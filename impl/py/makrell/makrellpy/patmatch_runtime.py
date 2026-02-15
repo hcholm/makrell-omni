@@ -1,8 +1,18 @@
 from __future__ import annotations
 
+from dataclasses import fields, is_dataclass
 from typing import Any
 
-from makrell.ast import BinOp, CurlyBrackets, Identifier, Node, Number, RoundBrackets, String
+from makrell.ast import (
+    BinOp,
+    CurlyBrackets,
+    Identifier,
+    Node,
+    Number,
+    RoundBrackets,
+    SquareBrackets,
+    String,
+)
 from makrell.baseformat import operator_parse, src_to_baseformat
 from makrell.parsing import python_value
 from makrell.tokeniser import regular
@@ -38,6 +48,119 @@ def _matches_simple(value: Any, patt: Node) -> bool:
         # binding-compatible syntax: name=pattern
         return _matches_simple(value, patt.right)
     return False
+
+
+def _node_to_dotted_name(n: Node) -> str | None:
+    if isinstance(n, Identifier):
+        return n.value
+    if isinstance(n, BinOp) and n.op == ".":
+        left = _node_to_dotted_name(n.left)
+        right = _node_to_dotted_name(n.right)
+        if left is None or right is None:
+            return None
+        return f"{left}.{right}"
+    return None
+
+
+def _matches_type_node(value: Any, type_node: Node) -> bool:
+    dotted = _node_to_dotted_name(type_node)
+    if dotted is None:
+        return False
+
+    builtin_types = {
+        "int": int,
+        "str": str,
+        "float": float,
+        "bool": bool,
+        "list": list,
+        "dict": dict,
+        "tuple": tuple,
+        "set": set,
+        "object": object,
+    }
+    if dotted in builtin_types:
+        return isinstance(value, builtin_types[dotted])
+
+    for cls in type(value).__mro__:
+        if cls.__name__ == dotted:
+            return True
+        qual = cls.__qualname__
+        if qual == dotted:
+            return True
+        full = f"{cls.__module__}.{qual}"
+        if full == dotted:
+            return True
+    return False
+
+
+def _get_positional_fields(value: Any) -> list[str]:
+    match_args = getattr(type(value), "__match_args__", None)
+    if isinstance(match_args, (tuple, list)):
+        names = [n for n in match_args if isinstance(n, str)]
+        if len(names) == len(match_args):
+            return names
+    if is_dataclass(value):
+        return [f.name for f in fields(value)]
+    return []
+
+
+def match_type_pattern(value: Any, pattern: Node) -> bool:
+    if not isinstance(pattern, CurlyBrackets):
+        return False
+    pnodes = regular(pattern.nodes)
+    if len(pnodes) < 2:
+        return False
+    if not isinstance(pnodes[0], Identifier) or pnodes[0].value != "$type":
+        return False
+    if not _matches_type_node(value, pnodes[1]):
+        return False
+
+    pos_nodes: list[Node] | None = None
+    kw_nodes: list[BinOp] = []
+
+    for extra in pnodes[2:]:
+        if not isinstance(extra, SquareBrackets):
+            return False
+        parts = operator_parse(regular(extra.nodes))
+        if len(parts) == 0:
+            continue
+        all_kw = all(isinstance(p, BinOp) and p.op == "=" for p in parts)
+        any_kw = any(isinstance(p, BinOp) and p.op == "=" for p in parts)
+        if any_kw and not all_kw:
+            return False
+        if all_kw:
+            for p in parts:
+                assert isinstance(p, BinOp)
+                if not isinstance(p.left, Identifier):
+                    return False
+                kw_nodes.append(p)
+        else:
+            if pos_nodes is not None:
+                return False
+            pos_nodes = parts
+
+    if pos_nodes is not None:
+        field_names = _get_positional_fields(value)
+        if len(field_names) < len(pos_nodes):
+            return False
+        for i, patt in enumerate(pos_nodes):
+            field_name = field_names[i]
+            if not hasattr(value, field_name):
+                return False
+            attr_value = getattr(value, field_name)
+            if not _matches_simple(attr_value, patt):
+                return False
+
+    for p in kw_nodes:
+        assert isinstance(p.left, Identifier)
+        field_name = p.left.value
+        if not hasattr(value, field_name):
+            return False
+        attr_value = getattr(value, field_name)
+        if not _matches_simple(attr_value, p.right):
+            return False
+
+    return True
 
 
 def _quant_bounds(qn: Node) -> tuple[int, int | None] | None:
@@ -113,3 +236,10 @@ def match_regular_pattern_src(value: Any, pattern_src: str) -> bool:
     if len(ns) != 1:
         return False
     return match_regular_pattern(value, ns[0])
+
+
+def match_type_pattern_src(value: Any, pattern_src: str) -> bool:
+    ns = regular(src_to_baseformat(pattern_src))
+    if len(ns) != 1:
+        return False
+    return match_type_pattern(value, ns[0])

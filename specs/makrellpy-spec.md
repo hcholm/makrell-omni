@@ -122,6 +122,17 @@ Built-in regular pattern type (`$r`):
 - Regular subpatterns MAY be nested.
 - Binding form `name=pattern` MUST be accepted inside regular parts and participate in match bindings.
 
+Built-in constructor/type destructuring pattern (`$type`):
+- Form: `{$type T}`
+- Positional form: `{$type T [p1 p2 ...]}`
+- Keyword form: `{$type T [field1=p1 field2=p2 ...]}`
+- Mixed form: `{$type T [p1 ...] [field1=p1 ...]}`
+- Semantics:
+  - must match values whose runtime type is compatible with `T`
+  - positional matching uses `__match_args__` when available, with dataclass field-order fallback
+  - keyword matching tests named attributes
+  - all provided positional and keyword constraints MUST hold
+
 Suffix definition forms:
 - `{def strsuffix SUFFIX TRANSFORM}`
 - `{def intsuffix SUFFIX TRANSFORM}`

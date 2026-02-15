@@ -132,6 +132,56 @@
     }
 }
 
+{test "match type constructor pattern"
+    {class Point []
+        __match_args__ = ["x" "y"]
+        {fun __init__ [self x y]
+            self.x = x
+            self.y = y
+        }
+    }
+
+    {assert
+        {match {Point 2 3}
+            {$type Point}
+                "point"
+            _
+                "other"
+        } == "point"
+        "$type type-only"
+    }
+
+    {assert
+        {match {Point 2 3}
+            {$type Point [2 3]}
+                "pos"
+            _
+                "other"
+        } == "pos"
+        "$type positional"
+    }
+
+    {assert
+        {match {Point 2 3}
+            {$type Point [x=2 y=3]}
+                "kw"
+            _
+                "other"
+        } == "kw"
+        "$type keyword"
+    }
+
+    {assert
+        {match {Point 2 3}
+            {$type Point [2 _] [y=3]}
+                "mixed"
+            _
+                "other"
+        } == "mixed"
+        "$type mixed"
+    }
+}
+
 {test "match complex"
 
     {assert

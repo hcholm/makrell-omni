@@ -1,5 +1,5 @@
 
-{import makrell.makrellpy.patmatch_runtime@[match_regular_pattern match_regular_pattern_src]}
+{import makrell.makrellpy.patmatch_runtime@[match_regular_pattern match_regular_pattern_src match_type_pattern match_type_pattern_src]}
 
 
 {def operator >> 100

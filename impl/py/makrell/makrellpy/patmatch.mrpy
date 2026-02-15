@@ -207,6 +207,28 @@
         ["regular_pattype" can_handle make_test]
     }
 
+    _type_ctor_pattype = [] -> {do
+        can_handle = pattern -> {do
+            {when not \ {isinstance pattern CurlyBrackets}
+                {return false}}
+            pnodes = {regular pattern.nodes}
+            {when {len pnodes} == 0
+                {return false}}
+            head = pnodes@0
+            {when not \ {isinstance head Identifier}
+                {return false}}
+            head.value == "$type"
+        }
+
+        make_test = [testval pattern main] -> {do
+            pattern_src = {str pattern}
+            test = {quote {match_type_pattern_src {$ testval} {$ pattern_src}}}
+            [test []]
+        }
+
+        ["type_ctor_pattype" can_handle make_test]
+    }
+
     _any_binop_pattype = [] -> {do
         can_handle = n -> {isinstance n BinOp}
 
@@ -232,6 +254,7 @@
     _match_pattern_types = [
         {_self_pattype}
         {_type_pattype}
+        {_type_ctor_pattype}
         {_regular_pattype}
         {_list_pattype}
         {_or_pattype}

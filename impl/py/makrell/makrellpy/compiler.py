@@ -10,7 +10,12 @@ from makrell.tokeniser import regular
 from makrell.parsing import (Diagnostics, flatten)
 from ._compiler_common import stmt_wrap
 from ._compile import (CompilerContext, compile_mr)
-from .patmatch_runtime import match_regular_pattern, match_regular_pattern_src
+from .patmatch_runtime import (
+    match_regular_pattern,
+    match_regular_pattern_src,
+    match_type_pattern,
+    match_type_pattern_src,
+)
 
 
 def import_mr_module(name: str, dest_module, alias: str | None = None) -> py.Module:
@@ -100,6 +105,8 @@ def eval_nodes(ns: list[Node], cc: CompilerContext | None = None,
     loc = locals_ if locals_ is not None else locals()
     glob.setdefault("match_regular_pattern", match_regular_pattern)
     glob.setdefault("match_regular_pattern_src", match_regular_pattern_src)
+    glob.setdefault("match_type_pattern", match_type_pattern)
+    glob.setdefault("match_type_pattern_src", match_type_pattern_src)
 
     # statements
     if stmt_count > 0:
@@ -131,6 +138,8 @@ def exec_nodes(nodes: list[Node], filename: str | None = None) -> Any:
     glob = {}
     glob["match_regular_pattern"] = match_regular_pattern
     glob["match_regular_pattern_src"] = match_regular_pattern_src
+    glob["match_type_pattern"] = match_type_pattern
+    glob["match_type_pattern_src"] = match_type_pattern_src
     init_py = \
         """import sys
 sys.path.append('.')
