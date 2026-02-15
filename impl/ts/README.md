@@ -43,6 +43,7 @@ bun run src/cli.ts examples/hello.mrjs --emit-js
 - `examples/`: runnable examples
   - `examples/browser-smoke/index.html`
 - `COMPATIBILITY.md`: runtime/tooling support matrix
+- `IMPORT_MODEL.md`: runtime/importm interoperability model (CJS/ESM/browser strategy)
 - `REFERENCE_PLAN.md`: roadmap to make MakrellTS the reference implementation
 
 ## Notes
@@ -53,3 +54,4 @@ bun run src/cli.ts examples/hello.mrjs --emit-js
 - Current M0 typecheck scope is intentionally minimal (`src/ast.ts`) and will expand in M1.
 - Makrell-defined macros now run through a meta-runtime adapter layer (`src/meta_runtime.ts`), with subprocess isolation enabled by default on Bun.
 - Pattern matching supports `_`, `$`, literals, lists, `|`, `&`, type checks, `{$r ...}`, `{$type ...}`, plus runtime user hooks via `registerPatternHook`.
+- `import`/`importm` behavior and browser module loading strategy are defined in `IMPORT_MODEL.md`.

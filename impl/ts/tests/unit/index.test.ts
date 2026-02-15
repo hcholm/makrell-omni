@@ -3,6 +3,7 @@ import {
   clearPatternHooks,
   compile,
   InProcessMetaRuntimeAdapter,
+  parse,
   registerPatternHook,
   run,
   SubprocessMetaRuntimeAdapter,
@@ -170,5 +171,48 @@ describe("MakrellTs MVP", () => {
     });
     expect(run(`{match 6 {$even} "yes" _ "no"}`)).toBe("yes");
     clearPatternHooks();
+  });
+
+  test("runtime import and import-from", () => {
+    const scope = {
+      __mr_modules: {
+        math: {
+          sqrt: (x: number) => Math.sqrt(x),
+        },
+      },
+    };
+    expect(run(`
+      {import math}
+      {math.sqrt 9}
+    `, { scope })).toBe(3);
+
+    expect(run(`
+      {import math@[sqrt]}
+      {sqrt 16}
+    `, { scope })).toBe(4);
+  });
+
+  test("compile-time importm macro import", () => {
+    const body = parse(`
+      n = {regular ns}@0
+      {quote {$ n} + 1}
+    `);
+    const scope = {
+      __mr_modules: {
+        tools: {
+          __mr_meta__: [
+            {
+              name: "inc",
+              params: ["ns"],
+              body,
+            },
+          ],
+        },
+      },
+    };
+    expect(run(`
+      {importm tools@[inc]}
+      {inc 41}
+    `, { scope })).toBe(42);
   });
 });

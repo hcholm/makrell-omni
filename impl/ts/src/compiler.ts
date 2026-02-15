@@ -1,11 +1,18 @@
 import { CurlyBracketsNode, Node, SourceSpan, SquareBracketsNode, isIdent } from "./ast";
-import { MacroRegistry, defaultMacroContext, defineMakrellMacro } from "./macros";
+import {
+  MacroRegistry,
+  SerializedMakrellMacro,
+  defaultMacroContext,
+  defineMakrellMacro,
+} from "./macros";
 import { createDefaultMetaRuntimeAdapter, MetaRuntimeAdapter } from "./meta_runtime";
 import { parse } from "./parser";
 
 export interface CompileOptions {
   macros?: MacroRegistry;
   metaRuntime?: MetaRuntimeAdapter;
+  moduleResolver?: (moduleName: string) => Record<string, unknown>;
+  metaModuleResolver?: (moduleName: string) => { __mr_meta__?: SerializedMakrellMacro[] } | null;
 }
 
 export interface CompileDiagnostic {
@@ -29,6 +36,8 @@ interface Ctx {
   macros: MacroRegistry;
   macroCtx: ReturnType<typeof defaultMacroContext>;
   metaRuntime: MetaRuntimeAdapter;
+  moduleResolver?: (moduleName: string) => Record<string, unknown>;
+  metaModuleResolver?: (moduleName: string) => { __mr_meta__?: SerializedMakrellMacro[] } | null;
   fnDepth: number;
   tempId: number;
   thisAlias?: string;
@@ -222,6 +231,73 @@ function compileClassExpr(nodes: Node[], ctx: Ctx): string {
   return `class ${className} {${parts.join("\n")}}`;
 }
 
+function nodeToModuleName(n: Node): string {
+  if (n.kind === "identifier") return n.value;
+  if (n.kind === "binop" && n.op === ".") return `${nodeToModuleName(n.left)}.${nodeToModuleName(n.right)}`;
+  fail("Invalid module identifier", n);
+}
+
+function parseImportFromNames(n: Node): string[] {
+  if (n.kind === "square" || n.kind === "round") {
+    return n.nodes
+      .map((x) => {
+        if (x.kind !== "identifier") fail("import from names must be identifiers", x);
+        return x.value;
+      });
+  }
+  fail("Invalid import from list", n);
+}
+
+function compileImportExpr(nodes: Node[]): string {
+  const steps: string[] = [];
+  for (const n of nodes) {
+    if (n.kind === "identifier" || (n.kind === "binop" && n.op === ".")) {
+      const moduleName = nodeToModuleName(n);
+      const alias = moduleName.includes(".") ? moduleName.split(".").at(-1) ?? moduleName : moduleName;
+      steps.push(`__mr_import(${JSON.stringify(moduleName)}, ${JSON.stringify(alias)});`);
+      continue;
+    }
+    if (n.kind === "binop" && n.op === "@") {
+      const moduleName = nodeToModuleName(n.left);
+      const names = parseImportFromNames(n.right);
+      steps.push(`__mr_import_from(${JSON.stringify(moduleName)}, ${JSON.stringify(names)});`);
+      continue;
+    }
+    fail("Unsupported import form", n);
+  }
+  steps.push("return null;");
+  return `(() => {${steps.join("\n")}})()`;
+}
+
+function applyImportm(nodes: Node[], ctx: Ctx): void {
+  const resolver = ctx.metaModuleResolver ?? ((name: string) => ctx.moduleResolver?.(name) as { __mr_meta__?: SerializedMakrellMacro[] } | null);
+  if (!resolver) fail("importm requires a meta module resolver");
+
+  const applyModule = (moduleName: string, names?: string[]): void => {
+    const mod = resolver(moduleName);
+    if (!mod || !Array.isArray(mod.__mr_meta__)) {
+      fail(`Module '${moduleName}' has no __mr_meta__ definitions`);
+    }
+    const wanted = names ? new Set(names) : null;
+    for (const entry of mod.__mr_meta__) {
+      if (wanted && !wanted.has(entry.name)) continue;
+      defineMakrellMacro(entry.name, entry.params, entry.body, ctx.macros);
+    }
+  };
+
+  for (const n of nodes) {
+    if (n.kind === "identifier" || (n.kind === "binop" && n.op === ".")) {
+      applyModule(nodeToModuleName(n));
+      continue;
+    }
+    if (n.kind === "binop" && n.op === "@") {
+      applyModule(nodeToModuleName(n.left), parseImportFromNames(n.right));
+      continue;
+    }
+    fail("Unsupported importm form", n);
+  }
+}
+
 function compileCurly(n: CurlyBracketsNode, ctx: Ctx): string {
   if (registerMacroDef(n, ctx)) return "null";
 
@@ -240,6 +316,11 @@ function compileCurly(n: CurlyBracketsNode, ctx: Ctx): string {
   if (isIdent(head, "when")) return compileWhenExpr(n.nodes.slice(1), ctx);
   if (isIdent(head, "while")) return compileWhileExpr(n.nodes.slice(1), ctx);
   if (isIdent(head, "for")) return compileForExpr(n.nodes.slice(1), ctx);
+  if (isIdent(head, "import")) return compileImportExpr(n.nodes.slice(1));
+  if (isIdent(head, "importm")) {
+    applyImportm(n.nodes.slice(1), ctx);
+    return "null";
+  }
   if (isIdent(head, "match")) return compileMatchExpr(n.nodes.slice(1), ctx);
   if (isIdent(head, "fun")) return compileFunExpr(n.nodes, ctx);
   if (isIdent(head, "class")) return compileClassExpr(n.nodes, ctx);
@@ -397,6 +478,8 @@ export function compileToJs(src: string, options: CompileOptions = {}): string {
     macros: options.macros ?? new MacroRegistry(),
     macroCtx: defaultMacroContext(),
     metaRuntime: options.metaRuntime ?? createDefaultMetaRuntimeAdapter(),
+    moduleResolver: options.moduleResolver,
+    metaModuleResolver: options.metaModuleResolver,
     fnDepth: 0,
     tempId: 0,
   };

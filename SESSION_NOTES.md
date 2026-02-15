@@ -81,6 +81,15 @@ Keep entries concise and append-only.
     - TypeScript parity files are thin wrappers for file loading + adapter selection
   - Tests run: `bun run ci` (from `impl/ts`)
   - Result: all checks pass (`build`, `test`, `typecheck`, `test:browser`)
+- 2026-02-15: Delivered M4 import/interoperability increment in `impl/ts`.
+  - Files: `impl/ts/src/compiler.ts`, `impl/ts/src/index.ts`, `impl/ts/tests/unit/index.test.ts`, `impl/ts/IMPORT_MODEL.md`, `impl/ts/README.md`
+  - Scope:
+    - Runtime `{import ...}` and `{import mod@[a b]}` support
+    - Compile-time `{importm ...}` and `{importm mod@[macroNames]}` support via `__mr_meta__`
+    - Resolver strategy for Node/Bun/browser-style module maps
+    - ESM/CJS/browser loading behavior documented in `IMPORT_MODEL.md`
+  - Tests run: `bun run ci` (from `impl/ts`)
+  - Result: all checks pass (`build`, `test`, `typecheck`, `test:browser`)
 
 ## In Progress
 

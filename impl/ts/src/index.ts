@@ -25,9 +25,48 @@ export interface RunOptions extends CompileOptions {
   scope?: Record<string, unknown>;
 }
 
+function getDefaultModuleResolver(scopeObj: Record<string, unknown>): (moduleName: string) => Record<string, unknown> {
+  return (moduleName: string): Record<string, unknown> => {
+    const reg = scopeObj.__mr_modules as Record<string, unknown> | undefined;
+    if (reg && moduleName in reg) {
+      return reg[moduleName] as Record<string, unknown>;
+    }
+
+    const req = (globalThis as unknown as { require?: (name: string) => unknown }).require;
+    if (typeof req === "function") {
+      return req(moduleName) as Record<string, unknown>;
+    }
+
+    throw new Error(`No module resolver for '${moduleName}'. Provide scope.__mr_modules or options.moduleResolver.`);
+  };
+}
+
 export function run(src: string, options: RunOptions = {}): unknown {
-  const js = compileToJs(src, options);
   const scope = options.scope ?? {};
+  const moduleResolver = options.moduleResolver ?? getDefaultModuleResolver(scope);
+  const metaModuleResolver = options.metaModuleResolver ?? ((name: string) => moduleResolver(name) as { __mr_meta__?: unknown[] });
+
+  const js = compileToJs(src, {
+    ...options,
+    moduleResolver,
+    metaModuleResolver,
+  });
+
+  const importFn = (moduleName: string, alias?: string): unknown => {
+    const mod = moduleResolver(moduleName);
+    const key = alias && alias.length > 0 ? alias : moduleName;
+    scope[key] = mod;
+    return mod;
+  };
+
+  const importFromFn = (moduleName: string, names: string[]): null => {
+    const mod = moduleResolver(moduleName) as Record<string, unknown>;
+    for (const n of names) scope[n] = mod[n];
+    return null;
+  };
+
+  scope.__mr_import = importFn;
+  scope.__mr_import_from = importFromFn;
 
   const fn = new Function(
     "__scope",
