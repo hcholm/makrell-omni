@@ -17,6 +17,7 @@ Keep entries concise and append-only.
 - 2026-02-15: TS-compatible typing is required in MakrellTS source syntax and compiler output (TS emit and/or declaration output).
 - 2026-02-15: No new AST node kinds for typing in MakrellTS; encode types using existing MBF/Makrell node structures.
 - 2026-02-15: `in` is not to be introduced as an operator token; mapped-type forms must be rewritten to existing operator/core-node constructs or omit `in` when possible.
+- 2026-02-15: N-body browser example must be runnable directly from repo source without a separate build step; runnable output artifacts should be kept with the example.
 
 ## Completed
 

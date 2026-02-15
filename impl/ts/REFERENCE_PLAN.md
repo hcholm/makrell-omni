@@ -175,6 +175,8 @@ Exit criteria:
 ## M6. Example app: N-body simulator
 
 - Example path: `impl/ts/examples/nbody-browser/`.
+- Must be runnable from repository source without a separate build step.
+- Keep runnable browser output artifacts checked in (or otherwise directly executable source form) so a fresh clone can run the demo immediately.
 - Features:
   - 2D simulation with gravitational attraction.
   - Collision detection and merge-on-collision.
@@ -190,6 +192,7 @@ Exit criteria:
 
 Exit criteria:
 - Runs in browser with smooth interaction and deterministic reset behavior.
+- `examples/nbody-browser` can be launched directly from source (no pre-run build required).
 
 ## M7. Reference transition
 
