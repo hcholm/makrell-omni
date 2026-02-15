@@ -1,0 +1,120 @@
+{assert (
+    {match 2
+        3 "therr"
+    } == null
+) "no match"}
+
+{assert (
+    {match 2
+        2 "two"
+    } == "two"
+) "simple number"}
+
+{assert (
+    {match "asd"
+        "qwe" "qwe"
+        _ "any"
+        "asd" "asd"
+    } == "any"
+) "wildcard order"}
+
+{assert (
+    {match [2 3]
+        [_ _] "two"
+        _ "other"
+    } == "two"
+) "list"}
+
+{assert (
+    {match 7
+        2 | 3 "two or three"
+        5 | 7 "five or seven"
+    } == "five or seven"
+) "or"}
+
+{assert (
+    {match 2
+        _:str & $ < 3 "str < 3"
+        _:int & $ < 3 "int < 3"
+        _ "other"
+    } == "int < 3"
+) "and"}
+
+{assert (
+    {match 2
+        $ > 3 "$ > 3"
+        $ < 3 "$ < 3"
+        _ "other"
+    } == "$ < 3"
+) "self/binop"}
+
+{class Point []
+    __match_args__ = ["x" "y"]
+    {fun __init__ [self x y]
+        self.x = x
+        self.y = y
+    }
+}
+
+{assert (
+    {match {new Point [2 3]}
+        _:Point "Point object"
+        _ "other"
+    } == "Point object"
+) "type"}
+
+{assert (
+    {match {new Point [2 3]}
+        {$type Point [2 _] [y=3]} "mixed"
+        _ "other"
+    } == "mixed"
+) "$type"}
+
+{assert ({match 2 2} == true) "short true"}
+{assert ({match 2 3} == false) "short false"}
+{assert ({match [2 3] [_ $ > 2 & $ < 5]} == true) "short complex true"}
+{assert ({match [2 5] [_ $ > 2 & $ < 5]} == false) "short complex false"}
+
+{assert (
+    {match [2 3 5]
+        {$r 2 3 5} true
+        _ false
+    } == true
+) "$r exact"}
+
+{assert (
+    {match [2 3 5 7]
+        {$r 2 _ $rest} true
+        _ false
+    } == true
+) "$r rest"}
+
+{assert (
+    {match [2 3 3 5]
+        {$r 2 (2..3)*3 5} true
+        _ false
+    } == true
+) "$r range quantifier"}
+
+{assert (
+    {match [2 5 5 3]
+        {$r 2 some*5 3} true
+        _ false
+    } == true
+) "$r some"}
+
+{assert (
+    {match [2 7 5]
+        {$r 2 any*(_ | 7) 5} true
+        _ false
+    } == true
+) "$r group"}
+
+{assert (
+    {match [[2 3] 7]
+        {$r {$r 2 3} 7} true
+        _ false
+    } == true
+) "$r nested"}
+
+true

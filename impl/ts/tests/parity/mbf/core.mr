@@ -1,0 +1,56 @@
+{fun add [x y]
+    x + y
+}
+{assert ({add 10 32} == 42) "add"}
+
+x = 7
+{assert ({if x < 3 "a" x < 6 "b" x < 9 "c" "d"} == "c") "if chain"}
+
+{assert (
+    {do
+        a = 2
+        a = a + 5
+        a
+    } == 7
+) "do return"}
+
+add2 = x -> x + 2
+{assert ({add2 40} == 42) "lambda"}
+
+{class Point []
+    {fun __init__ [self x y]
+        self.x = x
+        self.y = y
+    }
+    {fun sum [self]
+        self.x + self.y
+    }
+}
+p = {new Point [11 31]}
+{assert ({p.sum} == 42) "class/new"}
+
+{fun mul [x:int y:int]
+    x * y
+}
+out:int = {mul 6 7}
+{assert (out == 42) "typed surface"}
+
+{assert (
+    {for n [1 2 3 4]
+        n
+    } == null
+) "for loop returns null"}
+
+{assert (
+    {while false
+        1
+    } == null
+) "while loop returns null"}
+
+{assert (
+    {when true
+        2 + 40
+    } == 42
+) "when"}
+
+true

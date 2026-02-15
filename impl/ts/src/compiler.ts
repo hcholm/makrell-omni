@@ -108,6 +108,10 @@ function compileDoExpr(nodes: Node[], ctx: Ctx): string {
 function compileMatchExpr(nodes: Node[], ctx: Ctx): string {
   if (nodes.length === 0) return "null";
   const valueExpr = compileExpr(nodes[0], ctx);
+  if (nodes.length === 2) {
+    const patt = JSON.stringify(nodes[1]);
+    return `__mr_matchPattern(${valueExpr}, ${patt})`;
+  }
   const tmp = nextTmp(ctx);
 
   const chunks: string[] = [];

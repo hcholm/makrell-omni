@@ -6,13 +6,15 @@ import {
   SubprocessMetaRuntimeAdapter,
 } from "./meta_runtime";
 import { parse } from "./parser";
-import { matchPattern } from "./pattern";
+import { clearPatternHooks, matchPattern, registerPatternHook } from "./pattern";
 
 export {
   parse,
   compileToJs as compile,
   MacroRegistry,
   matchPattern,
+  registerPatternHook,
+  clearPatternHooks,
   InProcessMetaRuntimeAdapter,
   SubprocessMetaRuntimeAdapter,
 };

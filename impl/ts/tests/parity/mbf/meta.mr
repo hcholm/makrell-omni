@@ -1,0 +1,33 @@
+{def macro inc [ns]
+    n = {regular ns}@0
+    {quote {$ n} + 1}
+}
+{assert ({inc 41} == 42) "inc"}
+
+{def macro twostmts [ns]
+    {quote
+        a = 2
+        a = a + 40
+    }
+}
+{twostmts}
+{assert (a == 42) "multi quote"}
+
+{def macro add1 [ns]
+    n = {regular ns}@0
+    {quote {$ n} + 1}
+}
+
+{def macro add2 [ns]
+    n = {regular ns}@0
+    {quote {add1 {add1 {$ n}}}}
+}
+{assert ({add2 40} == 42) "macro calls macro"}
+
+{def macro makeexpr [ns]
+    x = {regular ns}@0
+    {quote ({$ x} * 6) + 6}
+}
+{assert ({makeexpr 6} == 42) "quote/unquote expr"}
+
+true

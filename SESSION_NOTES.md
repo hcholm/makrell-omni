@@ -49,17 +49,49 @@ Keep entries concise and append-only.
     - Added subprocess runner script and tests for adapter routing
   - Tests run: `bun run ci` (from `impl/ts`)
   - Result: all checks pass (`build`, `test`, `typecheck`, `test:browser`)
+- 2026-02-15: Delivered M3 pattern matching increment in `impl/ts`.
+  - Files: `impl/ts/src/pattern.ts`, `impl/ts/src/compiler.ts`, `impl/ts/src/index.ts`, `impl/ts/tests/unit/index.test.ts`, `impl/ts/README.md`
+  - Scope:
+    - Added built-ins: `_`, `$`, literals, lists, `|`, `&`, type patterns, binop-with-`$`
+    - Added regular patterns `{$r ...}` including quantifiers and `$rest`
+    - Added constructor/type destructuring `{$type ...}`
+    - Added short-form `{match value pattern}` -> boolean
+    - Added runtime user-defined pattern hook API (`registerPatternHook`, `clearPatternHooks`)
+  - Tests run: `bun run ci` (from `impl/ts`)
+  - Result: all checks pass (`build`, `test`, `typecheck`, `test:browser`)
+- 2026-02-15: Started parity test migration from MakrellPy suites.
+  - Files: `impl/ts/tests/parity/manifest.md`, `impl/ts/tests/parity/patmatch.parity.test.ts`, `impl/ts/src/pattern.ts`
+  - Scope:
+    - Added parity manifest with `portable/adapt/exclude` status mapping
+    - Ported substantial `test_patmatch.mr` subset into TS parity tests
+    - Fixed grouped round-pattern handling used by `$r` advanced forms
+  - Tests run: `bun run ci` (from `impl/ts`)
+  - Result: all checks pass (`build`, `test`, `typecheck`, `test:browser`)
+- 2026-02-15: Added parity tests for previous milestones (M0/M1/M2).
+  - Files: `impl/ts/tests/parity/core.parity.test.ts`, `impl/ts/tests/parity/meta.parity.test.ts`, `impl/ts/tests/parity/manifest.md`
+  - Scope:
+    - M0/M1 core parity checks (compile/run/function flow/class/new/typed surface/diagnostics)
+    - M2 meta parity checks (in-process + subprocess adapter macro execution)
+  - Tests run: `bun run ci` (from `impl/ts`)
+  - Result: all checks pass (`build`, `test`, `typecheck`, `test:browser`)
+- 2026-02-15: Migrated parity tests to MBF-first authoring where possible.
+  - Files: `impl/ts/tests/parity/mbf/core.mr`, `impl/ts/tests/parity/mbf/meta.mr`, `impl/ts/tests/parity/mbf/patmatch.mr`, `impl/ts/tests/parity/_mbf_runner.ts`, parity wrapper test files
+  - Scope:
+    - MBF parity sources now hold most test logic
+    - TypeScript parity files are thin wrappers for file loading + adapter selection
+  - Tests run: `bun run ci` (from `impl/ts`)
+  - Result: all checks pass (`build`, `test`, `typecheck`, `test:browser`)
 
 ## In Progress
 
 - Item: MakrellTS milestone execution (M0-M7)
-- Status: M0 completed; M1 core increment completed; M2 isolation increment completed
+- Status: M0 completed; M1 core increment completed; M2 isolation increment completed; M3 increment completed
 - Blockers: none documented yet
 
 ## Next Actions
 
 1. Build parity matrix from MakrellPy tests into `impl/ts/tests/parity/` status categories.
-2. Expand M1 test coverage to mirror more MakrellPy core scenarios (flow/functions/classes/patterns).
+2. Port additional MakrellPy suites into `impl/ts/tests/parity/` (`test_funcs.mr`, `test_flow.mr`, `test_classes.mr`).
 3. Define MakrellTS typing syntax subset using existing AST node forms only (formal doc + fixtures).
 4. Add browser worker adapter for isolated meta execution in browser target.
 

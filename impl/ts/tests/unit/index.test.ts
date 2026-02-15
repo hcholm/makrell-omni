@@ -1,7 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
+  clearPatternHooks,
   compile,
   InProcessMetaRuntimeAdapter,
+  registerPatternHook,
   run,
   SubprocessMetaRuntimeAdapter,
 } from "../../src/index";
@@ -122,5 +124,51 @@ describe("MakrellTs MVP", () => {
     `;
     expect(run(src, { metaRuntime: new InProcessMetaRuntimeAdapter() })).toBe(42);
     expect(run(src, { metaRuntime: new SubprocessMetaRuntimeAdapter() })).toBe(42);
+  });
+
+  test("match short form returns bool", () => {
+    expect(run(`{match 2 2}`)).toBe(true);
+    expect(run(`{match 2 3}`)).toBe(false);
+  });
+
+  test("$r regular patterns", () => {
+    const src = `
+      {match [2 3 3 5]
+        {$r 2 (2..3)*3 5}
+          "ok"
+        _
+          "no"
+      }
+    `;
+    expect(run(src)).toBe("ok");
+  });
+
+  test("$type constructor patterns", () => {
+    const src = `
+      {class Point []
+        {fun __init__ [self x y]
+          self.x = x
+          self.y = y
+        }
+      }
+      {match {new Point [2 3]}
+        {$type Point [x=2 y=3]}
+          "ok"
+        _
+          "no"
+      }
+    `;
+    expect(run(src)).toBe("ok");
+  });
+
+  test("user-defined pattern hook API", () => {
+    clearPatternHooks();
+    registerPatternHook({
+      name: "even",
+      canHandle: (p) => p.kind === "curly" && p.nodes[0]?.kind === "identifier" && p.nodes[0].value === "$even",
+      match: (v, _p, env) => (typeof v === "number" && v % 2 === 0 ? env : null),
+    });
+    expect(run(`{match 6 {$even} "yes" _ "no"}`)).toBe("yes");
+    clearPatternHooks();
   });
 });
