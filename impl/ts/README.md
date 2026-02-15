@@ -1,8 +1,10 @@
 # MakrellTS
 
-`impl/ts` is the TypeScript implementation track for Makrell.
+`impl/ts` is the TypeScript reference implementation for Makrell.
 
-Status: M0 baseline prepared (build/test/typecheck/browser-smoke scripts + compatibility matrix).
+Targets:
+- Bun (preferred) and Node.js
+- Browser runtime (including isolated meta execution support)
 
 ## Install
 
@@ -42,12 +44,81 @@ Typed outputs (API):
 import { compileToTs, compileToDts } from "makrellts";
 ```
 
+## MakrellTS by example
+
+### Core syntax
+
+```mbf
+a = 2
+b = a + 3
+[a b 5] | sum
+
+{fun add [x y]
+  x + y}
+
+{if a < b
+  "a is less"
+  "a is not less"}
+
+{match a
+  2 "two"
+  _ "other"}
+```
+
+### TypeScript-oriented semantics
+
+```mbf
+Point = {class Point
+  {fun __init__ [self x:number y:number]
+    self.x = x
+    self.y = y}
+}
+
+p:Point = {new Point [2 3]}
+
+mode:"option1" | "option2" = "option1"
+```
+
+### Macros and meta execution
+
+```mbf
+{def macro twice [x]
+  [{quote $x} {quote $x}]}
+
+{twice {print "hello"}}
+```
+
+## MRON example
+
+```mbf
+owner "Rena Holm"
+active true
+count 3
+items [
+  { name "A" }
+  { name "B" }
+]
+```
+
+## MRML example
+
+```mbf
+{html
+  {body
+    {h1 MakrellTS}
+    {p Generated from MBF-style syntax.}
+  }
+}
+```
+
 ## Layout
 
 - `src/`: compiler/runtime source
 - `src/browser.ts`: browser compile/execute entrypoint
 - `src/meta_worker.ts`: browser meta worker entrypoint
+- `src/browser-runtime/`: checked-in browser runtime JS for no-build static hosting
 - `tests/unit/`: unit tests
+- `tests/parity/`: parity tests against MakrellPy behaviour where applicable
 - `scripts/`: helper scripts (including browser smoke check)
 - `examples/`: runnable examples
   - `examples/browser-smoke/index.html`
@@ -55,17 +126,16 @@ import { compileToTs, compileToDts } from "makrellts";
   - `examples/nbody-browser/index.html`
 - `COMPATIBILITY.md`: runtime/tooling support matrix
 - `IMPORT_MODEL.md`: runtime/importm interoperability model (CJS/ESM/browser strategy)
-- `REFERENCE_PLAN.md`: roadmap to make MakrellTS the reference implementation
+- `REFERENCE_PLAN.md`: roadmap and milestone tracking
 
 ## Notes
 
 - Bun is the preferred local runtime.
 - Node/browser support is tracked in `COMPATIBILITY.md`.
-- Typing and semantic parity work is tracked in `REFERENCE_PLAN.md`.
-- Current M0 typecheck scope is intentionally minimal (`src/ast.ts`) and will expand in M1.
-- Makrell-defined macros now run through a meta-runtime adapter layer (`src/meta_runtime.ts`), with subprocess isolation enabled by default on Bun.
-- Pattern matching supports `_`, `$`, literals, lists, `|`, `&`, type checks, `{$r ...}`, `{$type ...}`, plus runtime user hooks via `registerPatternHook`.
-- `import`/`importm` behavior and browser module loading strategy are defined in `IMPORT_MODEL.md`.
-- Browser bundle outputs are generated to `dist/browser/` (`browser.js`, `meta_worker.js`).
-- Typed compiler outputs are available via `compileToTs` and `compileToDts`.
-- N-body simulator example is available at `examples/nbody-browser/index.html` and runs directly from source with a static file server.
+- `import`/`importm` behaviour and browser module loading strategy are defined in `IMPORT_MODEL.md`.
+- Browser runtime bundle outputs are built to `dist/browser/` and mirrored in `src/browser-runtime/` for static hosting without build steps.
+- N-body simulator example is at `examples/nbody-browser/index.html` and uses MakrellTS source (`app.mrjs`).
+
+## Licence
+
+MIT. See [`../../LICENSE`](../../LICENSE).

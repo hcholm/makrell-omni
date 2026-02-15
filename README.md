@@ -3,7 +3,8 @@
 Monorepo for the Makrell language family and tooling.
 
 Makrell includes:
-- **MakrellPy**: general-purpose language with Python interop and metaprogramming.
+- **MakrellTS**: TypeScript reference implementation (Node/Bun + browser runtime).
+- **MakrellPy**: Python implementation track for compatibility, validation, and tooling continuity.
 - **MRON**: Makrell Object Notation.
 - **MRML**: Makrell Markup Language.
 - **MBF**: Makrell Base Format used by all of the above.
@@ -13,11 +14,32 @@ Project website and docs: [makrell.dev](https://makrell.dev)
 ## Repository layout
 
 - `specs/`: normative and draft specifications (`main-spec.md`, `makrellpy-spec.md`, `mron-spec.md`, `mrml-spec.md`, `mbf-spec.md`).
-- `impl/py/`: Python reference implementation, tests, examples, packaging, and implementation docs.
+- `impl/ts/`: TypeScript reference implementation, tests, examples, browser runtime, and roadmap docs.
+- `impl/py/`: Python implementation track, tests, examples, packaging, and implementation docs.
 - `makrell.dev/`: website/docs source.
 - `vscode-makrell/`: VS Code extension and editor integration assets.
 
-## Working with the Python reference implementation
+## Implementation guides
+
+- MakrellTS guide and examples: [`impl/ts/README.md`](impl/ts/README.md#makrellts-by-example)
+- MakrellPy guide and examples: [`impl/py/README.md`](impl/py/README.md#makrellpy-by-example)
+
+## Working with MakrellTS (reference)
+
+From `impl/ts/`:
+
+```bash
+bun install
+bun run ci
+```
+
+Run MakrellTS CLI:
+
+```bash
+bun run src/cli.ts examples/hello.mrjs
+```
+
+## Working with MakrellPy
 
 From `impl/py/`:
 
@@ -35,8 +57,8 @@ makrell path/to/script.mr
 
 ## Specifications first
 
-The language and format behaviour in this repo should be driven by `specs/`.
-Implementation changes in `impl/py/` should stay aligned with those specs and tests.
+Language and format behaviour in this repo should be driven by `specs/`.
+Implementation changes in both `impl/ts/` and `impl/py/` should stay aligned with specs and tests.
 
 ## Licence
 
