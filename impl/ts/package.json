@@ -1,0 +1,16 @@
+{
+  "name": "makrelljs-jsport1",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun build ./src/index.ts ./src/cli.ts --outdir dist --target bun",
+    "dev": "bun run src/cli.ts",
+    "check": "bunx tsc --noEmit",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/bun": "latest"
+  }
+}

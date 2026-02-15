@@ -1,0 +1,105 @@
+{
+	"name": "Makrell",
+	"scopeName": "source.makrell",
+	"patterns": [{
+		"include": "#expression"
+	}],
+	"repository": {
+		"expression": {
+			"patterns": [
+				{
+					"name": "comment.line.number-sign.makrell",
+					"begin": "#",
+					"beginCaptures": {
+						"0": {
+							"name": "punctuation.definition.comment.makrell"
+						}
+					},
+					"end": "$"
+				},
+				{
+					"begin": "(/\\*)",
+					"captures": {
+						"1": {
+							"name": "punctuation.definition.comment.makrell"
+						},
+						"2": {
+							"name": "punctuation.definition.comment.makrell"
+						}
+					},
+					"end": "(\\*/)",
+					"name": "comment.block.makrell"
+				},
+				{
+					"include": "#paren-expression"
+				},
+				{
+					"name": "keyword.control.makrell",
+					"match": "\\b(?<![\\.\\$])(catch|do|each|finally|for|if|return|switch|throw|try|unless|when|while|until|loop|export|\\$import|default|from|as|yield|async|await|(?<=for)\\s+own)(?!\\s*:)\\b"
+				},
+				{
+					"name": "keyword.reserved.makrell",
+					"match": "\\b(?<![\\.\\$])(class|fun|with|const|let|enum|native|__hasProp|__extends|__slice|__bind|__indexOf|implements|interface|package|private|protected|public|static)(?!\\s*:)\\b"
+				},
+				{
+					"match": "\\$[a-z]+\\b",
+					"name": "keyword.reserved.makrell"
+				},
+				{
+					"name": "keyword.operator.makrell",
+					"match": "\\b[:\\.=+\\-\\*\\/<>@,~\\|!'%^;]\\b"
+				},
+				{
+					"name": "storage.type.class.makrell",
+					"match": "\\b(?<!\\.)(class)\\b"
+				},
+				{
+					"name": "string.quoted.double.makrell",
+					"match": "\".*?\""
+				},
+				{
+					"name": "entity.name.function.makrell",
+					"match": "\\b[[:alpha:]_]\\w*\\b(?=\\s*(fun)\\b)"
+				},
+				{
+					"name": "entity.name.type.class.makrell",
+					"match": "\\b[[:alpha:]_]\\w*\\b(?=\\s*(class)\\b)"
+				},
+				{
+					"name": "keyword.operator.other.makrell",
+					"match": "`[[:alpha:]_]\\w*\\b"
+				},
+				{
+					"name": "entity.name.tag.html",
+					"match": "[a-zA-Z][a-zA-Z0-9:._-]*>"
+				},
+				{
+					"name": "variable.other.makrell",
+					"match": "\\b[[:alpha:]_]\\w*\\b"
+				}
+			]
+		},
+		"letter": {
+			"match": "a|b|c",
+			"name": "keyword.letter"
+		},
+		"paren-expression": {
+			"begin": "\\(",
+			"end": "\\)",
+			"beginCaptures": {
+				"0": {
+					"name": "punctuation.paren.open"
+				}
+			},
+			"endCaptures": {
+				"0": {
+					"name": "punctuation.paren.close"
+				}
+			},
+			"name": "expression.group",
+			"patterns": [{
+				"include": "#expression"
+			}]
+		}
+	}
+}

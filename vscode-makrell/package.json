@@ -1,0 +1,223 @@
+{
+    "name": "vscode-makrell",
+    "displayName": "Makrell",
+    "description": "Extension for the Makrell programming language.",
+    "version": "0.8.0",
+    "publisher": "hcholm",
+    "icon": "images/makrell.png",
+    "engines": {
+        "vscode": "^1.78.0"
+    },
+    "extensionDependencies": [
+        "ms-python.python"
+    ],
+    "categories": [
+        "Programming Languages"
+    ],
+    "activationEvents": [
+        "onStartupFinished"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/hcholm/vscode-makrell.git"
+    },
+    "bugs": {
+        "url": "https://github.com/hcholm/vscode-makrell/issues"
+    },
+    "homepage": "https://github.com/hcholm/vscode-makrell",
+    "contributes": {
+        "commands": [
+            {
+                "command": "makrell.server.hi",
+                "title": "Makrell Server Hi",
+                "category": "makrell"
+            },
+            {
+                "command": "makrell.server.restart",
+                "title": "Restart Makrell Server",
+                "category": "makrell"
+            },
+            {
+                "command": "makrell.server.executeCommand",
+                "title": "Execute Makrell Command",
+                "category": "makrell"
+            },
+            {
+                "command": "makrell.server.startRepl",
+                "title": "Start Makrell REPL",
+                "category": "makrell"
+            },
+            {
+                "command": "makrell.server.sendToRepl",
+                "title": "Send Code to Makrell REPL",
+                "category": "makrell"
+            },
+            {
+                "command": "makrell.server.stopRepl",
+                "title": "Stop Makrell REPL",
+                "category": "makrell"
+            }
+        ],
+        "keybindings": [
+            {
+                "command": "makrell.server.sendToRepl",
+                "key": "shift+enter"
+            }
+        ],
+        "languages": [
+            {
+                "id": "makrell",
+                "aliases": [
+                    "Makrell",
+                    "makrell"
+                ],
+                "extensions": [
+                    ".mr",
+                    ".mrx",
+                    ".mrpy"
+                ],
+                "configuration": "./language-configuration.json",
+                "icon": {
+                    "light": "./images/makrell.png",
+                    "dark": "./images/makrell.png"
+                }
+            },
+            {
+                "id": "makrell-on",
+                "aliases": [
+                    "Makrell Object Notation",
+                    "makrell object notation"
+                ],
+                "extensions": [
+                    ".mron"
+                ],
+                "configuration": "./language-configuration.json",
+                "icon": {
+                    "light": "./images/makrell-o.png",
+                    "dark": "./images/makrell-o.png"
+                }
+            },
+            {
+                "id": "makrell-ml",
+                "aliases": [
+                    "Makrell Markup Language",
+                    "makrell markup language"
+                ],
+                "extensions": [
+                    ".mrml"
+                ],
+                "configuration": "./language-configuration.json",
+                "icon": {
+                    "light": "./images/makrell-x.png",
+                    "dark": "./images/makrell-x.png"
+                }
+            }
+        ],
+        "grammars": [
+            {
+                "language": "makrell",
+                "scopeName": "source.makrell",
+                "path": "./syntaxes/makrell.tmLanguage.json"
+            },
+            {
+                "language": "makrell-on",
+                "scopeName": "source.makrell",
+                "path": "./syntaxes/makrell.tmLanguage.json"
+            },
+            {
+                "language": "makrell-ml",
+                "scopeName": "source.makrell",
+                "path": "./syntaxes/makrell.tmLanguage.json"
+            }
+        ],
+        "snippets": [
+            {
+                "language": "makrell",
+                "path": "./snippets/makrell.code-snippets.json"
+            }
+        ],
+        "configuration": [
+            {
+                "type": "object",
+                "title": "Makrell Server Configuration",
+                "properties": {
+                    "makrell.server.cwd": {
+                        "scope": "resource",
+                        "type": "string",
+                        "description": "The working directory from which to launch the server.",
+                        "markdownDescription": "The working directory from which to launch the server.\nIf blank, this will default to the `examples/servers` directory."
+                    },
+                    "makrell.server.launchScript": {
+                        "scope": "resource",
+                        "type": "string",
+                        "default": "makrell-langserver",
+                        "description": "The python script to run when launching the server.",
+                        "markdownDescription": "The python script to run when launching the server.\n Relative to #makrell.server.cwd#"
+                    },
+                    "makrell.server.pythonPath": {
+                        "scope": "resource",
+                        "type": "string",
+                        "default": "makrell-langserver",
+                        "description": "The python interpreter to use to run the server.\nBy default, this extension will attempt to use the Python interpreter configured via the Python extension, setting this setting will override this behavior."
+                    },
+                    "makrell.trace.server": {
+                        "scope": "resource",
+                        "type": "string",
+                        "default": "off",
+                        "enum": [
+                            "off",
+                            "verbose"
+                        ],
+                        "description": "Controls if LSP messages send to/from the server should be logged.",
+                        "enumDescriptions": [
+                            "do not log any lsp messages",
+                            "log all lsp messages sent to/from the server"
+                        ]
+                    }
+                }
+            },
+            {
+                "type": "object",
+                "title": "Client Configuration",
+                "properties": {
+                    "makrell.client.documentSelector": {
+                        "scope": "window",
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        },
+                        "default": [
+                            {
+                                "scheme": "file",
+                                "language": "makrell"
+                            }
+                        ],
+                        "description": "The client uses this to decide which documents the server is able to help with.",
+                        "markdownDescription": "The client uses this to decide which documents the server is able to help with.\n See [DocumentSelector](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#documentFilter) in the LSP Specification for more details."
+                    }
+                }
+            }
+        ]
+    },
+    "main": "./out/extension",
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p .",
+        "watch": "tsc -p . -w"
+    },
+    "devDependencies": {
+        "@types/node": "^16.11.6",
+        "@types/semver": "^7.5.0",
+        "@types/vscode": "^1.78.0",
+        "@typescript-eslint/eslint-plugin": "^5.3.0",
+        "@typescript-eslint/parser": "^5.3.0",
+        "eslint": "^8.2.0",
+        "typescript": "^5.1.0"
+    },
+    "dependencies": {
+        "@vscode/python-extension": "^1.0.4",
+        "semver": "^7.5.4",
+        "vsce": "^2.15.0",
+        "vscode-languageclient": "^8.1.0"
+    }
+}

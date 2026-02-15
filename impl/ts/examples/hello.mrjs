@@ -1,0 +1,67 @@
+{def macro inc [ns]
+  n = {regular ns}@0
+  {quote {$ n} + 1}
+}
+
+{def macro dbg [ns]
+  ns = {regular ns}
+  label = ns@0
+  expr = ns@1
+  {quote
+    {print "[dbg]" + {$ label}}
+    tmp = {$ expr}
+    {print "  ->" tmp}
+    tmp
+  }
+}
+
+{def macro repeat_add [ns]
+  ns = {regular ns}
+  val = ns@0
+  count = ns@1
+  count = {int count.value}
+  i = 0
+  expr = val
+  {while i < count
+    expr = {quote {inc {$ expr}}}
+    i = i + 1
+  }
+  expr
+}
+
+{print "== MakrellJs demo starting =="}
+
+x = 2
+{print "x =" x}
+
+y = {dbg "inc x" {inc x}}
+z = {dbg "repeat_add x 3" {repeat_add x 3}}
+{print "y =" y ", z =" z}
+
+point = ["Point" 3 5]
+{print "point =" point}
+
+classification = {match [y z point]
+  [3 5 ["Point" _ _]]
+    "shape pipeline matched"
+  [3 _ _]
+    "only first value matched"
+  _
+    "fallback"
+}
+
+{print "classification =" classification}
+
+verdict = {match z
+  $ > 10
+    "z is big"
+  $ > 4 & $ < 10
+    "z is medium"
+  _
+    "z is small"
+}
+
+{print "verdict =" verdict}
+{print "== MakrellJs demo done =="}
+
+classification + " / " + verdict

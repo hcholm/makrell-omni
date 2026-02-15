@@ -1,0 +1,7 @@
+
+{import makrell.makrellpy.patmatch_runtime@[match_regular_pattern match_regular_pattern_src]}
+
+
+{def operator >> 100
+    [x] -> (x | $left | $right)
+}

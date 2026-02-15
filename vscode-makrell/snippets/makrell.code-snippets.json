@@ -1,0 +1,28 @@
+{
+    "if": {
+        "prefix": "if",
+        "body": "{if ${1:predicate} ${2:consequent} ${3:alternative}}",
+        "description": "Code snippet for an if expression",
+        "scope": "source.makrell"
+    },
+    "fun": {
+        "prefix": "fun",
+        "body": [
+            "{fun ${1:name} [${2:parameters}]",
+            "\t$TM_SELECTED_TEXT$0",
+            "}"
+        ],
+        "description": "Code snippet for a function definition",
+        "scope": "source.makrell"
+    },
+    "class": {
+        "prefix": "cls",
+        "body": [
+            "{class ${1:name}",
+            "\t$TM_SELECTED_TEXT$0",
+            "}"
+        ],
+        "description": "Code snippet for a class definition",
+        "scope": "source.makrell"
+    }
+}
