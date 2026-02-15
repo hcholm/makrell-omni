@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MakrellTS N-body</title>
+    <style>
+      :root {
+        --bg: #0c1016;
+        --panel: #111826;
+        --ink: #e8eef8;
+        --muted: #97a7c0;
+        --accent: #59d8ff;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font: 14px/1.35 "Segoe UI", Tahoma, sans-serif;
+        background: radial-gradient(1200px 700px at 25% 15%, #1a2234 0%, var(--bg) 55%);
+        color: var(--ink);
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        min-height: 100vh;
+      }
+      .panel {
+        background: color-mix(in oklab, var(--panel), black 16%);
+        border-right: 1px solid #1f2a40;
+        padding: 16px;
+      }
+      h1 {
+        font-size: 18px;
+        margin: 0 0 10px;
+      }
+      p.muted {
+        margin: 0 0 10px;
+        color: var(--muted);
+      }
+      .help {
+        margin: 0 0 14px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .row { margin-bottom: 12px; }
+      .row label {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 4px;
+      }
+      .row output { color: var(--accent); min-width: 48px; text-align: right; }
+      input[type="range"] { width: 100%; }
+      .checkrow {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .buttons { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+      button {
+        border: 1px solid #2a3b59;
+        border-radius: 8px;
+        padding: 8px 10px;
+        color: var(--ink);
+        background: #17233a;
+        cursor: pointer;
+      }
+      button:hover { background: #213150; }
+      .stats {
+        margin-top: 14px;
+        color: var(--muted);
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        white-space: pre-wrap;
+      }
+      .stage { display: grid; place-items: center; padding: 10px; }
+      canvas {
+        width: min(1100px, calc(100vw - 360px));
+        height: min(760px, calc(100vh - 20px));
+        border: 1px solid #2b3c58;
+        border-radius: 10px;
+        background: linear-gradient(180deg, #090d16 0%, #070b12 100%);
+      }
+      dialog {
+        width: min(900px, calc(100vw - 24px));
+        max-height: 80vh;
+        border: 1px solid #2a3b59;
+        border-radius: 10px;
+        background: #0f1726;
+        color: var(--ink);
+      }
+      dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
+      .source-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      .source-code {
+        margin: 0;
+        padding: 10px;
+        border: 1px solid #273751;
+        border-radius: 8px;
+        background: #0a1220;
+        font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+        overflow: auto;
+        max-height: 60vh;
+      }
+      @media (max-width: 980px) {
+        .layout { grid-template-columns: 1fr; }
+        .panel { border-right: none; border-bottom: 1px solid #1f2a40; }
+        canvas { width: calc(100vw - 20px); height: 62vh; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="panel">
+        <h1>N-body Merge Simulator</h1>
+        <p class="muted">Bodies attract each other and merge on collision (momentum-conserving).</p>
+        <p class="help">Drag to pan. Mouse wheel to zoom. Auto camera can be toggled.</p>
+
+        <div class="row">
+          <label>Body count <output id="bodyCountOut">120</output></label>
+          <input id="bodyCount" type="range" min="10" max="500" step="1" value="120" />
+        </div>
+        <div class="row">
+          <label>Gravity G <output id="gravityOut">140</output></label>
+          <input id="gravity" type="range" min="10" max="600" step="5" value="140" />
+        </div>
+        <div class="row">
+          <label>Timestep <output id="dtOut">0.032</output></label>
+          <input id="dt" type="range" min="0.002" max="0.08" step="0.001" value="0.032" />
+        </div>
+        <div class="row">
+          <label>Softening <output id="softeningOut">25</output></label>
+          <input id="softening" type="range" min="0" max="120" step="1" value="25" />
+        </div>
+        <div class="row">
+          <label>Spawn radius <output id="spawnRadiusOut">260</output></label>
+          <input id="spawnRadius" type="range" min="30" max="380" step="5" value="260" />
+        </div>
+        <div class="row">
+          <label>Velocity range <output id="velocityOut">35</output></label>
+          <input id="velocity" type="range" min="0" max="200" step="5" value="35" />
+        </div>
+        <div class="row">
+          <label>Trail alpha <output id="trailOut">0.14</output></label>
+          <input id="trail" type="range" min="0.02" max="0.5" step="0.01" value="0.14" />
+        </div>
+        <div class="row">
+          <label>Manual zoom <output id="zoomOut">1.00x</output></label>
+          <input id="zoom" type="range" min="0.2" max="6" step="0.01" value="1" />
+        </div>
+        <div class="row checkrow">
+          <label for="autoCamera">Auto zoom &amp; pan</label>
+          <input id="autoCamera" type="checkbox" checked />
+        </div>
+        <div class="buttons">
+          <button id="toggle">Pause</button>
+          <button id="reset">Reset</button>
+          <button id="resetView">Reset View</button>
+          <button id="viewSource">View Source</button>
+        </div>
+        <div id="stats" class="stats"></div>
+      </aside>
+      <main class="stage">
+        <canvas id="sim" width="1100" height="760"></canvas>
+      </main>
+    </div>
+
+    <dialog id="sourceDialog">
+      <div class="source-head">
+        <strong>MakrellTS Source (app.mrjs)</strong>
+        <button id="closeSource">Close</button>
+      </div>
+      <pre id="sourceCode" class="source-code"></pre>
+    </dialog>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

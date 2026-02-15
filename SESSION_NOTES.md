@@ -107,11 +107,20 @@ Keep entries concise and append-only.
     - Added typed-output tests for annotation preservation and declaration generation
   - Tests run: `bun run ci` (from `impl/ts`)
   - Result: all checks pass (`build`, `test`, `typecheck`, `test:browser`)
+- 2026-02-15: Delivered M6 browser example increment in `impl/ts`.
+  - Files: `impl/ts/examples/nbody-browser/index.html`, `impl/ts/examples/nbody-browser/app.js`, `impl/ts/scripts/test-browser-smoke.ts`, `impl/ts/README.md`
+  - Scope:
+    - Added interactive N-body simulator example
+    - Merge-on-collision behavior with momentum-preserving merge
+    - Controls: body count, gravity, timestep, softening, spawn radius, velocity range, trail alpha, pause/reset
+    - Source-runnable example (no build needed to run the app itself; static file server is enough)
+  - Tests run: `bun run ci` (from `impl/ts`)
+  - Result: all checks pass (`build`, `test`, `typecheck`, `test:browser`)
 
 ## In Progress
 
 - Item: MakrellTS milestone execution (M0-M7)
-- Status: M0 completed; M1 completed; M2 completed; M3 completed; M4 completed; M5 completed; M5.1 completed
+- Status: M0 completed; M1 completed; M2 completed; M3 completed; M4 completed; M5 completed; M5.1 completed; M6 completed
 - Blockers: none documented yet
 
 ## Next Actions
@@ -119,7 +128,7 @@ Keep entries concise and append-only.
 1. Port additional MakrellPy suites into `impl/ts/tests/parity/` (`test_funcs.mr`, `test_flow.mr`, `test_classes.mr`).
 2. Add true async browser worker meta adapter path (current worker entrypoint exists; runtime adapter remains Node-focused).
 3. Define MakrellTS typing syntax subset using existing AST node forms only (formal doc + fixtures).
-4. Start M6 `examples/nbody-browser` scaffold and controls.
+4. Begin M7 transition docs (reference-implementation switch criteria and divergence report).
 
 ## Quick Repro / Verification
 

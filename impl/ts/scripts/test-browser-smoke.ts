@@ -5,6 +5,8 @@ const root = process.cwd();
 const browserExample = join(root, "examples", "browser-smoke", "index.html");
 const browserCompileExample = join(root, "examples", "browser-compile", "index.html");
 const browserCompileApp = join(root, "examples", "browser-compile", "app.js");
+const nbodyExample = join(root, "examples", "nbody-browser", "index.html");
+const nbodyApp = join(root, "examples", "nbody-browser", "app.js");
 const browserBundle = join(root, "dist", "browser", "browser.js");
 const workerBundle = join(root, "dist", "browser", "meta_worker.js");
 
@@ -31,6 +33,11 @@ if (!existsSync(browserCompileExample) || !existsSync(browserCompileApp)) {
   process.exit(1);
 }
 
+if (!existsSync(nbodyExample) || !existsSync(nbodyApp)) {
+  console.error("Missing nbody browser example files.");
+  process.exit(1);
+}
+
 if (!existsSync(browserBundle)) {
   console.error("Missing browser bundle:", browserBundle);
   process.exit(1);
@@ -43,3 +50,4 @@ if (!existsSync(workerBundle)) {
 
 console.log("Browser bundle check OK:", browserBundle);
 console.log("Meta worker bundle check OK:", workerBundle);
+console.log("N-body example check OK:", nbodyExample);

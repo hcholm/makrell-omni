@@ -52,6 +52,7 @@ import { compileToTs, compileToDts } from "makrellts";
 - `examples/`: runnable examples
   - `examples/browser-smoke/index.html`
   - `examples/browser-compile/index.html`
+  - `examples/nbody-browser/index.html`
 - `COMPATIBILITY.md`: runtime/tooling support matrix
 - `IMPORT_MODEL.md`: runtime/importm interoperability model (CJS/ESM/browser strategy)
 - `REFERENCE_PLAN.md`: roadmap to make MakrellTS the reference implementation
@@ -67,3 +68,4 @@ import { compileToTs, compileToDts } from "makrellts";
 - `import`/`importm` behavior and browser module loading strategy are defined in `IMPORT_MODEL.md`.
 - Browser bundle outputs are generated to `dist/browser/` (`browser.js`, `meta_worker.js`).
 - Typed compiler outputs are available via `compileToTs` and `compileToDts`.
+- N-body simulator example is available at `examples/nbody-browser/index.html` and runs directly from source with a static file server.

@@ -1,0 +1,113 @@
+{fun resetSim []
+    state.bodies = []
+    state.i = 0
+    {while state.i < params.bodyCount
+        {state.bodies.push {makeBody centerX centerY params.spawnRadius params.velocity}}
+        state.i = state.i + 1
+    }
+    state.lastMerged = 0
+    true
+}
+
+{fun integrate []
+    state.n = state.bodies.length
+    state.dt = params.dt
+    state.G = params.gravity
+    state.soft2 = (params.softening * params.softening) + 0.000000001
+
+    state.i = 0
+    {while state.i < state.n
+        state.bi = {state.bodies.at state.i}
+        state.ax = 0
+        state.ay = 0
+        state.j = 0
+        {while state.j < state.n
+            {when state.i != state.j
+                state.bj = {state.bodies.at state.j}
+                state.dx = state.bj.x - state.bi.x
+                state.dy = state.bj.y - state.bi.y
+                state.d2 = (state.dx * state.dx) + (state.dy * state.dy) + state.soft2
+                state.invD = 1 / {Math.sqrt state.d2}
+                state.invD3 = state.invD * state.invD * state.invD
+                state.f = state.G * state.bj.mass * state.invD3
+                state.ax = state.ax + (state.dx * state.f)
+                state.ay = state.ay + (state.dy * state.f)
+            }
+            state.j = state.j + 1
+        }
+        state.bi.vx = state.bi.vx + (state.ax * state.dt)
+        state.bi.vy = state.bi.vy + (state.ay * state.dt)
+        state.i = state.i + 1
+    }
+
+    state.i = 0
+    {while state.i < state.n
+        state.b = {state.bodies.at state.i}
+        state.b.x = state.b.x + (state.b.vx * state.dt)
+        state.b.y = state.b.y + (state.b.vy * state.dt)
+        state.i = state.i + 1
+    }
+    null
+}
+
+{fun mergeCollisions []
+    state.merged = 0
+    state.i = 0
+    {while state.i < state.bodies.length
+        state.a = {state.bodies.at state.i}
+        state.j = state.i + 1
+        {while state.j < state.bodies.length
+            state.b = {state.bodies.at state.j}
+            state.dx = state.b.x - state.a.x
+            state.dy = state.b.y - state.a.y
+            state.rr = ({bodyRadius state.a.mass}) + ({bodyRadius state.b.mass})
+            {when ((state.dx * state.dx) + (state.dy * state.dy)) <= (state.rr * state.rr)
+                state.m = state.a.mass + state.b.mass
+                state.a.x = ((state.a.x * state.a.mass) + (state.b.x * state.b.mass)) / state.m
+                state.a.y = ((state.a.y * state.a.mass) + (state.b.y * state.b.mass)) / state.m
+                state.a.vx = ((state.a.vx * state.a.mass) + (state.b.vx * state.b.mass)) / state.m
+                state.a.vy = ((state.a.vy * state.a.mass) + (state.b.vy * state.b.mass)) / state.m
+                state.a.mass = state.m
+                state.a.hue = ((state.a.hue * (state.a.mass - state.b.mass)) + (state.b.hue * state.b.mass)) / state.m
+                {state.bodies.splice state.j 1}
+                state.merged = state.merged + 1
+                state.j = state.j - 1
+            }
+            state.j = state.j + 1
+        }
+        state.i = state.i + 1
+    }
+    state.lastMerged = state.merged
+    state.merged
+}
+
+{fun drawFrame []
+    ctx.fillStyle = "rgba(6, 10, 16, " + {str params.trail} + ")"
+    {ctx.fillRect 0 0 canvasWidth canvasHeight}
+
+    {for b state.bodies
+        r = {bodyRadius b.mass}
+        color = "hsla(" + {str b.hue} + ", 100%, 78%, 0.9)"
+        {circle b.x b.y r color}
+    }
+    null
+}
+
+{fun stepSim []
+    {integrate}
+    {mergeCollisions}
+    {drawFrame}
+    null
+}
+
+{fun getStats []
+    state.totalMass = 0
+    state.i = 0
+    {while state.i < state.bodies.length
+        state.totalMass = state.totalMass + {state.bodies.at state.i}.mass
+        state.i = state.i + 1
+    }
+    [state.bodies.length state.totalMass state.lastMerged]
+}
+
+[stepSim resetSim getStats]
