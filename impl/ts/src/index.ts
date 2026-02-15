@@ -1,10 +1,23 @@
 import { compileToJs, CompileOptions } from "./compiler";
 import { MacroRegistry } from "./macros";
+import {
+  InProcessMetaRuntimeAdapter,
+  MetaRuntimeAdapter,
+  SubprocessMetaRuntimeAdapter,
+} from "./meta_runtime";
 import { parse } from "./parser";
 import { matchPattern } from "./pattern";
 
-export { parse, compileToJs as compile, MacroRegistry, matchPattern };
+export {
+  parse,
+  compileToJs as compile,
+  MacroRegistry,
+  matchPattern,
+  InProcessMetaRuntimeAdapter,
+  SubprocessMetaRuntimeAdapter,
+};
 export type { CompileOptions } from "./compiler";
+export type { MetaRuntimeAdapter } from "./meta_runtime";
 
 export interface RunOptions extends CompileOptions {
   scope?: Record<string, unknown>;

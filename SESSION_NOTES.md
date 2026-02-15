@@ -39,11 +39,21 @@ Keep entries concise and append-only.
     - additional reserved constructs (`when`, `while`, `for`) in compiler core
   - Tests run: `bun run ci` (from `impl/ts`)
   - Result: all checks pass (`build`, `test`, `typecheck`, `test:browser`)
+- 2026-02-15: Delivered M2 meta runtime isolation increment in `impl/ts`.
+  - Files: `impl/ts/src/meta_runtime.ts`, `impl/ts/scripts/meta-runner.ts`, `impl/ts/src/macros.ts`, `impl/ts/src/compiler.ts`, `impl/ts/src/index.ts`, `impl/ts/tests/unit/index.test.ts`, `impl/ts/README.md`
+  - Scope:
+    - Added meta runtime adapter interface
+    - Added subprocess adapter for isolated Makrell macro execution (Bun)
+    - Added in-process adapter fallback
+    - Refactored macro registry to serializable Makrell macro entries
+    - Added subprocess runner script and tests for adapter routing
+  - Tests run: `bun run ci` (from `impl/ts`)
+  - Result: all checks pass (`build`, `test`, `typecheck`, `test:browser`)
 
 ## In Progress
 
 - Item: MakrellTS milestone execution (M0-M7)
-- Status: M0 completed; M1 core increment completed; M1 parity expansion still pending
+- Status: M0 completed; M1 core increment completed; M2 isolation increment completed
 - Blockers: none documented yet
 
 ## Next Actions
@@ -51,7 +61,7 @@ Keep entries concise and append-only.
 1. Build parity matrix from MakrellPy tests into `impl/ts/tests/parity/` status categories.
 2. Expand M1 test coverage to mirror more MakrellPy core scenarios (flow/functions/classes/patterns).
 3. Define MakrellTS typing syntax subset using existing AST node forms only (formal doc + fixtures).
-4. Implement isolated meta runtime adapter interface for Bun/Node + browser worker.
+4. Add browser worker adapter for isolated meta execution in browser target.
 
 ## Quick Repro / Verification
 

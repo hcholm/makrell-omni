@@ -14,6 +14,24 @@ import {
 import { operatorParseNodes, parse } from "./parser";
 
 export type MacroFn = (args: Node[], ctx: MacroContext) => Node | Node[];
+export interface MakrellMacroEntry {
+  kind: "makrell";
+  params: string[];
+  body: Node[];
+}
+
+export interface NativeMacroEntry {
+  kind: "native";
+  fn: MacroFn;
+}
+
+export type MacroEntry = MakrellMacroEntry | NativeMacroEntry;
+
+export interface SerializedMakrellMacro {
+  name: string;
+  params: string[];
+  body: Node[];
+}
 
 export interface MacroContext {
   regular(nodes: Node[]): Node[];
@@ -516,18 +534,38 @@ function baseMacroEnv(ctx: MacroContext): Env {
 }
 
 export class MacroRegistry {
-  private readonly macros = new Map<string, MacroFn>();
+  private readonly macros = new Map<string, MacroEntry>();
 
   register(name: string, fn: MacroFn): void {
-    this.macros.set(name, fn);
+    this.macros.set(name, { kind: "native", fn });
+  }
+
+  registerMakrell(name: string, params: string[], body: Node[]): void {
+    this.macros.set(name, { kind: "makrell", params, body });
   }
 
   get(name: string): MacroFn | undefined {
+    const e = this.macros.get(name);
+    if (!e || e.kind !== "native") return undefined;
+    return e.fn;
+  }
+
+  getEntry(name: string): MacroEntry | undefined {
     return this.macros.get(name);
   }
 
-  entries(): Array<[string, MacroFn]> {
+  entries(): Array<[string, MacroEntry]> {
     return [...this.macros.entries()];
+  }
+
+  serializeMakrellEntries(): SerializedMakrellMacro[] {
+    const out: SerializedMakrellMacro[] = [];
+    for (const [name, entry] of this.macros.entries()) {
+      if (entry.kind === "makrell") {
+        out.push({ name, params: entry.params, body: entry.body });
+      }
+    }
+    return out;
   }
 }
 
@@ -539,36 +577,64 @@ export function defaultMacroContext(): MacroContext {
   };
 }
 
+export function runMakrellMacroDef(
+  params: string[],
+  body: Node[],
+  args: Node[],
+  registry: MacroRegistry,
+  macroCtx: MacroContext,
+): Node | Node[] {
+  const env = baseMacroEnv(macroCtx);
+
+  if (params.length === 1) {
+    env.set(params[0], args);
+  } else {
+    for (let i = 0; i < params.length; i += 1) env.set(params[i], args[i] ?? ident("null"));
+  }
+
+  for (const [macroName, macroEntry] of registry.entries()) {
+    env.set(macroName, (...macroArgs: MacroValue[]) => {
+      const asNodes = macroArgs.map((a) => toNode(a));
+      if (macroEntry.kind === "native") return macroEntry.fn(asNodes, macroCtx);
+      return runMakrellMacroDef(macroEntry.params, macroEntry.body, asNodes, registry, macroCtx);
+    });
+  }
+
+  let out: MacroValue = null;
+  try {
+    for (const stmt of body) out = evalMacroNode(stmt, env, macroCtx);
+  } catch (ret) {
+    if (ret instanceof ReturnSignal) out = ret.value;
+    else throw ret;
+  }
+
+  if (isNode(out)) return out;
+  if (isNodeList(out)) return out;
+  return toNode(out);
+}
+
 export function defineMakrellMacro(name: string, params: string[], body: Node[], registry: MacroRegistry): MacroFn {
+  registry.registerMakrell(name, params, body);
   const fn: MacroFn = (args: Node[], macroCtx: MacroContext): Node | Node[] => {
-    const env = baseMacroEnv(macroCtx);
-
-    if (params.length === 1) {
-      env.set(params[0], args);
-    } else {
-      for (let i = 0; i < params.length; i += 1) env.set(params[i], args[i] ?? ident("null"));
-    }
-
-    for (const [macroName, macroFn] of registry.entries()) {
-      env.set(macroName, (...macroArgs: MacroValue[]) => {
-        const asNodes = macroArgs.map((a) => toNode(a));
-        return macroFn(asNodes, macroCtx);
-      });
-    }
-
-    let out: MacroValue = null;
-    try {
-      for (const stmt of body) out = evalMacroNode(stmt, env, macroCtx);
-    } catch (ret) {
-      if (ret instanceof ReturnSignal) out = ret.value;
-      else throw ret;
-    }
-
-    if (isNode(out)) return out;
-    if (isNodeList(out)) return out;
-    return toNode(out);
+    return runMakrellMacroDef(params, body, args, registry, macroCtx);
   };
-
-  registry.register(name, fn);
   return fn;
+}
+
+export function evaluateSerializedMakrellMacro(payload: {
+  target: SerializedMakrellMacro;
+  args: Node[];
+  registry: SerializedMakrellMacro[];
+}): Node | Node[] {
+  const registry = new MacroRegistry();
+  for (const r of payload.registry) {
+    registry.registerMakrell(r.name, r.params, r.body);
+  }
+  return runMakrellMacroDef(
+    payload.target.params,
+    payload.target.body,
+    payload.args,
+    registry,
+    defaultMacroContext(),
+  );
 }

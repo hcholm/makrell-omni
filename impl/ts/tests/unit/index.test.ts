@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { compile, run } from "../../src/index";
+import {
+  compile,
+  InProcessMetaRuntimeAdapter,
+  run,
+  SubprocessMetaRuntimeAdapter,
+} from "../../src/index";
 
 describe("MakrellTs MVP", () => {
   test("implicit return in fun", () => {
@@ -105,5 +110,17 @@ describe("MakrellTs MVP", () => {
       a =
     `;
     expect(() => compile(src)).toThrow(/line 2, col 7|line 3, col 1|line 2/);
+  });
+
+  test("makrell macro execution can be routed through runtime adapter", () => {
+    const src = `
+      {def macro inc [ns]
+        n = {regular ns}@0
+        {quote {$ n} + 1}
+      }
+      {inc 41}
+    `;
+    expect(run(src, { metaRuntime: new InProcessMetaRuntimeAdapter() })).toBe(42);
+    expect(run(src, { metaRuntime: new SubprocessMetaRuntimeAdapter() })).toBe(42);
   });
 });

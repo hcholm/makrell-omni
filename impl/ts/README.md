@@ -51,3 +51,4 @@ bun run src/cli.ts examples/hello.mrjs --emit-js
 - Node/browser support is tracked in `COMPATIBILITY.md`.
 - Typing and semantic parity work is tracked in `REFERENCE_PLAN.md`.
 - Current M0 typecheck scope is intentionally minimal (`src/ast.ts`) and will expand in M1.
+- Makrell-defined macros now run through a meta-runtime adapter layer (`src/meta_runtime.ts`), with subprocess isolation enabled by default on Bun.

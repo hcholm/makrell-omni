@@ -1,9 +1,11 @@
 import { CurlyBracketsNode, Node, SourceSpan, SquareBracketsNode, isIdent } from "./ast";
 import { MacroRegistry, defaultMacroContext, defineMakrellMacro } from "./macros";
+import { createDefaultMetaRuntimeAdapter, MetaRuntimeAdapter } from "./meta_runtime";
 import { parse } from "./parser";
 
 export interface CompileOptions {
   macros?: MacroRegistry;
+  metaRuntime?: MetaRuntimeAdapter;
 }
 
 export interface CompileDiagnostic {
@@ -26,6 +28,7 @@ export class CompileFailure extends Error {
 interface Ctx {
   macros: MacroRegistry;
   macroCtx: ReturnType<typeof defaultMacroContext>;
+  metaRuntime: MetaRuntimeAdapter;
   fnDepth: number;
   tempId: number;
   thisAlias?: string;
@@ -44,9 +47,11 @@ function expandMacro(n: CurlyBracketsNode, ctx: Ctx): Node[] | null {
   if (n.nodes.length === 0) return null;
   const head = n.nodes[0];
   if (head.kind !== "identifier") return null;
-  const macro = ctx.macros.get(head.value);
-  if (!macro) return null;
-  const out = macro(n.nodes.slice(1), ctx.macroCtx);
+  const entry = ctx.macros.getEntry(head.value);
+  if (!entry) return null;
+  const out = entry.kind === "native"
+    ? entry.fn(n.nodes.slice(1), ctx.macroCtx)
+    : ctx.metaRuntime.runMakrellMacro(head.value, entry, n.nodes.slice(1), ctx.macros);
   return Array.isArray(out) ? out : [out];
 }
 
@@ -387,6 +392,7 @@ export function compileToJs(src: string, options: CompileOptions = {}): string {
   const ctx: Ctx = {
     macros: options.macros ?? new MacroRegistry(),
     macroCtx: defaultMacroContext(),
+    metaRuntime: options.metaRuntime ?? createDefaultMetaRuntimeAdapter(),
     fnDepth: 0,
     tempId: 0,
   };
