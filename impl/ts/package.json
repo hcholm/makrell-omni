@@ -5,11 +5,12 @@
   "type": "module",
   "scripts": {
     "build": "bun build ./src/index.ts ./src/cli.ts --outdir dist --target bun --sourcemap",
+    "build:browser": "bun build ./src/browser.ts ./src/meta_worker.ts --outdir dist/browser --target browser --format esm --sourcemap",
     "dev": "bun run src/cli.ts",
     "lint": "bunx tsc --noEmit -p tsconfig.typecheck.json --pretty false",
     "typecheck": "bunx tsc --noEmit -p tsconfig.typecheck.json",
     "test": "bun test",
-    "test:browser": "bun run scripts/test-browser-smoke.ts",
+    "test:browser": "bun run build:browser && bun run scripts/test-browser-smoke.ts",
     "ci": "bun run build && bun run test && bun run typecheck && bun run test:browser"
   },
   "devDependencies": {

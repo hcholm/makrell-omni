@@ -29,3 +29,8 @@ All four must pass for the M0 baseline to be considered healthy.
 
 Note:
 - In M0, `typecheck` is a scoped check (`src/ast.ts`) to keep baseline CI stable while broader TS typing issues are addressed in M1.
+
+Browser packaging:
+- `bun run build:browser` emits:
+  - `dist/browser/browser.js`
+  - `dist/browser/meta_worker.js`

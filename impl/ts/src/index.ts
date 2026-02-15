@@ -1,4 +1,4 @@
-import { compileToJs, CompileOptions } from "./compiler";
+import { compileToDts, compileToJs, compileToTs, CompileOptions } from "./compiler";
 import { MacroRegistry } from "./macros";
 import {
   InProcessMetaRuntimeAdapter,
@@ -11,6 +11,8 @@ import { clearPatternHooks, matchPattern, registerPatternHook } from "./pattern"
 export {
   parse,
   compileToJs as compile,
+  compileToTs,
+  compileToDts,
   MacroRegistry,
   matchPattern,
   registerPatternHook,
@@ -45,9 +47,11 @@ export function run(src: string, options: RunOptions = {}): unknown {
   const scope = options.scope ?? {};
   const moduleResolver = options.moduleResolver ?? getDefaultModuleResolver(scope);
   const metaModuleResolver = options.metaModuleResolver ?? ((name: string) => moduleResolver(name) as { __mr_meta__?: unknown[] });
+  const metaRuntime = options.metaRuntime ?? new SubprocessMetaRuntimeAdapter();
 
   const js = compileToJs(src, {
     ...options,
+    metaRuntime,
     moduleResolver,
     metaModuleResolver,
   });

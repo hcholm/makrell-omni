@@ -90,19 +90,36 @@ Keep entries concise and append-only.
     - ESM/CJS/browser loading behavior documented in `IMPORT_MODEL.md`
   - Tests run: `bun run ci` (from `impl/ts`)
   - Result: all checks pass (`build`, `test`, `typecheck`, `test:browser`)
+- 2026-02-15: Delivered M5 browser packaging increment in `impl/ts`.
+  - Files: `impl/ts/src/browser.ts`, `impl/ts/src/meta_worker.ts`, `impl/ts/examples/browser-compile/index.html`, `impl/ts/examples/browser-compile/app.js`, `impl/ts/scripts/test-browser-smoke.ts`, `impl/ts/package.json`, `impl/ts/README.md`, `impl/ts/COMPATIBILITY.md`
+  - Scope:
+    - Browser bundle build pipeline (`build:browser`)
+    - Browser compile/execute entrypoint
+    - Meta worker entrypoint bundle
+    - Browser compile example + smoke checks for generated artifacts
+  - Tests run: `bun run ci` (from `impl/ts`)
+  - Result: all checks pass (`build`, `test`, `typecheck`, `test:browser`)
+- 2026-02-15: Delivered M5.1 typed output increment in `impl/ts`.
+  - Files: `impl/ts/src/compiler.ts`, `impl/ts/src/index.ts`, `impl/ts/tests/unit/index.test.ts`, `impl/ts/README.md`
+  - Scope:
+    - Added `compileToTs` emit mode
+    - Added `compileToDts` emit mode
+    - Added typed-output tests for annotation preservation and declaration generation
+  - Tests run: `bun run ci` (from `impl/ts`)
+  - Result: all checks pass (`build`, `test`, `typecheck`, `test:browser`)
 
 ## In Progress
 
 - Item: MakrellTS milestone execution (M0-M7)
-- Status: M0 completed; M1 core increment completed; M2 isolation increment completed; M3 increment completed
+- Status: M0 completed; M1 completed; M2 completed; M3 completed; M4 completed; M5 completed; M5.1 completed
 - Blockers: none documented yet
 
 ## Next Actions
 
-1. Build parity matrix from MakrellPy tests into `impl/ts/tests/parity/` status categories.
-2. Port additional MakrellPy suites into `impl/ts/tests/parity/` (`test_funcs.mr`, `test_flow.mr`, `test_classes.mr`).
+1. Port additional MakrellPy suites into `impl/ts/tests/parity/` (`test_funcs.mr`, `test_flow.mr`, `test_classes.mr`).
+2. Add true async browser worker meta adapter path (current worker entrypoint exists; runtime adapter remains Node-focused).
 3. Define MakrellTS typing syntax subset using existing AST node forms only (formal doc + fixtures).
-4. Add browser worker adapter for isolated meta execution in browser target.
+4. Start M6 `examples/nbody-browser` scaffold and controls.
 
 ## Quick Repro / Verification
 

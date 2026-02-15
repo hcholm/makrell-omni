@@ -16,6 +16,7 @@ bun install
 
 ```bash
 bun run build
+bun run build:browser
 bun run test
 bun run typecheck
 bun run lint
@@ -35,13 +36,22 @@ Emit generated JS:
 bun run src/cli.ts examples/hello.mrjs --emit-js
 ```
 
+Typed outputs (API):
+
+```ts
+import { compileToTs, compileToDts } from "makrellts";
+```
+
 ## Layout
 
 - `src/`: compiler/runtime source
+- `src/browser.ts`: browser compile/execute entrypoint
+- `src/meta_worker.ts`: browser meta worker entrypoint
 - `tests/unit/`: unit tests
 - `scripts/`: helper scripts (including browser smoke check)
 - `examples/`: runnable examples
   - `examples/browser-smoke/index.html`
+  - `examples/browser-compile/index.html`
 - `COMPATIBILITY.md`: runtime/tooling support matrix
 - `IMPORT_MODEL.md`: runtime/importm interoperability model (CJS/ESM/browser strategy)
 - `REFERENCE_PLAN.md`: roadmap to make MakrellTS the reference implementation
@@ -55,3 +65,5 @@ bun run src/cli.ts examples/hello.mrjs --emit-js
 - Makrell-defined macros now run through a meta-runtime adapter layer (`src/meta_runtime.ts`), with subprocess isolation enabled by default on Bun.
 - Pattern matching supports `_`, `$`, literals, lists, `|`, `&`, type checks, `{$r ...}`, `{$type ...}`, plus runtime user hooks via `registerPatternHook`.
 - `import`/`importm` behavior and browser module loading strategy are defined in `IMPORT_MODEL.md`.
+- Browser bundle outputs are generated to `dist/browser/` (`browser.js`, `meta_worker.js`).
+- Typed compiler outputs are available via `compileToTs` and `compileToDts`.

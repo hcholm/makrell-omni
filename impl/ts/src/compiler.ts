@@ -1,11 +1,13 @@
 import { CurlyBracketsNode, Node, SourceSpan, SquareBracketsNode, isIdent } from "./ast";
 import {
+  MakrellMacroEntry,
   MacroRegistry,
   SerializedMakrellMacro,
   defaultMacroContext,
   defineMakrellMacro,
+  runMakrellMacroDef,
 } from "./macros";
-import { createDefaultMetaRuntimeAdapter, MetaRuntimeAdapter } from "./meta_runtime";
+import type { MetaRuntimeAdapter } from "./meta_runtime";
 import { parse } from "./parser";
 
 export interface CompileOptions {
@@ -14,6 +16,8 @@ export interface CompileOptions {
   moduleResolver?: (moduleName: string) => Record<string, unknown>;
   metaModuleResolver?: (moduleName: string) => { __mr_meta__?: SerializedMakrellMacro[] } | null;
 }
+
+type EmitTarget = "js" | "ts";
 
 export interface CompileDiagnostic {
   message: string;
@@ -41,6 +45,15 @@ interface Ctx {
   fnDepth: number;
   tempId: number;
   thisAlias?: string;
+  emitTarget: EmitTarget;
+}
+
+class InlineMetaRuntimeAdapter implements MetaRuntimeAdapter {
+  kind = "inline";
+
+  runMakrellMacro(_name: string, macro: MakrellMacroEntry, args: Node[], registry: MacroRegistry): Node | Node[] {
+    return runMakrellMacroDef(macro.params, macro.body, args, registry, defaultMacroContext());
+  }
 }
 
 function nextTmp(ctx: Ctx): string {
@@ -84,6 +97,43 @@ function registerMacroDef(n: CurlyBracketsNode, ctx: Ctx): boolean {
 function emitLiteralIdentifier(name: string): string {
   if (name === "true" || name === "false" || name === "null") return name;
   return name;
+}
+
+function emitTypeNode(n: Node): string {
+  if (n.kind === "identifier") {
+    if (n.value === "str") return "string";
+    if (n.value === "int" || n.value === "float") return "number";
+    if (n.value === "bool") return "boolean";
+    if (n.value === "list") return "unknown[]";
+    if (n.value === "dict") return "Record<string, unknown>";
+    if (n.value === "null") return "null";
+    return n.value;
+  }
+  if (n.kind === "string") return JSON.stringify(n.value);
+  if (n.kind === "number") return n.value;
+  if (n.kind === "binop" && n.op === "|") return `${emitTypeNode(n.left)} | ${emitTypeNode(n.right)}`;
+  if (n.kind === "square") {
+    if (n.nodes.length > 0 && n.nodes[0].kind === "identifier") {
+      const head = n.nodes[0].value;
+      const args = n.nodes.slice(1).map((x) => emitTypeNode(x)).join(", ");
+      return args.length > 0 ? `${head}<${args}>` : head;
+    }
+    return `[${n.nodes.map((x) => emitTypeNode(x)).join(", ")}]`;
+  }
+  if (n.kind === "curly" && n.nodes.length >= 3 && isIdent(n.nodes[0], "$dict")) {
+    const keyPart = n.nodes[1];
+    const valType = emitTypeNode(n.nodes[2]);
+    if (keyPart.kind === "square" && keyPart.nodes.length === 3 && keyPart.nodes[1].kind === "identifier") {
+      const k = keyPart.nodes[0];
+      const kIn = keyPart.nodes[1];
+      const keys = keyPart.nodes[2];
+      if (k.kind === "identifier" && kIn.value === "in") {
+        return `{ [${k.value} in ${emitTypeNode(keys)}]: ${valType} }`;
+      }
+    }
+    return `Record<string, ${valType}>`;
+  }
+  return "unknown";
 }
 
 function compileAssignLeft(n: Node, ctx: Ctx): string {
@@ -156,7 +206,10 @@ function compileFunExpr(nodes: Node[], ctx: Ctx): string {
   const args = argsNode.nodes
     .map((n) => {
       if (n.kind === "identifier") return n.value;
-      if (n.kind === "binop" && n.op === ":" && n.left.kind === "identifier") return n.left.value;
+      if (n.kind === "binop" && n.op === ":" && n.left.kind === "identifier") {
+        if (ctx.emitTarget === "ts") return `${n.left.value}: ${emitTypeNode(n.right)}`;
+        return n.left.value;
+      }
       fail("Function args must be identifiers or typed identifiers", n);
     })
     .join(", ");
@@ -205,7 +258,9 @@ function compileMethod(n: CurlyBracketsNode, ctx: Ctx): string {
     const arg = argNodes[i];
     let name = "";
     if (arg.kind === "identifier") name = arg.value;
-    else if (arg.kind === "binop" && arg.op === ":" && arg.left.kind === "identifier") name = arg.left.value;
+    else if (arg.kind === "binop" && arg.op === ":" && arg.left.kind === "identifier") {
+      name = ctx.emitTarget === "ts" ? `${arg.left.value}: ${emitTypeNode(arg.right)}` : arg.left.value;
+    }
     else fail("Method arguments must be identifiers or typed identifiers", arg);
     if (i === 0 && name === "self") continue;
     params.push(name);
@@ -451,6 +506,15 @@ function compileStmt(n: Node, ctx: Ctx, isLast: boolean): string {
     if (isLast) return `${assign}\nreturn ${n.left.value};`;
     return assign;
   }
+  if (n.kind === "binop" && n.op === "=" && n.left.kind === "binop" && n.left.op === ":" && n.left.left.kind === "identifier") {
+    const rhs = compileExpr(n.right, ctx);
+    const t = emitTypeNode(n.left.right);
+    const decl = ctx.emitTarget === "ts"
+      ? `var ${n.left.left.value}: ${t} = ${rhs};`
+      : `var ${n.left.left.value} = ${rhs};`;
+    if (isLast) return `${decl}\nreturn ${n.left.left.value};`;
+    return decl;
+  }
 
   if (n.kind === "curly" && n.nodes.length > 0 && isIdent(n.nodes[0], "return")) {
     const val = n.nodes[1] ? compileExpr(n.nodes[1], ctx) : "null";
@@ -477,14 +541,66 @@ export function compileToJs(src: string, options: CompileOptions = {}): string {
   const ctx: Ctx = {
     macros: options.macros ?? new MacroRegistry(),
     macroCtx: defaultMacroContext(),
-    metaRuntime: options.metaRuntime ?? createDefaultMetaRuntimeAdapter(),
+    metaRuntime: options.metaRuntime ?? new InlineMetaRuntimeAdapter(),
     moduleResolver: options.moduleResolver,
     metaModuleResolver: options.metaModuleResolver,
     fnDepth: 0,
     tempId: 0,
+    emitTarget: "js",
   };
 
   const nodes = parse(src);
   const body = compileBlock(nodes, ctx, true);
   return `(() => {\n${body}\n})()`;
+}
+
+export function compileToTs(src: string, options: CompileOptions = {}): string {
+  const ctx: Ctx = {
+    macros: options.macros ?? new MacroRegistry(),
+    macroCtx: defaultMacroContext(),
+    metaRuntime: options.metaRuntime ?? new InlineMetaRuntimeAdapter(),
+    moduleResolver: options.moduleResolver,
+    metaModuleResolver: options.metaModuleResolver,
+    fnDepth: 0,
+    tempId: 0,
+    emitTarget: "ts",
+  };
+  const nodes = parse(src);
+  const body = compileBlock(nodes, ctx, true);
+  return `(() => {\n${body}\n})()`;
+}
+
+export function compileToDts(src: string): string {
+  const nodes = parse(src);
+  const out: string[] = [];
+
+  const emitArgDecl = (n: Node): string => {
+    if (n.kind === "identifier") return `${n.value}: unknown`;
+    if (n.kind === "binop" && n.op === ":" && n.left.kind === "identifier") return `${n.left.value}: ${emitTypeNode(n.right)}`;
+    return "arg: unknown";
+  };
+
+  for (const n of nodes) {
+    if (n.kind === "curly" && n.nodes.length >= 3 && isIdent(n.nodes[0], "fun") && n.nodes[1].kind === "identifier") {
+      const name = n.nodes[1].value;
+      const argsNode = n.nodes[2];
+      const args = argsNode.kind === "square" ? argsNode.nodes.map(emitArgDecl).join(", ") : "";
+      out.push(`export function ${name}(${args}): unknown;`);
+      continue;
+    }
+    if (n.kind === "curly" && n.nodes.length >= 2 && isIdent(n.nodes[0], "class") && n.nodes[1].kind === "identifier") {
+      out.push(`export class ${n.nodes[1].value} {}`);
+      continue;
+    }
+    if (n.kind === "binop" && n.op === "=" && n.left.kind === "binop" && n.left.op === ":" && n.left.left.kind === "identifier") {
+      out.push(`export let ${n.left.left.value}: ${emitTypeNode(n.left.right)};`);
+      continue;
+    }
+    if (n.kind === "binop" && n.op === "=" && n.left.kind === "identifier") {
+      out.push(`export let ${n.left.value}: unknown;`);
+    }
+  }
+
+  if (out.length === 0) out.push("export {};");
+  return out.join("\n");
 }

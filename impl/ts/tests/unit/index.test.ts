@@ -2,6 +2,8 @@ import { describe, expect, test } from "bun:test";
 import {
   clearPatternHooks,
   compile,
+  compileToDts,
+  compileToTs,
   InProcessMetaRuntimeAdapter,
   parse,
   registerPatternHook,
@@ -214,5 +216,31 @@ describe("MakrellTs MVP", () => {
       {importm tools@[inc]}
       {inc 41}
     `, { scope })).toBe(42);
+  });
+
+  test("typed output: ts emit keeps annotations", () => {
+    const src = `
+      {fun add [x:int y:int]
+        x + y
+      }
+      out:int = {add 2 3}
+      out
+    `;
+    const tsOut = compileToTs(src);
+    expect(tsOut).toContain("x: number");
+    expect(tsOut).toContain("y: number");
+    expect(tsOut).toContain("var out: number =");
+  });
+
+  test("typed output: d.ts emit creates declarations", () => {
+    const src = `
+      {fun add [x:int y:int]
+        x + y
+      }
+      out:int = {add 2 3}
+    `;
+    const dts = compileToDts(src);
+    expect(dts).toContain("export function add(x: number, y: number): unknown;");
+    expect(dts).toContain("export let out: number;");
   });
 });
