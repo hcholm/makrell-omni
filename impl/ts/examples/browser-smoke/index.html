@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MakrellTS Browser Smoke</title>
+  </head>
+  <body>
+    <h1>MakrellTS browser smoke</h1>
+    <p id="out">pending...</p>
+    <script type="module">
+      const out = document.getElementById("out");
+      if (!out) throw new Error("Missing #out");
+      out.textContent = "MakrellTS browser smoke: OK";
+      console.log("MakrellTS browser smoke");
+    </script>
+  </body>
+</html>

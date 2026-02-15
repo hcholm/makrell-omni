@@ -1,68 +1,53 @@
-# MakrellJs (`jsport1`)
+# MakrellTS
 
-MakrellJs is a Bun + TypeScript Makrell-to-JS port with JS semantics.
+`impl/ts` is the TypeScript implementation track for Makrell.
 
-## Status
-
-This is an MVP compiler/runtime focused on:
-
-- Makrell-like syntax (`{...}`, `[...]`, binary operators)
-- JavaScript code generation
-- compile-time macros written in MakrellJs (`{def macro ...}`)
-- implicit return values in function bodies
-- pattern matching (`{match ...}`) inspired by MakrellPy
+Status: M0 baseline prepared (build/test/typecheck/browser-smoke scripts + compatibility matrix).
 
 ## Install
 
+From `impl/ts/`:
+
 ```bash
-cd jsport1
 bun install
 ```
 
-## Run a file
+## Commands
 
 ```bash
-bun src/cli.ts examples/hello.mrjs
+bun run build
+bun run test
+bun run typecheck
+bun run lint
+bun run test:browser
+bun run ci
+```
+
+Run a Makrell source file:
+
+```bash
+bun run src/cli.ts examples/hello.mrjs
 ```
 
 Emit generated JS:
 
 ```bash
-bun src/cli.ts examples/hello.mrjs --emit-js
+bun run src/cli.ts examples/hello.mrjs --emit-js
 ```
 
-## Macros (MakrellJs)
+## Layout
 
-Macros are authored in MakrellJs and run at compile time:
-
-```clojure
-{def macro inc [ns]
-  n = {regular ns}@0
-  {quote {$ n} + 1}
-}
-
-{inc 41}
-```
-
-Supported macro-time helpers include `regular`, `operator_parse`, `parse`, `len`, `range`, `map`, `list`, `assert`, and node constructors like `Identifier`, `BinOp`, `SquareBrackets`.
-List-friendly helpers include `first`, `rest`, `reversed`, `push`, and `pop`.
-
-`quote` / `unquote` are supported with `{quote ...}` and `{$ ...}`. Multi-node `quote` output is supported for statement-emitting macros.
-
-## Pattern matching
-
-Supported in `{match value pattern result ...}`:
-
-- `_` wildcard
-- `$` self-truthy
-- literals (`2`, `"x"`, `true`, `null`)
-- list patterns (`[_ _:int]`)
-- `|` and `&`
-- type patterns (`_:str`, `_:int`, `_:Point`)
-- expression-like binop patterns using `$` (e.g. `$ > 3`, `$.x < 5`)
+- `src/`: compiler/runtime source
+- `tests/unit/`: unit tests
+- `scripts/`: helper scripts (including browser smoke check)
+- `examples/`: runnable examples
+  - `examples/browser-smoke/index.html`
+- `COMPATIBILITY.md`: runtime/tooling support matrix
+- `REFERENCE_PLAN.md`: roadmap to make MakrellTS the reference implementation
 
 ## Notes
 
-- This is not a direct one-to-one port of MakrellPy.
-- Semantics are intentionally JavaScript-first.
-- Macro execution is implemented in the language evaluator (no Node-only API requirement), so it works in browser and Node environments.
+- Bun is the preferred local runtime.
+- Node/browser support is tracked in `COMPATIBILITY.md`.
+- Typing and semantic parity work is tracked in `REFERENCE_PLAN.md`.
+- Current M0 typecheck scope is intentionally minimal (`src/ast.ts`) and will expand in M1.

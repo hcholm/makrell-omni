@@ -25,19 +25,23 @@ Keep entries concise and append-only.
   - Files: `impl/ts/REFERENCE_PLAN.md`
   - Tests run: N/A (planning/documentation only)
   - Result: plan committed in-repo for future sessions
+- 2026-02-15: Executed M0 baseline for `impl/ts`.
+  - Files: `impl/ts/package.json`, `impl/ts/tsconfig.json`, `impl/ts/README.md`, `impl/ts/COMPATIBILITY.md`, `impl/ts/.gitignore`, `impl/ts/scripts/test-browser-smoke.ts`, `impl/ts/examples/browser-smoke/index.html`, `impl/ts/tests/unit/index.test.ts`, `.github/workflows/ts-m0.yml`
+  - Tests run: `bun run ci` (from `impl/ts`)
+  - Result: baseline scripts and checks pass locally
 
 ## In Progress
 
 - Item: MakrellTS milestone execution (M0-M7)
-- Status: planning complete; implementation not started in this thread
+- Status: M0 completed; moving into M1/M2 preparation
 - Blockers: none documented yet
 
 ## Next Actions
 
 1. Build parity matrix from MakrellPy tests into `impl/ts/tests/parity/` status categories.
-2. Implement isolated meta runtime adapter interface for Bun/Node + browser worker.
-3. Define MakrellTS typing syntax subset using existing AST node forms only.
-4. Add `{new ...}` construct and baseline class-instantiation tests in `impl/ts`.
+2. Define MakrellTS typing syntax subset using existing AST node forms only.
+3. Add `{new ...}` construct and baseline class-instantiation tests in `impl/ts`.
+4. Implement isolated meta runtime adapter interface for Bun/Node + browser worker.
 
 ## Quick Repro / Verification
 

@@ -1,0 +1,41 @@
+name: ts-m0
+
+on:
+  push:
+    paths:
+      - "impl/ts/**"
+      - ".github/workflows/ts-m0.yml"
+  pull_request:
+    paths:
+      - "impl/ts/**"
+      - ".github/workflows/ts-m0.yml"
+
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: impl/ts
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.0.26"
+
+      - name: Install
+        run: bun install
+
+      - name: Build
+        run: bun run build
+
+      - name: Test
+        run: bun run test
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Browser Smoke
+        run: bun run test:browser

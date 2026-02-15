@@ -1,13 +1,16 @@
 {
-  "name": "makrelljs-jsport1",
+  "name": "makrellts",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "bun build ./src/index.ts ./src/cli.ts --outdir dist --target bun",
+    "build": "bun build ./src/index.ts ./src/cli.ts --outdir dist --target bun --sourcemap",
     "dev": "bun run src/cli.ts",
-    "check": "bunx tsc --noEmit",
-    "test": "bun test"
+    "lint": "bunx tsc --noEmit -p tsconfig.typecheck.json --pretty false",
+    "typecheck": "bunx tsc --noEmit -p tsconfig.typecheck.json",
+    "test": "bun test",
+    "test:browser": "bun run scripts/test-browser-smoke.ts",
+    "ci": "bun run build && bun run test && bun run typecheck && bun run test:browser"
   },
   "devDependencies": {
     "typescript": "^5.6.3",

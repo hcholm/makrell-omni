@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { run } from "./index";
+import { run } from "../../src/index";
 
-describe("MakrellJs MVP", () => {
+describe("MakrellTs MVP", () => {
   test("implicit return in fun", () => {
     const src = `
       {fun add [x y]
@@ -24,7 +24,7 @@ describe("MakrellJs MVP", () => {
     expect(run(src)).toBe("ok");
   });
 
-  test("MakrellJs macro via def macro", () => {
+  test("MakrellTs macro via def macro", () => {
     const src = `
       {def macro inc [ns]
         n = {regular ns}@0
