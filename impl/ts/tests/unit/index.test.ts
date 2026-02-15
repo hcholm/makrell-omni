@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { run } from "../../src/index";
+import { compile, run } from "../../src/index";
 
 describe("MakrellTs MVP", () => {
   test("implicit return in fun", () => {
@@ -70,5 +70,40 @@ describe("MakrellTs MVP", () => {
       {calc}
     `;
     expect(run(src)).toBe(11);
+  });
+
+  test("class + new with TS-style semantics baseline", () => {
+    const src = `
+      {class Point []
+        {fun __init__ [self x y]
+          self.x = x
+          self.y = y
+        }
+        {fun sum [self]
+          self.x + self.y
+        }
+      }
+      p = {new Point [2 3]}
+      {p.sum}
+    `;
+    expect(run(src)).toBe(5);
+  });
+
+  test("typed syntax via existing nodes compiles", () => {
+    const src = `
+      {fun add [x:int y:int]
+        x + y
+      }
+      total:int = {add 2 3}
+      total
+    `;
+    expect(run(src)).toBe(5);
+  });
+
+  test("compile diagnostics include source position", () => {
+    const src = `
+      a =
+    `;
+    expect(() => compile(src)).toThrow(/line 2, col 7|line 3, col 1|line 2/);
   });
 });

@@ -1,4 +1,4 @@
-import { CurlyBracketsNode, Node, SquareBracketsNode, isIdent } from "./ast";
+import { CurlyBracketsNode, Node, SourceSpan, SquareBracketsNode, isIdent } from "./ast";
 import { MacroRegistry, defaultMacroContext, defineMakrellMacro } from "./macros";
 import { parse } from "./parser";
 
@@ -6,16 +6,38 @@ export interface CompileOptions {
   macros?: MacroRegistry;
 }
 
+export interface CompileDiagnostic {
+  message: string;
+  loc?: SourceSpan;
+}
+
+export class CompileFailure extends Error {
+  diagnostic: CompileDiagnostic;
+
+  constructor(diagnostic: CompileDiagnostic) {
+    const where = diagnostic.loc
+      ? ` [line ${diagnostic.loc.start.line}, col ${diagnostic.loc.start.column}]`
+      : "";
+    super(`${diagnostic.message}${where}`);
+    this.diagnostic = diagnostic;
+  }
+}
+
 interface Ctx {
   macros: MacroRegistry;
   macroCtx: ReturnType<typeof defaultMacroContext>;
   fnDepth: number;
   tempId: number;
+  thisAlias?: string;
 }
 
 function nextTmp(ctx: Ctx): string {
   ctx.tempId += 1;
   return `__mr_tmp_${ctx.tempId}`;
+}
+
+function fail(message: string, node?: Node): never {
+  throw new CompileFailure({ message, loc: node?.loc });
 }
 
 function expandMacro(n: CurlyBracketsNode, ctx: Ctx): Node[] | null {
@@ -34,10 +56,10 @@ function registerMacroDef(n: CurlyBracketsNode, ctx: Ctx): boolean {
   const nameNode = n.nodes[2];
   const paramsNode = n.nodes[3];
   if (nameNode.kind !== "identifier" || paramsNode.kind !== "square") {
-    throw new Error("Macro definition must be {def macro name [params] ...}");
+    fail("Macro definition must be {def macro name [params] ...}", n);
   }
   const params = paramsNode.nodes.map((p) => {
-    if (p.kind !== "identifier") throw new Error("Macro params must be identifiers");
+    if (p.kind !== "identifier") fail("Macro params must be identifiers", p);
     return p.value;
   });
   const body = n.nodes.slice(4);
@@ -51,9 +73,10 @@ function emitLiteralIdentifier(name: string): string {
 }
 
 function compileAssignLeft(n: Node, ctx: Ctx): string {
+  if (n.kind === "binop" && n.op === ":") return compileAssignLeft(n.left, ctx);
   if (n.kind === "identifier") return n.value;
   if (n.kind === "binop" && n.op === ".") return `${compileExpr(n.left, ctx)}.${compileExpr(n.right, ctx)}`;
-  throw new Error("Invalid assignment target");
+  fail("Invalid assignment target", n);
 }
 
 function compileIfExpr(nodes: Node[], ctx: Ctx): string {
@@ -73,7 +96,7 @@ function compileIfExpr(nodes: Node[], ctx: Ctx): string {
 }
 
 function compileDoExpr(nodes: Node[], ctx: Ctx): string {
-  const body = compileBlock(nodes, ctx);
+  const body = compileBlock(nodes, ctx, true);
   return `(() => {${body}})()`;
 }
 
@@ -109,23 +132,85 @@ function compileFunExpr(nodes: Node[], ctx: Ctx): string {
     argsNode = rest[0];
     bodyStart = 1;
   } else {
-    throw new Error("Invalid fun syntax. Expected {fun name [args] ...} or {fun [args] ...}");
+    fail("Invalid fun syntax. Expected {fun name [args] ...} or {fun [args] ...}", nodes[0]);
   }
 
   const args = argsNode.nodes
     .map((n) => {
-      if (n.kind !== "identifier") throw new Error("Function args must be identifiers");
-      return n.value;
+      if (n.kind === "identifier") return n.value;
+      if (n.kind === "binop" && n.op === ":" && n.left.kind === "identifier") return n.left.value;
+      fail("Function args must be identifiers or typed identifiers", n);
     })
     .join(", ");
 
   const innerCtx: Ctx = { ...ctx, fnDepth: ctx.fnDepth + 1 };
-  const body = compileBlock(rest.slice(bodyStart), innerCtx);
+  const body = compileBlock(rest.slice(bodyStart), innerCtx, true);
 
   if (name) {
     return `(function ${name}(${args}) {${body}})`;
   }
   return `((${args}) => {${body}})`;
+}
+
+function compileWhenExpr(nodes: Node[], ctx: Ctx): string {
+  if (nodes.length === 0) return "null";
+  const cond = compileExpr(nodes[0], ctx);
+  const thenBody = compileBlock(nodes.slice(1), ctx, true);
+  return `(() => { if (${cond}) { ${thenBody} } return null; })()`;
+}
+
+function compileWhileExpr(nodes: Node[], ctx: Ctx): string {
+  if (nodes.length === 0) return "null";
+  const cond = compileExpr(nodes[0], ctx);
+  const body = compileBlock(nodes.slice(1), ctx, false);
+  return `(() => { while (${cond}) { ${body} } return null; })()`;
+}
+
+function compileForExpr(nodes: Node[], ctx: Ctx): string {
+  if (nodes.length < 2) return "null";
+  const target = nodes[0];
+  if (target.kind !== "identifier") fail("for target must be identifier", target);
+  const iterable = compileExpr(nodes[1], ctx);
+  const body = compileBlock(nodes.slice(2), ctx, false);
+  return `(() => { for (const ${target.value} of ${iterable}) { ${body} } return null; })()`;
+}
+
+function compileMethod(n: CurlyBracketsNode, ctx: Ctx): string {
+  if (n.nodes.length < 4 || !isIdent(n.nodes[0], "fun") || n.nodes[1].kind !== "identifier" || n.nodes[2].kind !== "square") {
+    fail("Class methods must use {fun name [args] ...}", n);
+  }
+  const rawName = n.nodes[1].value;
+  const methodName = rawName === "__init__" ? "constructor" : rawName;
+  const argNodes = n.nodes[2].nodes;
+  const params: string[] = [];
+  for (let i = 0; i < argNodes.length; i += 1) {
+    const arg = argNodes[i];
+    let name = "";
+    if (arg.kind === "identifier") name = arg.value;
+    else if (arg.kind === "binop" && arg.op === ":" && arg.left.kind === "identifier") name = arg.left.value;
+    else fail("Method arguments must be identifiers or typed identifiers", arg);
+    if (i === 0 && name === "self") continue;
+    params.push(name);
+  }
+  const methodCtx: Ctx = { ...ctx, fnDepth: ctx.fnDepth + 1, thisAlias: "self" };
+  const body = compileBlock(n.nodes.slice(3), methodCtx, methodName !== "constructor");
+  return `${methodName}(${params.join(", ")}) {${body}}`;
+}
+
+function compileClassExpr(nodes: Node[], ctx: Ctx): string {
+  if (nodes.length < 2 || nodes[1].kind !== "identifier") {
+    fail("class requires name identifier", nodes[0]);
+  }
+  const className = nodes[1].value;
+  let bodyStart = 2;
+  if (nodes[2]?.kind === "square") bodyStart = 3;
+  const parts: string[] = [];
+  for (const n of nodes.slice(bodyStart)) {
+    if (n.kind === "curly" && isIdent(n.nodes[0], "fun")) {
+      parts.push(compileMethod(n, ctx));
+    }
+  }
+  return `class ${className} {${parts.join("\n")}}`;
 }
 
 function compileCurly(n: CurlyBracketsNode, ctx: Ctx): string {
@@ -143,8 +228,23 @@ function compileCurly(n: CurlyBracketsNode, ctx: Ctx): string {
 
   if (isIdent(head, "if")) return compileIfExpr(n.nodes.slice(1), ctx);
   if (isIdent(head, "do")) return compileDoExpr(n.nodes.slice(1), ctx);
+  if (isIdent(head, "when")) return compileWhenExpr(n.nodes.slice(1), ctx);
+  if (isIdent(head, "while")) return compileWhileExpr(n.nodes.slice(1), ctx);
+  if (isIdent(head, "for")) return compileForExpr(n.nodes.slice(1), ctx);
   if (isIdent(head, "match")) return compileMatchExpr(n.nodes.slice(1), ctx);
   if (isIdent(head, "fun")) return compileFunExpr(n.nodes, ctx);
+  if (isIdent(head, "class")) return compileClassExpr(n.nodes, ctx);
+  if (isIdent(head, "new")) {
+    if (n.nodes.length < 2) fail("new requires constructor expression", n);
+    const ctorExpr = compileExpr(n.nodes[1], ctx);
+    const rawArgs = n.nodes.slice(2);
+    if (rawArgs.length === 1 && rawArgs[0].kind === "square") {
+      const args = rawArgs[0].nodes.map((arg) => compileExpr(arg, ctx)).join(", ");
+      return `new ${ctorExpr}(${args})`;
+    }
+    const args = rawArgs.map((arg) => compileExpr(arg, ctx)).join(", ");
+    return `new ${ctorExpr}(${args})`;
+  }
 
   const callee = compileExpr(head, ctx);
   const args = n.nodes.slice(1).map((arg) => compileExpr(arg, ctx)).join(", ");
@@ -165,6 +265,7 @@ function compilePipe(left: Node, right: Node, ctx: Ctx): string {
 function compileExpr(n: Node, ctx: Ctx): string {
   switch (n.kind) {
     case "identifier":
+      if (ctx.thisAlias && n.value === ctx.thisAlias) return "this";
       return emitLiteralIdentifier(n.value);
     case "string":
       return JSON.stringify(n.value);
@@ -194,19 +295,20 @@ function compileExpr(n: Node, ctx: Ctx): string {
             return x.value;
           });
         } else {
-          throw new Error("Invalid lambda args");
+          fail("Invalid lambda args", n.left);
         }
         return `((${args.join(", ")}) => (${compileExpr(n.right, ctx)}))`;
       }
       if (n.op === ".") return `${compileExpr(n.left, ctx)}.${compileExpr(n.right, ctx)}`;
+      if (n.op === ":") return compileExpr(n.left, ctx);
       return `(${compileExpr(n.left, ctx)} ${n.op} ${compileExpr(n.right, ctx)})`;
     }
     case "operator":
-      throw new Error(`Unexpected standalone operator '${n.value}'`);
+      fail(`Unexpected standalone operator '${n.value}'`, n);
     case "sequence":
       return compileDoExpr(n.nodes, ctx);
     default:
-      throw new Error(`Unknown node kind: ${(n as Node).kind}`);
+      fail(`Unknown node kind: ${(n as Node).kind}`, n);
   }
 }
 
@@ -216,6 +318,10 @@ function isFunDecl(n: Node): n is CurlyBracketsNode {
 
 function isMacroDecl(n: Node): n is CurlyBracketsNode {
   return n.kind === "curly" && n.nodes.length >= 5 && isIdent(n.nodes[0], "def") && isIdent(n.nodes[1], "macro");
+}
+
+function isClassDecl(n: Node): n is CurlyBracketsNode {
+  return n.kind === "curly" && n.nodes.length >= 2 && isIdent(n.nodes[0], "class") && n.nodes[1].kind === "identifier";
 }
 
 function compileStmt(n: Node, ctx: Ctx, isLast: boolean): string {
@@ -243,6 +349,12 @@ function compileStmt(n: Node, ctx: Ctx, isLast: boolean): string {
     return `const ${fnName} = ${fnExpr};`;
   }
 
+  if (isClassDecl(n)) {
+    const classExpr = compileClassExpr(n.nodes, ctx);
+    if (isLast) return `${classExpr};\nreturn ${(n.nodes[1] as { value: string }).value};`;
+    return `${classExpr};`;
+  }
+
   if (n.kind === "binop" && n.op === "=" && n.left.kind === "identifier") {
     const rhs = compileExpr(n.right, ctx);
     const assign = `var ${n.left.value} = ${rhs};`;
@@ -260,14 +372,14 @@ function compileStmt(n: Node, ctx: Ctx, isLast: boolean): string {
   return `${expr};`;
 }
 
-function compileBlock(nodes: Node[], ctx: Ctx): string {
+function compileBlock(nodes: Node[], ctx: Ctx, autoReturn: boolean): string {
   const lines: string[] = [];
   const filtered = nodes.filter(Boolean);
   for (let i = 0; i < filtered.length; i += 1) {
-    const line = compileStmt(filtered[i], ctx, i === filtered.length - 1);
+    const line = compileStmt(filtered[i], ctx, autoReturn && i === filtered.length - 1);
     if (line) lines.push(line);
   }
-  if (lines.length === 0) lines.push("return null;");
+  if (lines.length === 0 && autoReturn) lines.push("return null;");
   return lines.join("\n");
 }
 
@@ -280,6 +392,6 @@ export function compileToJs(src: string, options: CompileOptions = {}): string {
   };
 
   const nodes = parse(src);
-  const body = compileBlock(nodes, ctx);
+  const body = compileBlock(nodes, ctx, true);
   return `(() => {\n${body}\n})()`;
 }

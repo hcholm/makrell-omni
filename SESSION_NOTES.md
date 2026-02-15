@@ -29,18 +29,28 @@ Keep entries concise and append-only.
   - Files: `impl/ts/package.json`, `impl/ts/tsconfig.json`, `impl/ts/README.md`, `impl/ts/COMPATIBILITY.md`, `impl/ts/.gitignore`, `impl/ts/scripts/test-browser-smoke.ts`, `impl/ts/examples/browser-smoke/index.html`, `impl/ts/tests/unit/index.test.ts`, `.github/workflows/ts-m0.yml`
   - Tests run: `bun run ci` (from `impl/ts`)
   - Result: baseline scripts and checks pass locally
+- 2026-02-15: Delivered M1 core increment in `impl/ts`.
+  - Files: `impl/ts/src/ast.ts`, `impl/ts/src/tokenizer.ts`, `impl/ts/src/parser.ts`, `impl/ts/src/compiler.ts`, `impl/ts/tests/unit/index.test.ts`
+  - Scope:
+    - source span tracking in AST/tokens/parser
+    - source-positioned parse/compile diagnostics
+    - class + `new` compilation baseline (`{class ...}`, `{new ...}`)
+    - typed syntax compatibility via existing nodes (`x:int`, typed function params) with runtime JS emit
+    - additional reserved constructs (`when`, `while`, `for`) in compiler core
+  - Tests run: `bun run ci` (from `impl/ts`)
+  - Result: all checks pass (`build`, `test`, `typecheck`, `test:browser`)
 
 ## In Progress
 
 - Item: MakrellTS milestone execution (M0-M7)
-- Status: M0 completed; moving into M1/M2 preparation
+- Status: M0 completed; M1 core increment completed; M1 parity expansion still pending
 - Blockers: none documented yet
 
 ## Next Actions
 
 1. Build parity matrix from MakrellPy tests into `impl/ts/tests/parity/` status categories.
-2. Define MakrellTS typing syntax subset using existing AST node forms only.
-3. Add `{new ...}` construct and baseline class-instantiation tests in `impl/ts`.
+2. Expand M1 test coverage to mirror more MakrellPy core scenarios (flow/functions/classes/patterns).
+3. Define MakrellTS typing syntax subset using existing AST node forms only (formal doc + fixtures).
 4. Implement isolated meta runtime adapter interface for Bun/Node + browser worker.
 
 ## Quick Repro / Verification
