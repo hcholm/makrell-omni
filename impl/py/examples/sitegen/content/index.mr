@@ -1,0 +1,15 @@
+---
+title "Welcome"
+description "Root page for the MakrellPy-only sitegen scaffold."
+---
+# Makrell Sitegen
+
+This is custom MR content.
+Lines become paragraph blocks.
+
+{h2 "Raw MRML passthrough"}
+{p "MRML lines can be embedded directly in body content."}
+
+- Build command support
+- Watch mode
+- Search index output

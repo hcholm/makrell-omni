@@ -1,0 +1,74 @@
+site {
+    name "Makrell Vision Demo"
+    lang "en"
+    dist "dist"
+    template_dir "templates"
+    static_dir "static"
+}
+
+defaults {
+    layout "default"
+    description "A static site generated with MakrellPy."
+    theme {
+        name "base"
+        accent "#0f766e"
+    }
+}
+
+sections [
+    {
+        path ""
+        values {
+            section "home"
+        }
+        pages [
+            {
+                source "content/index.mr"
+                values {
+                    title "Welcome"
+                    description "Root page for the MakrellPy-only sitegen scaffold."
+                }
+            }
+        ]
+        sections [
+            {
+                path "docs"
+                values {
+                    section "docs"
+                    theme {
+                        name "docs"
+                        accent "#0ea5e9"
+                    }
+                }
+                pages [
+                    {
+                        source "content/getting-started.mr"
+                        values {
+                            title "Getting Started"
+                            description "Hierarchy and overrides in nested sections."
+                        }
+                    }
+                ]
+            }
+            {
+                path "blog"
+                values {
+                    section "blog"
+                    theme {
+                        name "blog"
+                        accent "#d97706"
+                    }
+                }
+                pages [
+                    {
+                        source "content/changelog.mr"
+                        values {
+                            title "Changelog"
+                            description "Blog-style page with inherited section theme."
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+]

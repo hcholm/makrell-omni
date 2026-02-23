@@ -1,0 +1,40 @@
+body {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  margin: 0;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.top,
+main,
+footer {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 1rem 1.25rem;
+}
+
+.top {
+  border-bottom: 3px solid #0f766e;
+}
+
+[data-theme="docs"] .top {
+  border-bottom-color: #0ea5e9;
+}
+
+[data-theme="blog"] .top {
+  border-bottom-color: #d97706;
+}
+
+.site-nav {
+  display: flex;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.site-nav a[aria-current="page"] {
+  font-weight: 700;
+}
+
+.search {
+  margin-top: 1rem;
+}

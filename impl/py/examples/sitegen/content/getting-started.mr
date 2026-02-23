@@ -1,0 +1,13 @@
+---
+title "Getting Started"
+description "Hierarchy and overrides in nested sections."
+---
+# Getting Started
+
+Section values override global defaults.
+Page front matter can override both.
+
+## Commands
+
+- python -m makrell.cli erbuild.mr build
+- python -m makrell.cli erbuild.mr watch

@@ -1,0 +1,10 @@
+---
+title "Changelog"
+description "Blog-style page with inherited section theme."
+---
+# Changelog
+
+## 2026-02-23
+
+- Rebuilt sitegen from scratch.
+- Moved generator logic into MakrellPy script.

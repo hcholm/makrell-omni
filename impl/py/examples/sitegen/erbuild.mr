@@ -1,0 +1,285 @@
+{import json}
+{import pathlib}
+{import re}
+{import shutil}
+{import makrell.mrml}
+{import makrell._mron_py@[parse_file parse_src]}
+{import makrell.io@[read_file write_file]}
+{import makrell.mrml@[parse_to_xml]}
+
+
+{fun to_plain_dict [m]
+    d = {dict}
+    {for k m
+        {d.__setitem__ k {to_plain {m.__getitem__ k}}}}
+    d
+}
+
+
+{fun to_plain [v]
+    {if {hasattr v "_data"}
+        {to_plain_dict v._data}
+        {if {isinstance v dict}
+            {to_plain_dict v}
+            {if {isinstance v list}
+                {list {map to_plain v}}
+                v}}}
+}
+
+
+{fun deep_merge [a b]
+    out = {dict}
+    {for k a
+        {out.__setitem__ k {a.__getitem__ k}}}
+    {for k b
+        av = {out.get k null}
+        bv = {b.__getitem__ k}
+        {if {isinstance av dict}
+            {if {isinstance bv dict}
+                {out.__setitem__ k {deep_merge av bv}}
+                {out.__setitem__ k bv}}
+            {out.__setitem__ k bv}}}
+    out
+}
+
+
+{fun slug_from_source [source]
+    {pathlib.Path source}.stem
+}
+
+
+{fun parse_mixed_page [path]
+    src = {read_file path}
+    normalized = {src.replace "\r\n" "\n"}
+    parts = {normalized.split "\n---\n" 1}
+    has_front = {if {len parts} == 2 true false}
+    front = {if has_front
+        {to_plain {parse_src {re.sub "^---\\n" "" {parts.__getitem__ 0}}}}
+        {dict}}
+    body = {if has_front {parts.__getitem__ 1}.strip {normalized.strip}}
+    out = {dict}
+    {out.__setitem__ "front" front}
+    {out.__setitem__ "body" body}
+    out
+}
+
+
+{fun q [text]
+    {json.dumps text}
+}
+
+
+{fun attrs_bits [attrs]
+    bits = []
+    {for k attrs
+        v = {attrs.__getitem__ k}
+        {when v != null
+            {bits.append k + "=" + {q {str v}}}}}
+    bits
+}
+
+
+{fun attrs_to_mr [attrs]
+    bits = {if attrs == null [] {attrs_bits attrs}}
+    {if {len bits} == 0 "" " [" + {" ".join bits} + "]"}
+}
+
+
+{fun tag [name content attrs]
+    ap = {attrs_to_mr attrs}
+    lb = {chr 123}
+    rb = {chr 125}
+    nl = {chr 10}
+    lb + name + ap + nl + content + nl + rb
+}
+
+
+{fun compile_body [src]
+    {tag "p" {q {re.sub "\\s+" " " src}} null}
+}
+
+
+{fun combine_path [a b]
+    aa = {a.strip "/"}
+    bb = {b.strip "/"}
+    {if aa == ""
+        bb
+        {if bb == ""
+            aa
+            aa + "/" + bb}}
+}
+
+
+{fun ensure_dir [path]
+    p = {pathlib.Path path}
+    {p.mkdir 511 true true}
+}
+
+
+{fun page_from_source [source]
+    d = {dict}
+    {d.__setitem__ "source" source}
+    d
+}
+
+
+{fun walk_sections [section inherited parent pages]
+    sec_values = {section.get "values" {dict}}
+    merged = {deep_merge inherited sec_values}
+    sec_path = {combine_path parent {section.get "path" ""}}
+
+    {for p0 {section.get "pages" []}
+        p = {if {isinstance p0 str}
+            {page_from_source p0}
+            p0}
+        source = {p.get "source"}
+        slug = {p.get "slug" {slug_from_source source}}
+        pctx = {deep_merge merged {p.get "values" {dict}}}
+        {pctx.__setitem__ "slug" slug}
+        rel = {if sec_path == "" slug + ".html" sec_path + "/" + slug + ".html"}
+
+        item = {dict}
+        {item.__setitem__ "source" source}
+        {item.__setitem__ "slug" slug}
+        {item.__setitem__ "dist_rel" rel}
+        {item.__setitem__ "url" "/" + rel}
+        {item.__setitem__ "template" {p.get "template" "default"}}
+        {item.__setitem__ "ctx" pctx}
+        {pages.append item}
+    }
+
+    {for child {section.get "sections" []}
+        {walk_sections child merged sec_path pages}}
+}
+
+
+{fun collect_pages [cfg]
+    pages = []
+    defaults = {cfg.get "defaults" {dict}}
+    {for section {cfg.get "sections" []}
+        {walk_sections section defaults "" pages}}
+    pages
+}
+
+
+{fun nav_mrml [items current]
+    links = []
+    {for item items
+        attrs = {dict}
+        {attrs.__setitem__ "href" {item.__getitem__ "url"}}
+        {when {item.__getitem__ "url"} == current
+            {attrs.__setitem__ "aria-current" "page"}}
+        {links.append {tag "a" {q {item.__getitem__ "title"}} attrs}}}
+    attrs = {dict}
+    {attrs.__setitem__ "class" "site-nav"}
+    {tag "nav" {"\n".join links} attrs}
+}
+
+
+{fun search_text [body]
+    t = {re.sub "^\\s*#+\\s*" "" body re.M}
+    t = {re.sub "^\\s*-\\s*" "" t re.M}
+    t = {re.sub "\\s+" " " t}
+    {t.strip}
+}
+
+
+{fun copy_static_inner [src dst]
+    {when {dst.exists}
+        {shutil.rmtree {str dst}}}
+    {shutil.copytree {str src} {str dst}}
+}
+
+
+{fun copy_static [src_dir dist_dir]
+    src = {pathlib.Path src_dir}
+    dst = {pathlib.Path dist_dir + "/assets"}
+    {when {src.exists}
+        {copy_static_inner src dst}}
+}
+
+
+{fun build []
+    cfg = {to_plain {parse_file "site.mron"}}
+    site = {cfg.get "site" {dict}}
+    dist_dir = {site.get "dist" "dist"}
+    tpl_dir = {site.get "template_dir" "templates"}
+    static_dir = {site.get "static_dir" "static"}
+    site_name = {site.get "name" "Makrell Site"}
+    site_lang = {site.get "lang" "en"}
+
+    {ensure_dir dist_dir}
+
+    pages = {collect_pages cfg}
+    payloads = []
+    nav_items = []
+
+    {for p pages
+        parsed = {parse_mixed_page {p.__getitem__ "source"}}
+        front = {parsed.__getitem__ "front"}
+        body = {parsed.__getitem__ "body"}
+
+        ctx = {deep_merge {p.__getitem__ "ctx"} {front.get "values" {dict}}}
+        {when {ctx.get "title" null} == null
+            {ctx.__setitem__ "title" {p.__getitem__ "slug"}}}
+        {when {front.get "title" null} != null
+            {ctx.__setitem__ "title" {front.get "title"}}}
+        {ctx.__setitem__ "description" {front.get "description" {ctx.get "description" ""}}}
+        {ctx.__setitem__ "site_name" site_name}
+        {ctx.__setitem__ "lang" {ctx.get "lang" site_lang}}
+
+        payload = {dict}
+        {payload.__setitem__ "page" p}
+        {payload.__setitem__ "ctx" ctx}
+        {payload.__setitem__ "body" body}
+        {payload.__setitem__ "template" {front.get "template" {p.__getitem__ "template"}}}
+        {payloads.append payload}
+
+        nav = {dict}
+        {nav.__setitem__ "url" {p.__getitem__ "url"}}
+        {nav.__setitem__ "title" {ctx.get "title"}}
+        {nav_items.append nav}
+    }
+
+    search = []
+    {for pl payloads
+        page = {pl.__getitem__ "page"}
+        ctx = {pl.__getitem__ "ctx"}
+        body = {pl.__getitem__ "body"}
+        tpl = {pl.__getitem__ "template"}
+
+        body_mrml = {tag "div" {compile_body body} {dict "class" "page-body"}}
+        body_html = {parse_to_xml body_mrml}
+        n_html = {parse_to_xml {nav_mrml nav_items {page.__getitem__ "url"}}}
+
+        tpl_src = {read_file tpl_dir + "/" + tpl + ".mrml"}
+        tpl_src = {tpl_src.replace "__TITLE__" {str {ctx.get "title"}}}
+        tpl_src = {tpl_src.replace "__DESCRIPTION__" {str {ctx.get "description" ""}}}
+        tpl_src = {tpl_src.replace "__SITE_NAME__" {str {ctx.get "site_name"}}}
+        tpl_src = {tpl_src.replace "__LANG__" {str {ctx.get "lang" "en"}}}
+        theme = {ctx.get "theme" {dict}}
+        theme_name = {theme.get "name" "base"}
+        tpl_src = {tpl_src.replace "__THEME__" {str theme_name}}
+        shell = {parse_to_xml tpl_src}
+        html = {shell.replace "__NAV__" n_html}
+        html = {html.replace "__CONTENT__" body_html}
+
+        out_path = dist_dir + "/" + {page.__getitem__ "dist_rel"}
+        {ensure_dir {str {pathlib.Path out_path}.parent}}
+        {write_file out_path html}
+        {print "Wrote " out_path}
+
+        rec = {dict}
+        {rec.__setitem__ "title" {ctx.get "title"}}
+        {rec.__setitem__ "url" {page.__getitem__ "url"}}
+        {rec.__setitem__ "description" {ctx.get "description" ""}}
+        {rec.__setitem__ "text" {search_text body}}
+        {search.append rec}
+    }
+
+    {copy_static static_dir dist_dir}
+    {write_file dist_dir + "/search-index.json" {json.dumps search}}
+}
+
+
+{build}

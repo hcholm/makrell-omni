@@ -1,0 +1,23 @@
+{html [lang="__LANG__"]
+    {head
+        {meta [charset="utf-8"]}
+        {meta [name="viewport" content="width=device-width, initial-scale=1"]}
+        {title __TITLE__ | __SITE_NAME__}
+        {meta [name="description" content="__DESCRIPTION__"]}
+        {link [rel="stylesheet" href="/assets/site.css"]}
+        {script [src="/assets/search.js"]}
+    }
+    {body [data-theme="__THEME__"]
+        {header [class="top"]
+            {h1 __TITLE__}
+            {p [class="desc"] __DESCRIPTION__}
+            __NAV__
+        }
+        {main
+            __CONTENT__
+        }
+        {footer
+            {small Generated with MakrellPy sitegen}
+        }
+    }
+}
