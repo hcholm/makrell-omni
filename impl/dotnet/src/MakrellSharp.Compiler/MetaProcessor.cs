@@ -1,3 +1,4 @@
+using System.Reflection;
 using MakrellSharp.Ast;
 using MakrellSharp.BaseFormat;
 
@@ -6,21 +7,34 @@ namespace MakrellSharp.Compiler;
 internal sealed class MetaProcessor
 {
     private readonly MacroRegistry registry;
+    private readonly string source;
     private readonly Dictionary<string, object?> symbols = new(StringComparer.Ordinal);
+    private readonly HashSet<string> importedAssemblyPaths = new(StringComparer.OrdinalIgnoreCase);
+    private readonly List<string> replaySources = [];
 
-    public MetaProcessor(MacroRegistry registry)
+    public MetaProcessor(MacroRegistry registry, string source)
     {
         this.registry = registry ?? throw new ArgumentNullException(nameof(registry));
+        this.source = source ?? throw new ArgumentNullException(nameof(source));
     }
+
+    public IReadOnlyList<string> ReplaySources => replaySources;
 
     public IReadOnlyList<Node> Process(IReadOnlyList<Node> nodes)
     {
         ArgumentNullException.ThrowIfNull(nodes);
 
+        return ProcessNodes(nodes, collectReplaySources: true);
+    }
+
+    private IReadOnlyList<Node> ProcessNodes(IReadOnlyList<Node> nodes, bool collectReplaySources)
+    {
         var output = new List<Node>();
         foreach (var node in nodes)
         {
-            if (TryDefineMacro(node) || TryExecuteMetaBlock(node))
+            if (TryImportMeta(node, collectReplaySources)
+                || TryDefineMacro(node, collectReplaySources)
+                || TryExecuteMetaBlock(node, collectReplaySources))
             {
                 continue;
             }
@@ -31,7 +45,7 @@ internal sealed class MetaProcessor
         return output;
     }
 
-    private bool TryDefineMacro(Node node)
+    private bool TryDefineMacro(Node node, bool collectReplaySources)
     {
         if (node is not CurlyBracketsNode curly
             || curly.Nodes.Count < 4
@@ -41,6 +55,11 @@ internal sealed class MetaProcessor
             || curly.Nodes[3] is not SquareBracketsNode parameters)
         {
             return false;
+        }
+
+        if (collectReplaySources)
+        {
+            RecordReplaySource(curly);
         }
 
         var parameterNames = parameters.Nodes
@@ -53,7 +72,7 @@ internal sealed class MetaProcessor
         return true;
     }
 
-    private bool TryExecuteMetaBlock(Node node)
+    private bool TryExecuteMetaBlock(Node node, bool collectReplaySources)
     {
         if (node is not CurlyBracketsNode curly
             || curly.Nodes.Count == 0
@@ -62,8 +81,37 @@ internal sealed class MetaProcessor
             return false;
         }
 
+        if (collectReplaySources)
+        {
+            RecordReplaySource(curly);
+        }
+
         var statements = BaseFormatParser.ParseOperators(curly.Nodes.Skip(1).ToArray());
         _ = ExecuteStatements(statements);
+        return true;
+    }
+
+    private bool TryImportMeta(Node node, bool collectReplaySources)
+    {
+        if (node is not CurlyBracketsNode curly
+            || curly.Nodes.Count < 2
+            || curly.Nodes[0] is not IdentifierNode { Value: "importm" })
+        {
+            return false;
+        }
+
+        if (collectReplaySources)
+        {
+            RecordReplaySource(curly);
+        }
+
+        foreach (var imported in curly.Nodes.Skip(1))
+        {
+            var path = imported as StringNode
+                ?? throw new InvalidOperationException("importm currently expects string literal assembly paths.");
+            ReplayImportedAssembly(EvaluateString(path));
+        }
+
         return true;
     }
 
@@ -88,6 +136,12 @@ internal sealed class MetaProcessor
                 return ExecuteWhen(curly);
             case CurlyBracketsNode curly when IsWhileHead(curly):
                 return ExecuteWhile(curly);
+            case CurlyBracketsNode curly when IsForHead(curly):
+                return ExecuteFor(curly);
+            case CurlyBracketsNode curly when IsBreakHead(curly):
+                throw new MetaBreak();
+            case CurlyBracketsNode curly when IsContinueHead(curly):
+                throw new MetaContinue();
             case CurlyBracketsNode curly when IsReturnHead(curly):
                 throw new MetaReturn(EvaluateReturnValue(curly));
             case BinOpNode { Operator: "=" } assignment when assignment.Left is IdentifierNode identifier:
@@ -540,10 +594,58 @@ internal sealed class MetaProcessor
         object? last = null;
         while (IsTruthy(EvaluateExpression(curly.Nodes[1])))
         {
-            last = ExecuteStatements(curly.Nodes.Skip(2));
+            try
+            {
+                last = ExecuteStatements(curly.Nodes.Skip(2));
+            }
+            catch (MetaContinue)
+            {
+                continue;
+            }
+            catch (MetaBreak)
+            {
+                break;
+            }
         }
 
         return last;
+    }
+
+    private object? ExecuteFor(CurlyBracketsNode curly)
+    {
+        if (curly.Nodes.Count < 3 || curly.Nodes[1] is not IdentifierNode loopVariable)
+        {
+            throw new InvalidOperationException("for expects a loop variable, iterable, and optional body.");
+        }
+
+        var snapshot = CaptureSymbols([loopVariable.Value]);
+        object? last = null;
+
+        try
+        {
+            foreach (var item in Enumerate(EvaluateExpression(curly.Nodes[2])))
+            {
+                symbols[loopVariable.Value] = item;
+                try
+                {
+                    last = ExecuteStatements(curly.Nodes.Skip(3));
+                }
+                catch (MetaContinue)
+                {
+                    continue;
+                }
+                catch (MetaBreak)
+                {
+                    break;
+                }
+            }
+
+            return last;
+        }
+        finally
+        {
+            RestoreSymbols(snapshot);
+        }
     }
 
     private object? EvaluateIf(CurlyBracketsNode curly)
@@ -864,11 +966,43 @@ internal sealed class MetaProcessor
         };
     }
 
+    private void ReplayImportedAssembly(string assemblyPath)
+    {
+        var fullPath = Path.GetFullPath(assemblyPath);
+        if (!importedAssemblyPaths.Add(fullPath))
+        {
+            return;
+        }
+
+        var assembly = Assembly.LoadFrom(fullPath);
+        var importedSources = MakrellMetaManifest.GetSources(assembly);
+        foreach (var importedSource in importedSources)
+        {
+            var parsed = BaseFormatParser.ParseStructure(importedSource);
+            _ = ProcessNodes(parsed, collectReplaySources: false);
+        }
+    }
+
+    private void RecordReplaySource(Node node)
+    {
+        var start = node.Span.Start.Index;
+        var end = node.Span.End.Index;
+        if (start < 0 || end < start || end > source.Length)
+        {
+            return;
+        }
+
+        replaySources.Add(source[start..end]);
+    }
+
     private static bool IsQuoteHead(CurlyBracketsNode curly) =>
         curly.Nodes.Count > 0 && curly.Nodes[0] is IdentifierNode { Value: "quote" };
 
     private static bool IsUnquoteHead(CurlyBracketsNode curly) =>
         curly.Nodes.Count > 0 && curly.Nodes[0] is IdentifierNode { Value: "unquote" or "$" };
+
+    private static bool IsForHead(CurlyBracketsNode curly) =>
+        curly.Nodes.Count > 0 && curly.Nodes[0] is IdentifierNode { Value: "for" };
 
     private static bool IsWhenHead(CurlyBracketsNode curly) =>
         curly.Nodes.Count > 0 && curly.Nodes[0] is IdentifierNode { Value: "when" };
@@ -876,11 +1010,30 @@ internal sealed class MetaProcessor
     private static bool IsWhileHead(CurlyBracketsNode curly) =>
         curly.Nodes.Count > 0 && curly.Nodes[0] is IdentifierNode { Value: "while" };
 
+    private static bool IsBreakHead(CurlyBracketsNode curly) =>
+        curly.Nodes.Count > 0 && curly.Nodes[0] is IdentifierNode { Value: "break" };
+
+    private static bool IsContinueHead(CurlyBracketsNode curly) =>
+        curly.Nodes.Count > 0 && curly.Nodes[0] is IdentifierNode { Value: "continue" };
+
     private static bool IsReturnHead(CurlyBracketsNode curly) =>
         curly.Nodes.Count > 0 && curly.Nodes[0] is IdentifierNode { Value: "return" };
 
     private static string QuoteStringLiteral(string text) =>
         "\"" + text.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal) + "\"";
+
+    private static IEnumerable<object?> Enumerate(object? value)
+    {
+        return value switch
+        {
+            null => Array.Empty<object?>(),
+            string text => text.Select(ch => (object?)ch.ToString()),
+            object?[] array => array,
+            IEnumerable<Node> nodes => nodes.Cast<object?>(),
+            IEnumerable<object?> objects => objects,
+            _ => throw new InvalidOperationException("for expects an enumerable value."),
+        };
+    }
 
     private sealed record SymbolSnapshot(string Name, bool Exists, object? Value);
     private sealed record MetaFunction(IReadOnlyList<string> ParameterNames, IReadOnlyList<Node> Body);
@@ -888,4 +1041,6 @@ internal sealed class MetaProcessor
     {
         public object? Value { get; } = value;
     }
+    private sealed class MetaBreak : Exception;
+    private sealed class MetaContinue : Exception;
 }

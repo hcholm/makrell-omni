@@ -8,11 +8,12 @@ namespace MakrellSharp.Compiler;
 
 internal static class RoslynExecutor
 {
-    public static MakrellAssemblyImage Compile(string csharpSource)
+    public static MakrellAssemblyImage Compile(string csharpSource, IReadOnlyList<string>? metaSources = null)
     {
         using var peStream = new MemoryStream();
         using var pdbStream = new MemoryStream();
-        var emit = CreateCompilation(csharpSource).Emit(peStream, pdbStream);
+        metaSources ??= Array.Empty<string>();
+        var emit = CreateCompilation(csharpSource, metaSources).Emit(peStream, pdbStream);
         if (!emit.Success)
         {
             var message = string.Join(
@@ -23,7 +24,7 @@ internal static class RoslynExecutor
             throw new InvalidOperationException(message);
         }
 
-        return new MakrellAssemblyImage(csharpSource, peStream.ToArray(), pdbStream.ToArray());
+        return new MakrellAssemblyImage(csharpSource, peStream.ToArray(), pdbStream.ToArray(), metaSources);
     }
 
     public static MakrellModule Load(MakrellAssemblyImage image)
@@ -53,15 +54,45 @@ internal static class RoslynExecutor
         return references.ToImmutableArray();
     }
 
-    private static CSharpCompilation CreateCompilation(string csharpSource)
+    private static CSharpCompilation CreateCompilation(string csharpSource, IReadOnlyList<string> metaSources)
     {
-        var syntaxTree = CSharpSyntaxTree.ParseText(csharpSource);
+        var syntaxTrees = new List<SyntaxTree>
+        {
+            CSharpSyntaxTree.ParseText(csharpSource),
+        };
+
+        if (metaSources.Count > 0)
+        {
+            syntaxTrees.Add(CSharpSyntaxTree.ParseText(EmitMetaManifestSource(metaSources)));
+        }
+
         return CSharpCompilation.Create(
             "__MakrellGenerated_" + Guid.NewGuid().ToString("N"),
-            [syntaxTree],
+            syntaxTrees,
             BuildReferences(),
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
     }
+
+    private static string EmitMetaManifestSource(IReadOnlyList<string> metaSources)
+    {
+        var arguments = string.Join(", ", metaSources.Select(ToCSharpLiteral));
+        return
+            """
+            [assembly: global::MakrellSharp.Compiler.MakrellMetaSourcesAttribute(
+            """
+            + arguments +
+            """
+            )]
+            """;
+    }
+
+    private static string ToCSharpLiteral(string value) =>
+        "\"" + value
+            .Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("\"", "\\\"", StringComparison.Ordinal)
+            .Replace("\r", "\\r", StringComparison.Ordinal)
+            .Replace("\n", "\\n", StringComparison.Ordinal)
+        + "\"";
 
     private sealed class MakrellModuleLoadContext : AssemblyLoadContext
     {

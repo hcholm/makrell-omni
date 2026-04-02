@@ -23,6 +23,8 @@ public sealed class MakrellModule : IDisposable
 
     public object? Run() => runMethod.Invoke(null, null);
 
+    public IReadOnlyList<string> GetMetaSources() => MakrellMetaManifest.GetSources(Assembly);
+
     public void Dispose()
     {
         loadContext?.Unload();

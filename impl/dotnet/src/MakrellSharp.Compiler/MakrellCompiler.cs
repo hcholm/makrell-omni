@@ -10,17 +10,18 @@ public static class MakrellCompiler
         options ??= new MakrellCompilerOptions();
 
         var structured = BaseFormatParser.ParseStructure(source);
-        var metaProcessed = new MetaProcessor(options.Macros).Process(structured);
+        var metaProcessor = new MetaProcessor(options.Macros, source);
+        var metaProcessed = metaProcessor.Process(structured);
         var expanded = new MacroExpander(options.Macros).Expand(metaProcessed);
         var parsed = BaseFormatParser.ParseOperators(expanded);
         var csharp = CSharpEmitter.EmitModule(parsed);
-        return new MakrellCompilationResult(csharp);
+        return new MakrellCompilationResult(csharp, metaProcessor.ReplaySources);
     }
 
     public static MakrellAssemblyImage CompileToAssemblyImage(string source, MakrellCompilerOptions? options = null)
     {
         var compilation = CompileToCSharp(source, options);
-        return RoslynExecutor.Compile(compilation.CSharpSource);
+        return RoslynExecutor.Compile(compilation.CSharpSource, compilation.MetaSources);
     }
 
     public static MakrellModule LoadModule(string source, MakrellCompilerOptions? options = null)

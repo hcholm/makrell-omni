@@ -378,6 +378,40 @@ public sealed class MakrellCompilerTests
     }
 
     [Fact]
+    public void Run_MetaFor_CanIterateCompileTimeValues()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {meta
+                total = 0
+                {for item [1 2 3 4]
+                    total = total + item}}
+            total
+            """);
+
+        Assert.Equal(10, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_MetaBreakAndContinue_WorkInsideLoops()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {meta
+                total = 0
+                {for item [1 2 3 4 5]
+                    {when item == 3
+                        {continue}}
+                    {when item == 5
+                        {break}}
+                    total = total + item}}
+            total
+            """);
+
+        Assert.Equal(7, Convert.ToInt32(result));
+    }
+
+    [Fact]
     public void Run_DefMacro_CanUseMetaHelperFunction()
     {
         var result = MakrellCompiler.Run(
@@ -392,6 +426,105 @@ public sealed class MakrellCompilerTests
             """);
 
         Assert.Equal(5, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_DefMacro_CanUseMetaForLoop()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {def macro last [ns]
+                ns = {regular ns}
+                last = 0
+                {for n ns
+                    last = n}
+                {quote {unquote last}}}
+            {last 2 3 5}
+            """);
+
+        Assert.Equal(5, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void CompileToAssemblyImage_PreservesReplayableMetaSources()
+    {
+        var image = MakrellCompiler.CompileToAssemblyImage(
+            """
+            {meta
+                a = 2}
+            {def macro incr [ns]
+                ns = {regular ns}
+                {quote {unquote ns@0} + {unquote a}}}
+            {incr 3}
+            """);
+
+        Assert.Contains(image.MetaSources, source => source.Contains("{meta", StringComparison.Ordinal));
+        Assert.Contains(image.MetaSources, source => source.Contains("{def macro incr", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void LoadModule_ExposesEmbeddedMetaSources()
+    {
+        using var module = MakrellCompiler.LoadModule(
+            """
+            {meta
+                a = 2}
+            {def macro incr [ns]
+                ns = {regular ns}
+                {quote {unquote ns@0} + {unquote a}}}
+            5
+            """);
+
+        var metaSources = module.GetMetaSources();
+
+        Assert.Contains(metaSources, source => source.Contains("{meta", StringComparison.Ordinal));
+        Assert.Contains(metaSources, source => source.Contains("{def macro incr", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Run_Importm_ReplaysMacrosFromCompiledAssembly()
+    {
+        var image = MakrellCompiler.CompileToAssemblyImage(
+            """
+            {meta
+                a = 2}
+            {def macro incr [ns]
+                ns = {regular ns}
+                {quote {unquote ns@0} + {unquote a}}}
+            0
+            """);
+
+        var directory = Path.Combine(Path.GetTempPath(), "makrellsharp-tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        var assemblyPath = Path.Combine(directory, "macro-module.dll");
+
+        try
+        {
+            File.WriteAllBytes(assemblyPath, image.PeBytes);
+
+            var result = MakrellCompiler.Run(
+                $$"""
+                {importm "{{assemblyPath.Replace("\\", "\\\\", StringComparison.Ordinal)}}"}
+                {incr 5}
+                """);
+
+            Assert.Equal(7, Convert.ToInt32(result));
+        }
+        finally
+        {
+            try
+            {
+                if (Directory.Exists(directory))
+                {
+                    Directory.Delete(directory, recursive: true);
+                }
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // The test imports the assembly through the default load context,
+                // so Windows may keep the file locked for the remainder of the run.
+            }
+        }
     }
 
     [Fact]
