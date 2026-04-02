@@ -95,6 +95,30 @@ public sealed class MakrellCompilerTests
     }
 
     [Fact]
+    public void Run_EvaluatesIndexOperator_OnArrayLiteral()
+    {
+        var result = MakrellCompiler.Run("[10 20 30] @ 1");
+
+        Assert.Equal(20, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesIndexOperator_OnString()
+    {
+        var result = MakrellCompiler.Run("\"abc\" @ 1");
+
+        Assert.Equal("b", result);
+    }
+
+    [Fact]
+    public void Run_EvaluatesIndexOperator_WithNegativeIndex()
+    {
+        var result = MakrellCompiler.Run("[10 20 30] @ -1");
+
+        Assert.Equal(30, Convert.ToInt32(result));
+    }
+
+    [Fact]
     public void Run_ConstructsDotNetObjects()
     {
         var result = MakrellCompiler.Run(
@@ -148,6 +172,48 @@ public sealed class MakrellCompilerTests
     }
 
     [Fact]
+    public void Run_ConstructsGenericListThroughImportedNamespace()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {import System.Collections.Generic}
+            items = {new (list string) []}
+            {items.Add "Mak"}
+            {items.Add "rell#"}
+            items @ 1
+            """);
+
+        Assert.Equal("rell#", result);
+    }
+
+    [Fact]
+    public void Run_ConstructsFullyQualifiedGenericDictionary()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            dict = {new (System.Collections.Generic.Dictionary string int) []}
+            {dict.Add "a" 2}
+            dict @ "a"
+            """);
+
+        Assert.Equal(2, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_ImportsConstructedGenericTypeAlias()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {import (list string)}
+            items = {new List []}
+            {items.Add "Makrell#"}
+            items @ 0
+            """);
+
+        Assert.Equal("Makrell#", result);
+    }
+
+    [Fact]
     public void Run_QuoteNumber_ReturnsAstNumberNode()
     {
         var result = Assert.IsType<NumberNode>(MakrellCompiler.Run("{quote 2}"));
@@ -174,6 +240,18 @@ public sealed class MakrellCompilerTests
         Assert.Collection(
             result.OriginalNodes,
             node => Assert.Equal(new NumberNode("2", string.Empty, SourceSpan.Empty), Assert.IsType<NumberNode>(node)));
+    }
+
+    [Fact]
+    public void Run_EvaluatesIndexOperator_OnAstNodeCollection()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            q = {quote [2 3]}
+            q.Nodes @ 1
+            """);
+
+        Assert.Equal(new NumberNode("3", string.Empty, SourceSpan.Empty), Assert.IsType<NumberNode>(result));
     }
 
     [Fact]

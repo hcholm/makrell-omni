@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Reflection;
+using System.Collections;
 
 namespace MakrellSharp.Compiler;
 
@@ -47,5 +49,95 @@ public static class MakrellCompilerRuntime
             "regex" => unescaped,
             _ => throw new InvalidOperationException($"Unsupported string suffix '{suffix}'."),
         };
+    }
+
+    public static object? Index(object? target, object? index)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+
+        if (target is string text)
+        {
+            var stringIndex = NormalizeIntIndex(text.Length, index);
+            return text[stringIndex].ToString();
+        }
+
+        if (target is Array array)
+        {
+            var arrayIndex = NormalizeIntIndex(array.Length, index);
+            return array.GetValue(arrayIndex);
+        }
+
+        if (target is IList list)
+        {
+            var listIndex = NormalizeIntIndex(list.Count, index);
+            return list[listIndex];
+        }
+
+        if (target is IDictionary dictionary)
+        {
+            ArgumentNullException.ThrowIfNull(index);
+            return dictionary[index];
+        }
+
+        var targetType = target.GetType();
+        var defaultIndexer = targetType
+            .GetDefaultMembers()
+            .OfType<PropertyInfo>()
+            .FirstOrDefault(property => property.GetIndexParameters().Length == 1);
+
+        if (defaultIndexer is not null)
+        {
+            var parameterType = defaultIndexer.GetIndexParameters()[0].ParameterType;
+            var converted = ConvertIndex(index, parameterType);
+            return defaultIndexer.GetValue(target, [converted]);
+        }
+
+        throw new InvalidOperationException($"Value of type '{targetType.FullName}' is not indexable.");
+    }
+
+    private static int NormalizeIntIndex(int length, object? index)
+    {
+        var converted = Convert.ToInt32(index, CultureInfo.InvariantCulture);
+        if (converted < 0)
+        {
+            converted += length;
+        }
+
+        if (converted < 0 || converted >= length)
+        {
+            throw new IndexOutOfRangeException($"Index {converted} is out of range for length {length}.");
+        }
+
+        return converted;
+    }
+
+    private static object? ConvertIndex(object? index, Type targetType)
+    {
+        if (index is null)
+        {
+            return null;
+        }
+
+        if (targetType.IsInstanceOfType(index))
+        {
+            return index;
+        }
+
+        if (targetType == typeof(int))
+        {
+            return Convert.ToInt32(index, CultureInfo.InvariantCulture);
+        }
+
+        if (targetType == typeof(long))
+        {
+            return Convert.ToInt64(index, CultureInfo.InvariantCulture);
+        }
+
+        if (targetType == typeof(string))
+        {
+            return Convert.ToString(index, CultureInfo.InvariantCulture);
+        }
+
+        return Convert.ChangeType(index, targetType, CultureInfo.InvariantCulture);
     }
 }

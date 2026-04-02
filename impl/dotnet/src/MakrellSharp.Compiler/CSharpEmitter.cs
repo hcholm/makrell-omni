@@ -75,6 +75,13 @@ internal static class CSharpEmitter
         }
 
         var expr = EmitExpression(node, state);
+        if (CanEmitDirectExpressionStatement(node))
+        {
+            return isLast
+                ? $"{Indent(indentLevel)}return {expr};"
+                : $"{Indent(indentLevel)}{expr};";
+        }
+
         return isLast
             ? $"{Indent(indentLevel)}return {expr};"
             : $"{Indent(indentLevel)}_ = {expr};";
@@ -291,12 +298,13 @@ internal static class CSharpEmitter
             throw new InvalidOperationException("Constructor form must be {new Type [args...]}.");
         }
 
-        if (curly.Nodes[2] is not SquareBracketsNode argsNode)
+        if (curly.Nodes[^1] is not SquareBracketsNode argsNode)
         {
             throw new InvalidOperationException("Constructor arguments must be provided in square brackets.");
         }
 
-        var typeExpression = EmitExpression(curly.Nodes[1], state);
+        var typeNodes = curly.Nodes.Skip(1).Take(curly.Nodes.Count - 2).ToArray();
+        var typeExpression = EmitTypeReference(typeNodes);
         var args = string.Join(", ", argsNode.Nodes.Select(arg => EmitExpression(arg, state)));
         return $"new {typeExpression}({args})";
     }
@@ -431,6 +439,11 @@ internal static class CSharpEmitter
         if (binOp.Operator == "|")
         {
             return EmitPipe(binOp.Left, binOp.Right, state);
+        }
+
+        if (binOp.Operator == "@")
+        {
+            return $"MakrellSharp.Compiler.MakrellCompilerRuntime.Index({EmitExpression(binOp.Left, state)}, {EmitExpression(binOp.Right, state)})";
         }
 
         if (binOp.Operator == ".")
@@ -595,9 +608,23 @@ internal static class CSharpEmitter
             return false;
         }
 
-        foreach (var part in curly.Nodes.Skip(1))
+        var parts = curly.Nodes.Skip(1).ToArray();
+        for (var i = 0; i < parts.Length; i += 1)
         {
-            AppendImportDirective(part, usingDirectives);
+            if (parts[i] is BinOpNode { Operator: "@" } importFrom)
+            {
+                AppendImportDirective(importFrom, usingDirectives);
+                continue;
+            }
+
+            if (i + 1 < parts.Length && parts[i + 1] is SquareBracketsNode genericArguments)
+            {
+                AppendImportDirective(parts[i], genericArguments, usingDirectives);
+                i += 1;
+                continue;
+            }
+
+            AppendImportDirective(parts[i], usingDirectives);
         }
 
         return true;
@@ -605,6 +632,14 @@ internal static class CSharpEmitter
 
     private static void AppendImportDirective(Node node, List<string> usingDirectives)
     {
+        if (node is RoundBracketsNode)
+        {
+            var alias = GetTerminalIdentifier(node);
+            var typeReference = EmitTypeReference([node]);
+            usingDirectives.Add($"using {alias} = global::{typeReference};");
+            return;
+        }
+
         if (node is BinOpNode { Operator: "@" } importFrom)
         {
             var source = GetDottedPath(importFrom.Left);
@@ -634,6 +669,13 @@ internal static class CSharpEmitter
         usingDirectives.Add($"using {path};");
     }
 
+    private static void AppendImportDirective(Node node, SquareBracketsNode genericArguments, List<string> usingDirectives)
+    {
+        var alias = GetTerminalIdentifier(node);
+        var typeReference = EmitTypeReference([node, genericArguments]);
+        usingDirectives.Add($"using {alias} = global::{typeReference};");
+    }
+
     private static string GetDottedPath(Node node)
     {
         return node switch
@@ -642,6 +684,23 @@ internal static class CSharpEmitter
             BinOpNode { Operator: "." } dotted => $"{GetDottedPath(dotted.Left)}.{GetDottedPath(dotted.Right)}",
             _ => throw new InvalidOperationException("Import path must be an identifier or dotted identifier."),
         };
+    }
+
+    private static string GetTerminalIdentifier(Node node)
+    {
+        return node switch
+        {
+            IdentifierNode identifier => GetTerminalIdentifier(MapTypeAlias(identifier.Value)),
+            BinOpNode { Operator: "." } dotted => GetTerminalIdentifier(dotted.Right),
+            RoundBracketsNode round when round.Nodes.Count > 0 => GetTerminalIdentifier(round.Nodes[0]),
+            _ => throw new InvalidOperationException("Type path must end with an identifier."),
+        };
+    }
+
+    private static string GetTerminalIdentifier(string path)
+    {
+        var lastDot = path.LastIndexOf('.');
+        return lastDot >= 0 ? path[(lastDot + 1)..] : path;
     }
 
     private static Type? ResolveType(string fullName)
@@ -673,6 +732,103 @@ internal static class CSharpEmitter
 
         var genericArgs = Enumerable.Repeat("dynamic", parameterCount + 1);
         return $"Func<{string.Join(", ", genericArgs)}>";
+    }
+
+    private static string EmitTypeReference(IReadOnlyList<Node> nodes)
+    {
+        if (nodes.Count == 0)
+        {
+            throw new InvalidOperationException("Type reference cannot be empty.");
+        }
+
+        if (nodes.Count == 1)
+        {
+            return EmitTypeReferenceNode(nodes[0]);
+        }
+
+        if (nodes.Count == 2 && nodes[1] is SquareBracketsNode genericArguments)
+        {
+            return EmitGenericTypeReference(nodes[0], genericArguments);
+        }
+
+        throw new InvalidOperationException("Unsupported type reference shape.");
+    }
+
+    private static string EmitTypeReferenceNode(Node node)
+    {
+        return node switch
+        {
+            IdentifierNode identifier => MapTypeAlias(identifier.Value),
+            BinOpNode { Operator: "." } dotted => $"{EmitTypeReferenceNode(dotted.Left)}.{EmitTypeReferenceNode(dotted.Right)}",
+            RoundBracketsNode round when round.Nodes.Count > 0 => EmitRoundTypeReference(round),
+            SequenceNode sequence when sequence.Nodes.Count > 0 => EmitTypeReference(sequence.Nodes),
+            _ => throw new InvalidOperationException($"Unsupported type reference node: {node.GetType().Name}"),
+        };
+    }
+
+    private static string EmitRoundTypeReference(RoundBracketsNode round)
+    {
+        var root = EmitTypeReferenceNode(round.Nodes[0]);
+        if (round.Nodes.Count == 1)
+        {
+            return root;
+        }
+
+        var typeArguments = round.Nodes.Skip(1).Select(EmitTypeReferenceNode);
+        return $"{root}<{string.Join(", ", typeArguments)}>";
+    }
+
+    private static string EmitGenericTypeReference(Node root, SquareBracketsNode genericArguments)
+    {
+        var typeArguments = ParseTypeArguments(genericArguments.Nodes);
+        return $"{EmitTypeReferenceNode(root)}<{string.Join(", ", typeArguments)}>";
+    }
+
+    private static IReadOnlyList<string> ParseTypeArguments(IReadOnlyList<Node> nodes)
+    {
+        var results = new List<string>();
+        for (var i = 0; i < nodes.Count; i += 1)
+        {
+            if (i + 1 < nodes.Count && nodes[i + 1] is SquareBracketsNode genericArguments)
+            {
+                results.Add(EmitGenericTypeReference(nodes[i], genericArguments));
+                i += 1;
+                continue;
+            }
+
+            results.Add(EmitTypeReferenceNode(nodes[i]));
+        }
+
+        return results;
+    }
+
+    private static string MapTypeAlias(string value)
+    {
+        return value switch
+        {
+            "string" => "string",
+            "bool" => "bool",
+            "object" => "object",
+            "long" => "long",
+            "int" => "long",
+            "double" => "double",
+            "float" => "double",
+            "decimal" => "decimal",
+            "list" => "System.Collections.Generic.List",
+            "dictionary" => "System.Collections.Generic.Dictionary",
+            "dict" => "System.Collections.Generic.Dictionary",
+            _ => value,
+        };
+    }
+
+    private static bool CanEmitDirectExpressionStatement(Node node)
+    {
+        return node switch
+        {
+            CurlyBracketsNode => true,
+            BinOpNode { Operator: "|" } => true,
+            _ => false,
+        };
     }
 
     private static string Quote(string value) =>
