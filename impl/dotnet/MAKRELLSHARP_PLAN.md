@@ -152,6 +152,7 @@ Build a shared AST library first. It should model the same conceptual nodes alre
 Requirements:
 
 - preserve source spans on all nodes
+- support optional preservation of whitespace nodes for embedded whitespace-sensitive sublanguages such as MRML
 - support serialisation for macro runtime boundaries
 - support visitor and rewrite utilities
 - separate token stream, parse tree, and operator-parsed tree clearly
@@ -177,6 +178,7 @@ Implementation notes:
 - keep operator precedence configurable for user-defined operators
 - support Unicode identifiers/operators
 - preserve comments/trivia when helpful for tooling and docs, even if the execution path filters them
+- do not assume all Makrell# compilation paths are whitespace-insensitive; embedded DSL subtrees must be able to bypass blanket regularization
 
 Deliverables:
 
@@ -425,6 +427,7 @@ Recommended architecture:
 - `{def macro name [args] ...}`
 - stored in a macro registry
 - serialised into loadable metadata where needed
+- macro invocation must receive original AST children, including whitespace/comment nodes where relevant, so a macro can decide for itself whether it is whitespace-sensitive
 
 ### Compile-time execution
 

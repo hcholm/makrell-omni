@@ -1,0 +1,85 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{6870E0AC-E5D0-47A9-97CD-91745E21715E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MakrellSharp.Ast", "src\MakrellSharp.Ast\MakrellSharp.Ast.csproj", "{EAD9200B-2B35-4A2E-84F1-5EF5C96652C8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MakrellSharp.BaseFormat", "src\MakrellSharp.BaseFormat\MakrellSharp.BaseFormat.csproj", "{E0E98C77-0A00-423B-A8EF-CB3372D9C2BA}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{EF2C99D3-70D7-415A-909C-7B6198655347}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MakrellSharp.BaseFormat.Tests", "tests\MakrellSharp.BaseFormat.Tests\MakrellSharp.BaseFormat.Tests.csproj", "{76E75B0F-15CC-4524-A899-7C3FDF82AE94}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MakrellSharp.Mron", "src\MakrellSharp.Mron\MakrellSharp.Mron.csproj", "{D3A26B70-17D9-4D3B-86C0-C19AEEEB0E0A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MakrellSharp.Mron.Tests", "tests\MakrellSharp.Mron.Tests\MakrellSharp.Mron.Tests.csproj", "{2CA8DBB8-E09F-409E-A0C7-DC610C81EEA1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MakrellSharp.Mrml", "src\MakrellSharp.Mrml\MakrellSharp.Mrml.csproj", "{2E9ED4CF-7F80-4CA0-8C0E-49C21C1777FF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MakrellSharp.Mrml.Tests", "tests\MakrellSharp.Mrml.Tests\MakrellSharp.Mrml.Tests.csproj", "{D3A3C554-D726-4925-961C-AFC17E1D1EA6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MakrellSharp.Compiler", "src\MakrellSharp.Compiler\MakrellSharp.Compiler.csproj", "{17ECFE1C-7AAB-46E3-BB87-AEF5BA603C0B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MakrellSharp.Compiler.Tests", "tests\MakrellSharp.Compiler.Tests\MakrellSharp.Compiler.Tests.csproj", "{C1D1D213-1E1F-417E-B004-95823B6FAF18}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EAD9200B-2B35-4A2E-84F1-5EF5C96652C8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EAD9200B-2B35-4A2E-84F1-5EF5C96652C8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EAD9200B-2B35-4A2E-84F1-5EF5C96652C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EAD9200B-2B35-4A2E-84F1-5EF5C96652C8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E0E98C77-0A00-423B-A8EF-CB3372D9C2BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E0E98C77-0A00-423B-A8EF-CB3372D9C2BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E0E98C77-0A00-423B-A8EF-CB3372D9C2BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E0E98C77-0A00-423B-A8EF-CB3372D9C2BA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{76E75B0F-15CC-4524-A899-7C3FDF82AE94}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{76E75B0F-15CC-4524-A899-7C3FDF82AE94}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{76E75B0F-15CC-4524-A899-7C3FDF82AE94}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{76E75B0F-15CC-4524-A899-7C3FDF82AE94}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D3A26B70-17D9-4D3B-86C0-C19AEEEB0E0A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D3A26B70-17D9-4D3B-86C0-C19AEEEB0E0A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D3A26B70-17D9-4D3B-86C0-C19AEEEB0E0A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D3A26B70-17D9-4D3B-86C0-C19AEEEB0E0A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2CA8DBB8-E09F-409E-A0C7-DC610C81EEA1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2CA8DBB8-E09F-409E-A0C7-DC610C81EEA1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2CA8DBB8-E09F-409E-A0C7-DC610C81EEA1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2CA8DBB8-E09F-409E-A0C7-DC610C81EEA1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2E9ED4CF-7F80-4CA0-8C0E-49C21C1777FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2E9ED4CF-7F80-4CA0-8C0E-49C21C1777FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2E9ED4CF-7F80-4CA0-8C0E-49C21C1777FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2E9ED4CF-7F80-4CA0-8C0E-49C21C1777FF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D3A3C554-D726-4925-961C-AFC17E1D1EA6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D3A3C554-D726-4925-961C-AFC17E1D1EA6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D3A3C554-D726-4925-961C-AFC17E1D1EA6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D3A3C554-D726-4925-961C-AFC17E1D1EA6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{17ECFE1C-7AAB-46E3-BB87-AEF5BA603C0B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{17ECFE1C-7AAB-46E3-BB87-AEF5BA603C0B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{17ECFE1C-7AAB-46E3-BB87-AEF5BA603C0B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{17ECFE1C-7AAB-46E3-BB87-AEF5BA603C0B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C1D1D213-1E1F-417E-B004-95823B6FAF18}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C1D1D213-1E1F-417E-B004-95823B6FAF18}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C1D1D213-1E1F-417E-B004-95823B6FAF18}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C1D1D213-1E1F-417E-B004-95823B6FAF18}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{EAD9200B-2B35-4A2E-84F1-5EF5C96652C8} = {6870E0AC-E5D0-47A9-97CD-91745E21715E}
+		{E0E98C77-0A00-423B-A8EF-CB3372D9C2BA} = {6870E0AC-E5D0-47A9-97CD-91745E21715E}
+		{76E75B0F-15CC-4524-A899-7C3FDF82AE94} = {EF2C99D3-70D7-415A-909C-7B6198655347}
+		{D3A26B70-17D9-4D3B-86C0-C19AEEEB0E0A} = {6870E0AC-E5D0-47A9-97CD-91745E21715E}
+		{2CA8DBB8-E09F-409E-A0C7-DC610C81EEA1} = {EF2C99D3-70D7-415A-909C-7B6198655347}
+		{2E9ED4CF-7F80-4CA0-8C0E-49C21C1777FF} = {6870E0AC-E5D0-47A9-97CD-91745E21715E}
+		{D3A3C554-D726-4925-961C-AFC17E1D1EA6} = {EF2C99D3-70D7-415A-909C-7B6198655347}
+		{17ECFE1C-7AAB-46E3-BB87-AEF5BA603C0B} = {6870E0AC-E5D0-47A9-97CD-91745E21715E}
+		{C1D1D213-1E1F-417E-B004-95823B6FAF18} = {EF2C99D3-70D7-415A-909C-7B6198655347}
+	EndGlobalSection
+EndGlobal

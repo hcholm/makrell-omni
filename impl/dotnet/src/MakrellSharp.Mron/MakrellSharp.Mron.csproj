@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MakrellSharp.Ast\MakrellSharp.Ast.csproj" />
+    <ProjectReference Include="..\MakrellSharp.BaseFormat\MakrellSharp.BaseFormat.csproj" />
+  </ItemGroup>
+
+</Project>
