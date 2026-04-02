@@ -121,7 +121,8 @@ Current implemented interop includes:
 - generic CLR method calls via `head@(types...)` in call position
 - writable property assignment
 - index access and assignment for CLR types with indexers
-- basic constructor and instance-method overload coercion for common scalar values
+- basic constructor and method overload coercion for common scalar values
+- adaptation of Makrell functions to CLR delegate parameters where signatures are compatible
 
 Examples:
 
@@ -147,6 +148,12 @@ empty.Length
 {import System.Linq}
 repeated = {Enumerable.Repeat@(string) "ha" 3}
 {String.Join "" repeated}
+```
+
+```makrell
+items = {new (list string) ["mak" "rell"]}
+upper = {items.ConvertAll@(string) {fun [x] {x.ToUpperInvariant}}}
+{String.Join "" upper}
 ```
 
 ## 9. Type Reference Forms

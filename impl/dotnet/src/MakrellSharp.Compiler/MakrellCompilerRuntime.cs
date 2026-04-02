@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Reflection;
 using System.Collections;
+using System.Linq.Expressions;
 
 namespace MakrellSharp.Compiler;
 
@@ -447,6 +448,17 @@ public static class MakrellCompilerRuntime
             return true;
         }
 
+        if (typeof(Delegate).IsAssignableFrom(targetType) && value is Delegate sourceDelegate)
+        {
+            if (!TryConvertDelegate(sourceDelegate, targetType, out converted))
+            {
+                return false;
+            }
+
+            score += 2;
+            return true;
+        }
+
         if (targetType.IsArray && value is object?[] objectArray)
         {
             var elementType = targetType.GetElementType()
@@ -587,6 +599,66 @@ public static class MakrellCompilerRuntime
         }
 
         return Convert.ChangeType(value, targetType, CultureInfo.InvariantCulture);
+    }
+
+    private static bool TryConvertDelegate(Delegate sourceDelegate, Type targetType, out object? converted)
+    {
+        converted = null;
+
+        var invokeMethod = targetType.GetMethod("Invoke");
+        if (invokeMethod is null)
+        {
+            return false;
+        }
+
+        var parameters = invokeMethod
+            .GetParameters()
+            .Select(parameter => Expression.Parameter(parameter.ParameterType, parameter.Name))
+            .ToArray();
+
+        var boxedArguments = Expression.NewArrayInit(
+            typeof(object),
+            parameters.Select(parameter => Expression.Convert(parameter, typeof(object))));
+
+        var dynamicInvoke = Expression.Call(
+            Expression.Constant(sourceDelegate),
+            typeof(Delegate).GetMethod(nameof(Delegate.DynamicInvoke), [typeof(object[])])
+                ?? throw new InvalidOperationException("Delegate.DynamicInvoke overload not found."),
+            boxedArguments);
+
+        Expression body;
+        if (invokeMethod.ReturnType == typeof(void))
+        {
+            body = Expression.Block(dynamicInvoke, Expression.Empty());
+        }
+        else
+        {
+            body = Expression.Convert(
+                Expression.Call(
+                    typeof(MakrellCompilerRuntime),
+                    nameof(ConvertDelegateReturn),
+                    Type.EmptyTypes,
+                    dynamicInvoke,
+                    Expression.Constant(invokeMethod.ReturnType, typeof(Type))),
+                invokeMethod.ReturnType);
+        }
+
+        converted = Expression.Lambda(targetType, body, parameters).Compile();
+        return true;
+    }
+
+    private static object? ConvertDelegateReturn(object? value, Type targetType)
+    {
+        ArgumentNullException.ThrowIfNull(targetType);
+
+        if (value is null)
+        {
+            return null;
+        }
+
+        return targetType.IsInstanceOfType(value)
+            ? value
+            : ConvertValue(value, targetType);
     }
 
     private static bool TryBindGenericMethod(

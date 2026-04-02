@@ -46,7 +46,8 @@ Implemented so far:
 - Makrell-defined macros with original whitespace-preserving nodes
 - dynamic compile/load with replayable `importm` metadata
 - first-pass .NET interop through `import`, `new`, member calls, generic member calls, property assignment, and index assignment
-- basic constructor and instance-method overload coercion for common scalar CLR arguments
+- basic constructor and method overload coercion for common scalar CLR arguments
+- adaptation of Makrell functions to CLR delegate parameters for common interop calls
 
 Not implemented yet:
 
@@ -96,6 +97,12 @@ empty.Length
 {import System.Linq}
 repeated = {Enumerable.Repeat@(string) "ha" 3}
 {String.Join "" repeated}
+```
+
+```makrell
+items = {new (list string) ["mak" "rell"]}
+upper = {items.ConvertAll@(string) {fun [x] {x.ToUpperInvariant}}}
+{String.Join "" upper}
 ```
 
 ```makrell

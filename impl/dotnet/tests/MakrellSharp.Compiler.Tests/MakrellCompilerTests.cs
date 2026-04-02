@@ -235,6 +235,19 @@ public sealed class MakrellCompilerTests
     }
 
     [Fact]
+    public void Run_CallsGenericInstanceClrMethods_WithMakrellFunctionDelegate()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            items = {new (list string) ["mak" "rell"]}
+            upper = {items.ConvertAll@(string) {fun [x] {x.ToUpperInvariant}}}
+            {String.Join "" upper}
+            """);
+
+        Assert.Equal("MAKRELL", result);
+    }
+
+    [Fact]
     public void Run_CoercesMakrellIntegers_ForStaticClrMethodOverloads()
     {
         var result = MakrellCompiler.Run(
