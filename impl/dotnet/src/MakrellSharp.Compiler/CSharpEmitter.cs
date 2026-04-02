@@ -7,19 +7,23 @@ internal static class CSharpEmitter
 {
     public static string EmitModule(IReadOnlyList<Node> nodes)
     {
+        var module = ExtractModuleImports(nodes);
         var state = new EmitterState();
-        var body = EmitBlock(nodes, state, autoReturn: true, indentLevel: 2);
+        var body = EmitBlock(module.BodyNodes, state, autoReturn: true, indentLevel: 2);
+        var usingDirectives = string.Join(
+            Environment.NewLine,
+            new[] { "using System;" }.Concat(module.UsingDirectives.Distinct(StringComparer.Ordinal)));
 
-        return
+        return usingDirectives +
+            Environment.NewLine +
+            Environment.NewLine +
             """
-            using System;
-
             public static class __MakrellModule
             {
                 public static dynamic Run()
                 {
-            """
-            + body +
+            """ +
+            body +
             """
                 }
             }
@@ -54,6 +58,11 @@ internal static class CSharpEmitter
             return functionStatement;
         }
 
+        if (TryEmitStatementForm(node, state, isLast, indentLevel, out var statementForm))
+        {
+            return statementForm;
+        }
+
         if (node is BinOpNode { Operator: "=" } assignment && assignment.Left is IdentifierNode identifier)
         {
             var rhs = EmitExpression(assignment.Right, state);
@@ -65,18 +74,35 @@ internal static class CSharpEmitter
                 : assign;
         }
 
-        if (node is CurlyBracketsNode curly
-            && curly.Nodes.Count > 0
-            && curly.Nodes[0] is IdentifierNode { Value: "return" })
-        {
-            var value = curly.Nodes.Count > 1 ? EmitExpression(curly.Nodes[1], state) : "null";
-            return $"{Indent(indentLevel)}return {value};";
-        }
-
         var expr = EmitExpression(node, state);
         return isLast
             ? $"{Indent(indentLevel)}return {expr};"
             : $"{Indent(indentLevel)}_ = {expr};";
+    }
+
+    private static bool TryEmitStatementForm(Node node, EmitterState state, bool isLast, int indentLevel, out string result)
+    {
+        result = string.Empty;
+
+        if (node is not CurlyBracketsNode curly
+            || curly.Nodes.Count == 0
+            || curly.Nodes[0] is not IdentifierNode head)
+        {
+            return false;
+        }
+
+        result = head.Value switch
+        {
+            "import" => throw new InvalidOperationException("Import forms are currently supported only at module scope."),
+            "importm" => throw new NotSupportedException("importm is not implemented yet in Makrell#."),
+            "return" => EmitReturnStatement(curly, state, indentLevel),
+            "when" => EmitWhenStatement(curly, state, isLast, indentLevel),
+            "while" => EmitWhileStatement(curly, state, isLast, indentLevel),
+            "for" => EmitForStatement(curly, state, isLast, indentLevel),
+            _ => string.Empty,
+        };
+
+        return result.Length > 0;
     }
 
     private static bool TryEmitNamedFunction(Node node, EmitterState state, bool isLast, int indentLevel, out string result)
@@ -127,6 +153,12 @@ internal static class CSharpEmitter
     private static string EmitLambdaBody(IReadOnlyList<Node> bodyNodes, EmitterState state, int indentLevel)
     {
         return EmitBlock(bodyNodes, state, autoReturn: true, indentLevel);
+    }
+
+    private static string EmitReturnStatement(CurlyBracketsNode curly, EmitterState state, int indentLevel)
+    {
+        var value = curly.Nodes.Count > 1 ? EmitExpression(curly.Nodes[1], state) : "null";
+        return $"{Indent(indentLevel)}return {value};";
     }
 
     private static string EmitExpression(Node node, EmitterState state)
@@ -180,6 +212,7 @@ internal static class CSharpEmitter
                 "do" => EmitDo(curly.Nodes.Skip(1).ToArray(), state),
                 "fun" => EmitAnonymousFunction(curly, state),
                 "new" => EmitNew(curly, state),
+                "quote" => EmitQuote(curly.Nodes.Skip(1).ToArray(), state),
                 _ => EmitCall(curly, state),
             };
         }
@@ -268,11 +301,122 @@ internal static class CSharpEmitter
         return $"new {typeExpression}({args})";
     }
 
+    private static string EmitQuote(
+        IReadOnlyList<Node> nodes,
+        EmitterState state,
+        int quoteDepth = 0,
+        bool allowSpecialForms = true)
+    {
+        return nodes.Count switch
+        {
+            0 => EmitQuotedNode(new IdentifierNode("null", SourceSpan.Empty), state, quoteDepth, allowSpecialForms),
+            1 => EmitQuotedNode(nodes[0], state, quoteDepth, allowSpecialForms),
+            _ => $"new object?[] {{ {string.Join(", ", nodes.Select(node => EmitQuotedNode(node, state, quoteDepth, allowSpecialForms)))} }}",
+        };
+    }
+
     private static string EmitCall(CurlyBracketsNode curly, EmitterState state)
     {
         var callee = EmitExpression(curly.Nodes[0], state);
         var args = string.Join(", ", curly.Nodes.Skip(1).Select(arg => EmitExpression(arg, state)));
         return $"{callee}({args})";
+    }
+
+    private static string EmitQuotedNode(
+        Node node,
+        EmitterState state,
+        int quoteDepth = 0,
+        bool allowSpecialForms = true)
+    {
+        if (allowSpecialForms && node is CurlyBracketsNode specialCurly)
+        {
+            if (IsUnquoteHead(specialCurly))
+            {
+                return quoteDepth > 0
+                    ? EmitQuotedNode(specialCurly, state, quoteDepth, allowSpecialForms: false)
+                    : EmitUnquote(specialCurly, state);
+            }
+
+            if (IsQuoteHead(specialCurly))
+            {
+                return EmitQuote(specialCurly.Nodes.Skip(1).ToArray(), state, quoteDepth + 1, allowSpecialForms);
+            }
+        }
+
+        return node switch
+        {
+            IdentifierNode identifier => $"new global::MakrellSharp.Ast.IdentifierNode({Quote(identifier.Value)}, global::MakrellSharp.Ast.SourceSpan.Empty)",
+            StringNode str => $"new global::MakrellSharp.Ast.StringNode({Quote(str.Value)}, {Quote(str.Suffix)}, global::MakrellSharp.Ast.SourceSpan.Empty)",
+            NumberNode number => $"new global::MakrellSharp.Ast.NumberNode({Quote(number.Value)}, {Quote(number.Suffix)}, global::MakrellSharp.Ast.SourceSpan.Empty)",
+            OperatorNode op => $"new global::MakrellSharp.Ast.OperatorNode({Quote(op.Value)}, global::MakrellSharp.Ast.SourceSpan.Empty)",
+            CommentNode comment => $"new global::MakrellSharp.Ast.CommentNode({Quote(comment.Value)}, global::MakrellSharp.Ast.SourceSpan.Empty)",
+            WhitespaceNode whitespace => $"new global::MakrellSharp.Ast.WhitespaceNode({Quote(whitespace.Value)}, global::MakrellSharp.Ast.SourceSpan.Empty)",
+            UnknownNode unknown => $"new global::MakrellSharp.Ast.UnknownNode({Quote(unknown.Value)}, global::MakrellSharp.Ast.SourceSpan.Empty)",
+            BinOpNode binOp => $"new global::MakrellSharp.Ast.BinOpNode({EmitQuotedNode(binOp.Left, state, quoteDepth, allowSpecialForms)}, {Quote(binOp.Operator)}, {EmitQuotedNode(binOp.Right, state, quoteDepth, allowSpecialForms)}, global::MakrellSharp.Ast.SourceSpan.Empty)",
+            SequenceNode sequence => EmitQuotedSequence(
+                "SequenceNode",
+                sequence.Nodes,
+                sequence.OriginalNodes.Count > 0 ? sequence.OriginalNodes : sequence.Nodes,
+                state,
+                quoteDepth,
+                allowSpecialForms),
+            RoundBracketsNode round => EmitQuotedSequence(
+                "RoundBracketsNode",
+                round.Nodes,
+                round.OriginalNodes.Count > 0 ? round.OriginalNodes : round.Nodes,
+                state,
+                quoteDepth,
+                allowSpecialForms),
+            SquareBracketsNode square => EmitQuotedSequence(
+                "SquareBracketsNode",
+                square.Nodes,
+                square.OriginalNodes.Count > 0 ? square.OriginalNodes : square.Nodes,
+                state,
+                quoteDepth,
+                allowSpecialForms),
+            CurlyBracketsNode curly => EmitQuotedSequence(
+                "CurlyBracketsNode",
+                curly.Nodes,
+                curly.OriginalNodes.Count > 0 ? curly.OriginalNodes : curly.Nodes,
+                state,
+                quoteDepth,
+                allowSpecialForms),
+            _ => throw new InvalidOperationException($"Unsupported quoted node: {node.GetType().Name}"),
+        };
+    }
+
+    private static string EmitQuotedSequence(
+        string typeName,
+        IReadOnlyList<Node> nodes,
+        IReadOnlyList<Node> originalNodes,
+        EmitterState state,
+        int quoteDepth,
+        bool allowSpecialForms)
+    {
+        var quotedNodes = $"new global::MakrellSharp.Ast.Node[] {{ {string.Join(", ", nodes.Select(node => EmitQuotedNode(node, state, quoteDepth, allowSpecialForms)))} }}";
+        var quotedOriginalNodes = $"new global::MakrellSharp.Ast.Node[] {{ {string.Join(", ", originalNodes.Select(node => EmitQuotedNode(node, state, quoteDepth, allowSpecialForms)))} }}";
+        return $"new global::MakrellSharp.Ast.{typeName}({quotedNodes}, {quotedOriginalNodes}, global::MakrellSharp.Ast.SourceSpan.Empty)";
+    }
+
+    private static bool IsQuoteHead(CurlyBracketsNode curly) =>
+        curly.Nodes.Count > 0 && curly.Nodes[0] is IdentifierNode { Value: "quote" };
+
+    private static bool IsUnquoteHead(CurlyBracketsNode curly) =>
+        curly.Nodes.Count > 0 && curly.Nodes[0] is IdentifierNode { Value: "unquote" or "$" };
+
+    private static string EmitUnquote(CurlyBracketsNode curly, EmitterState state)
+    {
+        if (curly.Nodes.Count <= 1)
+        {
+            return EmitQuotedNode(new IdentifierNode("null", SourceSpan.Empty), state);
+        }
+
+        if (curly.Nodes.Count == 2)
+        {
+            return EmitExpression(curly.Nodes[1], state);
+        }
+
+        return $"new object?[] {{ {string.Join(", ", curly.Nodes.Skip(1).Select(node => EmitExpression(node, state)))} }}";
     }
 
     private static string EmitBinOp(BinOpNode binOp, EmitterState state)
@@ -335,6 +479,191 @@ internal static class CSharpEmitter
         return $"({funcType})(({parameterList}) => {body})";
     }
 
+    private static string EmitWhenStatement(CurlyBracketsNode curly, EmitterState state, bool isLast, int indentLevel)
+    {
+        if (curly.Nodes.Count < 2)
+        {
+            throw new InvalidOperationException("When form must be {when condition ...}.");
+        }
+
+        var condition = EmitExpression(curly.Nodes[1], state);
+        var bodyState = state.Fork();
+        var body = EmitBlock(curly.Nodes.Skip(2).ToArray(), bodyState, autoReturn: false, indentLevel + 1);
+        var builder = new StringBuilder();
+        builder.Append($"{Indent(indentLevel)}if ({condition})");
+        builder.AppendLine();
+        builder.Append($"{Indent(indentLevel)}{{");
+        builder.AppendLine();
+        builder.Append(body);
+        builder.Append($"{Indent(indentLevel)}}}");
+        if (isLast)
+        {
+            builder.AppendLine();
+            builder.Append($"{Indent(indentLevel)}return null;");
+        }
+
+        return builder.ToString();
+    }
+
+    private static string EmitWhileStatement(CurlyBracketsNode curly, EmitterState state, bool isLast, int indentLevel)
+    {
+        if (curly.Nodes.Count < 2)
+        {
+            throw new InvalidOperationException("While form must be {while condition ...}.");
+        }
+
+        var condition = EmitExpression(curly.Nodes[1], state);
+        var bodyState = state.Fork();
+        var body = EmitBlock(curly.Nodes.Skip(2).ToArray(), bodyState, autoReturn: false, indentLevel + 1);
+        var builder = new StringBuilder();
+        builder.Append($"{Indent(indentLevel)}while ({condition})");
+        builder.AppendLine();
+        builder.Append($"{Indent(indentLevel)}{{");
+        builder.AppendLine();
+        builder.Append(body);
+        builder.Append($"{Indent(indentLevel)}}}");
+        if (isLast)
+        {
+            builder.AppendLine();
+            builder.Append($"{Indent(indentLevel)}return null;");
+        }
+
+        return builder.ToString();
+    }
+
+    private static string EmitForStatement(CurlyBracketsNode curly, EmitterState state, bool isLast, int indentLevel)
+    {
+        if (curly.Nodes.Count < 3 || curly.Nodes[1] is not IdentifierNode loopVariable)
+        {
+            throw new InvalidOperationException("For form must be {for item iterable ...}.");
+        }
+
+        var iterable = EmitExpression(curly.Nodes[2], state);
+        var bodyState = state.Fork();
+        bodyState.Declare(loopVariable.Value);
+        var body = EmitBlock(curly.Nodes.Skip(3).ToArray(), bodyState, autoReturn: false, indentLevel + 1);
+        var builder = new StringBuilder();
+        builder.Append($"{Indent(indentLevel)}foreach (dynamic {loopVariable.Value} in {iterable})");
+        builder.AppendLine();
+        builder.Append($"{Indent(indentLevel)}{{");
+        builder.AppendLine();
+        builder.Append(body);
+        builder.Append($"{Indent(indentLevel)}}}");
+        if (isLast)
+        {
+            builder.AppendLine();
+            builder.Append($"{Indent(indentLevel)}return null;");
+        }
+
+        return builder.ToString();
+    }
+
+    private static ModuleImports ExtractModuleImports(IReadOnlyList<Node> nodes)
+    {
+        var usingDirectives = new List<string>();
+        var bodyNodes = new List<Node>();
+
+        foreach (var node in nodes)
+        {
+            if (TryExtractImportDirectives(node, usingDirectives))
+            {
+                continue;
+            }
+
+            bodyNodes.Add(node);
+        }
+
+        return new ModuleImports(usingDirectives, bodyNodes);
+    }
+
+    private static bool TryExtractImportDirectives(Node node, List<string> usingDirectives)
+    {
+        if (node is not CurlyBracketsNode curly
+            || curly.Nodes.Count < 2
+            || curly.Nodes[0] is not IdentifierNode head)
+        {
+            return false;
+        }
+
+        if (head.Value == "importm")
+        {
+            throw new NotSupportedException("importm is not implemented yet in Makrell#.");
+        }
+
+        if (head.Value != "import")
+        {
+            return false;
+        }
+
+        foreach (var part in curly.Nodes.Skip(1))
+        {
+            AppendImportDirective(part, usingDirectives);
+        }
+
+        return true;
+    }
+
+    private static void AppendImportDirective(Node node, List<string> usingDirectives)
+    {
+        if (node is BinOpNode { Operator: "@" } importFrom)
+        {
+            var source = GetDottedPath(importFrom.Left);
+            if (importFrom.Right is not SquareBracketsNode importedNames)
+            {
+                throw new InvalidOperationException("Import selection must use square brackets.");
+            }
+
+            foreach (var imported in importedNames.Nodes)
+            {
+                var name = imported as IdentifierNode
+                    ?? throw new InvalidOperationException("Selected import names must be identifiers.");
+                usingDirectives.Add($"using {name.Value} = global::{source}.{name.Value};");
+            }
+
+            return;
+        }
+
+        var path = GetDottedPath(node);
+        var resolvedType = ResolveType(path);
+        if (resolvedType is not null)
+        {
+            usingDirectives.Add($"using {resolvedType.Name} = global::{path};");
+            return;
+        }
+
+        usingDirectives.Add($"using {path};");
+    }
+
+    private static string GetDottedPath(Node node)
+    {
+        return node switch
+        {
+            IdentifierNode identifier => identifier.Value,
+            BinOpNode { Operator: "." } dotted => $"{GetDottedPath(dotted.Left)}.{GetDottedPath(dotted.Right)}",
+            _ => throw new InvalidOperationException("Import path must be an identifier or dotted identifier."),
+        };
+    }
+
+    private static Type? ResolveType(string fullName)
+    {
+        var resolved = Type.GetType(fullName, throwOnError: false);
+        if (resolved is not null)
+        {
+            return resolved;
+        }
+
+        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+        {
+            resolved = assembly.GetType(fullName, throwOnError: false);
+            if (resolved is not null)
+            {
+                return resolved;
+            }
+        }
+
+        return null;
+    }
+
     private static string GetFuncType(int parameterCount)
     {
         if (parameterCount > 16)
@@ -368,4 +697,8 @@ internal static class CSharpEmitter
             return fork;
         }
     }
+
+    private sealed record ModuleImports(
+        IReadOnlyList<string> UsingDirectives,
+        IReadOnlyList<Node> BodyNodes);
 }

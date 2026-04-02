@@ -10,7 +10,8 @@ public static class MakrellCompiler
         options ??= new MakrellCompilerOptions();
 
         var structured = BaseFormatParser.ParseStructure(source);
-        var expanded = new MacroExpander(options.Macros).Expand(structured);
+        var metaProcessed = new MetaProcessor(options.Macros).Process(structured);
+        var expanded = new MacroExpander(options.Macros).Expand(metaProcessed);
         var parsed = BaseFormatParser.ParseOperators(expanded);
         var csharp = CSharpEmitter.EmitModule(parsed);
         return new MakrellCompilationResult(csharp);
