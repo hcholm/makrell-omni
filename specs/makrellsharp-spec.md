@@ -47,6 +47,8 @@ Functions and `do` blocks return the value of their final expression unless an e
 
 The following reserved forms are currently implemented in Makrell#:
 - `{if ...}`
+- `{match value pattern}` short-form boolean match
+- `{match value pattern result ...}` match expression
 - `{when ...}`
 - `{while ...}`
 - `{for item iterable ...}`
@@ -71,6 +73,7 @@ Makrell# currently implements:
 - `@` indexing
 - `.` member access
 - `=` assignment
+- `~=` / `!~=` pattern match / negated pattern match
 
 Operator semantics:
 - `a | f` rewrites to `{f a}`
@@ -79,6 +82,72 @@ Operator semantics:
 - `x = y` assigns to identifiers
 - `x.y = z` assigns to writable CLR members/properties
 - `x @ i = z` assigns through runtime index support
+
+## 6.1 Pattern Matching
+
+Makrell# now includes an initial pattern-matching slice.
+
+Implemented forms:
+- wildcard `_`
+- literal number, string, boolean, and null patterns
+- alternation with `|`
+- fixed-length list/array patterns such as `[_ _]`
+- type patterns of the form `_:Type`
+- `$type` constructor patterns with type-only, positional tuple/sequence, and keyword member matching
+- self truthiness pattern `$`
+- composite patterns with `&`
+- self-based predicate patterns such as `$ < 3`
+- short-form boolean matching: `{match value pattern}`
+- expression matching with pattern/result pairs
+- binary operator forms `value ~= pattern` and `value !~= pattern`
+
+Examples:
+
+```makrell
+{match 3
+    2
+        "two"
+    3
+        "three"
+    _
+        "other"}
+```
+
+```makrell
+{match [2 3]
+    []
+        "empty"
+    [_]
+        "one"
+    [_ _]
+        "two"}
+```
+
+```makrell
+[2 3] ~= [_ _]
+```
+
+```makrell
+{match 2
+    _:string & $ < 3
+        "string"
+    _:int & $ < 3
+        "int"
+    _
+        "other"}
+```
+
+```makrell
+date = {new System.DateTime [2024 6 7]}
+{match date
+    {$type System.DateTime [Year=2024 Month=6 Day=7]}
+        "date"
+    _
+        "other"}
+```
+
+This is intentionally only a first slice of MakrellPy-style pattern matching.
+The current Makrell# implementation does not yet include user-defined patterns, `$r` regular patterns, binding patterns, or full MakrellPy pattern parity.
 
 ## 7. Quote, Meta, and Macros
 
@@ -228,7 +297,7 @@ MRON executable embeds and MRML executable embeds are reserved for future work a
 The following are not yet fully specified or implemented:
 - full MakrellPy parity
 - user-defined operators
-- pattern matching
+- advanced MakrellPy pattern-matching parity
 - CLI build/test/repl workflow parity
 - direct IL backend
 - full overload-resolution and generic-method ergonomics for CLR interop

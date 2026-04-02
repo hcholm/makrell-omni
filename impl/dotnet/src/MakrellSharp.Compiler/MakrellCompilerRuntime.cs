@@ -2,11 +2,38 @@ using System.Globalization;
 using System.Reflection;
 using System.Collections;
 using System.Linq.Expressions;
+using MakrellSharp.Ast;
 
 namespace MakrellSharp.Compiler;
 
 public static class MakrellCompilerRuntime
 {
+    public static bool PatternMatches(object? value, Node pattern)
+    {
+        ArgumentNullException.ThrowIfNull(pattern);
+
+        try
+        {
+            return pattern switch
+            {
+                IdentifierNode identifier => MatchIdentifierPattern(value, identifier.Value),
+                NumberNode number => ValuesEqual(value, NumberLiteral(number.Value, number.Suffix)),
+                StringNode str => ValuesEqual(value, StringLiteral(str.Value, str.Suffix)),
+                SquareBracketsNode square => MatchListPattern(value, square),
+                CurlyBracketsNode curly when IsTypeConstructorPattern(curly) => MatchTypeConstructorPattern(value, curly),
+                BinOpNode { Operator: "|" } orPattern => PatternMatches(value, orPattern.Left) || PatternMatches(value, orPattern.Right),
+                BinOpNode { Operator: "&" } andPattern => PatternMatches(value, andPattern.Left) && PatternMatches(value, andPattern.Right),
+                BinOpNode { Operator: ":" } typePattern => PatternMatches(value, typePattern.Left) && MatchesTypePattern(value, typePattern.Right),
+                BinOpNode binOp when ContainsSelfReference(binOp) => IsTruthy(EvaluatePatternExpression(binOp, value)),
+                _ => false,
+            };
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
     public static object? NumberLiteral(string value, string suffix)
     {
         if (string.IsNullOrEmpty(suffix))
@@ -661,6 +688,527 @@ public static class MakrellCompilerRuntime
             : ConvertValue(value, targetType);
     }
 
+    private static bool MatchIdentifierPattern(object? value, string pattern)
+    {
+        return pattern switch
+        {
+            "_" => true,
+            "$" => IsTruthy(value),
+            "true" => value is true,
+            "false" => value is false,
+            "null" => value is null,
+            _ => ValuesEqual(value, pattern),
+        };
+    }
+
+    private static bool MatchListPattern(object? value, SquareBracketsNode pattern)
+    {
+        if (!TryGetSequenceItems(value, out var items))
+        {
+            return false;
+        }
+
+        if (items.Count != pattern.Nodes.Count)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < pattern.Nodes.Count; i += 1)
+        {
+            if (!PatternMatches(items[i], pattern.Nodes[i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool IsTypeConstructorPattern(CurlyBracketsNode pattern)
+    {
+        return pattern.Nodes.Count > 0
+            && pattern.Nodes[0] is IdentifierNode { Value: "$type" };
+    }
+
+    private static bool MatchTypeConstructorPattern(object? value, CurlyBracketsNode pattern)
+    {
+        if (value is null || pattern.Nodes.Count < 2)
+        {
+            return false;
+        }
+
+        if (!MatchesTypePattern(value, pattern.Nodes[1]))
+        {
+            return false;
+        }
+
+        SquareBracketsNode? positionalBlock = null;
+        var keywordPatterns = new List<BinOpNode>();
+
+        foreach (var extra in pattern.Nodes.Skip(2))
+        {
+            if (extra is not SquareBracketsNode block)
+            {
+                return false;
+            }
+
+            if (block.Nodes.Count == 0)
+            {
+                continue;
+            }
+
+            var allKeyword = block.Nodes.All(node => node is BinOpNode { Operator: "=" } assignment && assignment.Left is IdentifierNode);
+            var anyKeyword = block.Nodes.Any(node => node is BinOpNode { Operator: "=" });
+
+            if (anyKeyword && !allKeyword)
+            {
+                return false;
+            }
+
+            if (allKeyword)
+            {
+                keywordPatterns.AddRange(block.Nodes.Cast<BinOpNode>());
+                continue;
+            }
+
+            if (positionalBlock is not null)
+            {
+                return false;
+            }
+
+            positionalBlock = block;
+        }
+
+        if (positionalBlock is not null && !MatchPositionalTypePattern(value, positionalBlock))
+        {
+            return false;
+        }
+
+        foreach (var keywordPattern in keywordPatterns)
+        {
+            if (keywordPattern.Left is not IdentifierNode memberName)
+            {
+                return false;
+            }
+
+            var memberValue = GetMemberValue(value, memberName.Value);
+            if (!PatternMatches(memberValue, keywordPattern.Right))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool MatchPositionalTypePattern(object value, SquareBracketsNode positionalBlock)
+    {
+        if (!TryGetPositionalItems(value, out var items))
+        {
+            return false;
+        }
+
+        if (items.Count != positionalBlock.Nodes.Count)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < items.Count; i += 1)
+        {
+            if (!PatternMatches(items[i], positionalBlock.Nodes[i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool TryGetSequenceItems(object? value, out IReadOnlyList<object?> items)
+    {
+        switch (value)
+        {
+            case null:
+                items = Array.Empty<object?>();
+                return false;
+            case string:
+                items = Array.Empty<object?>();
+                return false;
+            case Array array:
+            {
+                var arrayItems = new object?[array.Length];
+                for (var i = 0; i < array.Length; i += 1)
+                {
+                    arrayItems[i] = array.GetValue(i);
+                }
+
+                items = arrayItems;
+                return true;
+            }
+            case IList list:
+            {
+                var listItems = new object?[list.Count];
+                for (var i = 0; i < list.Count; i += 1)
+                {
+                    listItems[i] = list[i];
+                }
+
+                items = listItems;
+                return true;
+            }
+            default:
+                items = Array.Empty<object?>();
+                return false;
+        }
+    }
+
+    private static bool TryGetPositionalItems(object value, out IReadOnlyList<object?> items)
+    {
+        if (TryGetSequenceItems(value, out items))
+        {
+            return true;
+        }
+
+        var tupleInterface = value.GetType()
+            .GetInterfaces()
+            .FirstOrDefault(type => type.FullName == "System.Runtime.CompilerServices.ITuple");
+
+        if (tupleInterface is null)
+        {
+            items = Array.Empty<object?>();
+            return false;
+        }
+
+        var lengthProperty = tupleInterface.GetProperty("Length");
+        var itemProperty = tupleInterface.GetProperty("Item");
+        if (lengthProperty is null || itemProperty is null)
+        {
+            items = Array.Empty<object?>();
+            return false;
+        }
+
+        var length = Convert.ToInt32(lengthProperty.GetValue(value), CultureInfo.InvariantCulture);
+        var tupleItems = new object?[length];
+        for (var i = 0; i < length; i += 1)
+        {
+            tupleItems[i] = itemProperty.GetValue(value, [i]);
+        }
+
+        items = tupleItems;
+        return true;
+    }
+
+    private static bool MatchesTypePattern(object? value, Node typeNode)
+    {
+        if (value is null)
+        {
+            return false;
+        }
+
+        var expectedName = NodeToDottedName(typeNode);
+        if (expectedName is null)
+        {
+            return false;
+        }
+
+        if (MatchesBuiltinTypeAlias(value, expectedName))
+        {
+            return true;
+        }
+
+        var normalized = NormalizeTypeAlias(expectedName);
+        var valueType = value.GetType();
+        return valueType
+            .GetInterfaces()
+            .Concat(GetTypeLineage(valueType))
+            .Any(candidate => TypeNameMatches(candidate, normalized));
+    }
+
+    private static IEnumerable<Type> GetTypeLineage(Type type)
+    {
+        for (var current = type; current is not null; current = current.BaseType)
+        {
+            yield return current;
+        }
+    }
+
+    private static bool TypeNameMatches(Type candidate, string expectedName)
+    {
+        var candidateNames = new[]
+        {
+            candidate.Name,
+            candidate.FullName,
+            candidate.GetGenericTypeDefinitionOrSelf().Name,
+            candidate.GetGenericTypeDefinitionOrSelf().FullName,
+        };
+
+        return candidateNames.Any(name => string.Equals(NormalizeClrTypeName(name), expectedName, StringComparison.Ordinal));
+    }
+
+    private static string? NodeToDottedName(Node node)
+    {
+        return node switch
+        {
+            IdentifierNode identifier => identifier.Value,
+            BinOpNode { Operator: "." } dotted => CombineDottedName(NodeToDottedName(dotted.Left), NodeToDottedName(dotted.Right)),
+            _ => null,
+        };
+    }
+
+    private static string? CombineDottedName(string? left, string? right)
+    {
+        return left is null || right is null ? null : $"{left}.{right}";
+    }
+
+    private static bool ContainsSelfReference(Node node)
+    {
+        return node switch
+        {
+            IdentifierNode { Value: "$" } => true,
+            BinOpNode binOp => ContainsSelfReference(binOp.Left) || ContainsSelfReference(binOp.Right),
+            RoundBracketsNode round => round.Nodes.Any(ContainsSelfReference),
+            SquareBracketsNode square => square.Nodes.Any(ContainsSelfReference),
+            CurlyBracketsNode curly => curly.Nodes.Any(ContainsSelfReference),
+            SequenceNode sequence => sequence.Nodes.Any(ContainsSelfReference),
+            _ => false,
+        };
+    }
+
+    private static object? EvaluatePatternExpression(Node node, object? self)
+    {
+        return node switch
+        {
+            IdentifierNode identifier => EvaluatePatternIdentifier(identifier.Value, self),
+            NumberNode number => NumberLiteral(number.Value, number.Suffix),
+            StringNode str => StringLiteral(str.Value, str.Suffix),
+            BinOpNode { Operator: "." } memberAccess => GetMemberValue(
+                EvaluatePatternExpression(memberAccess.Left, self),
+                memberAccess.Right is IdentifierNode member ? member.Value : throw new InvalidOperationException("Pattern member access requires an identifier.")),
+            BinOpNode { Operator: "@" } indexAccess => Index(
+                EvaluatePatternExpression(indexAccess.Left, self),
+                EvaluatePatternExpression(indexAccess.Right, self)),
+            BinOpNode binOp => EvaluatePatternBinaryExpression(binOp, self),
+            RoundBracketsNode round when round.Nodes.Count == 0 => null,
+            RoundBracketsNode round when round.Nodes.Count == 1 => EvaluatePatternExpression(round.Nodes[0], self),
+            _ => throw new InvalidOperationException($"Unsupported pattern predicate node: {node.GetType().Name}"),
+        };
+    }
+
+    private static object? EvaluatePatternIdentifier(string value, object? self)
+    {
+        return value switch
+        {
+            "$" => self,
+            "true" => true,
+            "false" => false,
+            "null" => null,
+            _ => throw new InvalidOperationException($"Unsupported identifier '{value}' in pattern predicate."),
+        };
+    }
+
+    private static object? EvaluatePatternBinaryExpression(BinOpNode binOp, object? self)
+    {
+        var left = EvaluatePatternExpression(binOp.Left, self);
+        var right = EvaluatePatternExpression(binOp.Right, self);
+
+        return binOp.Operator switch
+        {
+            "==" => ValuesEqual(left, right),
+            "!=" => !ValuesEqual(left, right),
+            "<" => CompareValues(left, right) < 0,
+            "<=" => CompareValues(left, right) <= 0,
+            ">" => CompareValues(left, right) > 0,
+            ">=" => CompareValues(left, right) >= 0,
+            "+" => AddValues(left, right),
+            "-" => SubtractValues(left, right),
+            "*" => MultiplyValues(left, right),
+            "/" => DivideValues(left, right),
+            "&&" => IsTruthy(left) && IsTruthy(right),
+            "||" => IsTruthy(left) || IsTruthy(right),
+            _ => throw new InvalidOperationException($"Unsupported operator '{binOp.Operator}' in pattern predicate."),
+        };
+    }
+
+    private static object? GetMemberValue(object? target, string memberName)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        ArgumentException.ThrowIfNullOrEmpty(memberName);
+
+        var targetType = target.GetType();
+        var property = targetType.GetProperty(memberName, BindingFlags.Public | BindingFlags.Instance);
+        if (property is not null)
+        {
+            return property.GetValue(target);
+        }
+
+        var field = targetType.GetField(memberName, BindingFlags.Public | BindingFlags.Instance);
+        if (field is not null)
+        {
+            return field.GetValue(target);
+        }
+
+        throw new InvalidOperationException($"Member '{memberName}' was not found on '{targetType.FullName}'.");
+    }
+
+    private static bool MatchesBuiltinTypeAlias(object value, string expectedName)
+    {
+        return expectedName switch
+        {
+            "string" => value is string,
+            "bool" => value is bool,
+            "int" or "long" => IsIntegralNumericValue(value),
+            "double" or "float" or "decimal" => IsFloatingPointValue(value),
+            "list" => value is IList or Array,
+            "dict" or "dictionary" => value is IDictionary,
+            _ => false,
+        };
+    }
+
+    private static string NormalizeTypeAlias(string name)
+    {
+        return name switch
+        {
+            "string" => "System.String",
+            "bool" => "System.Boolean",
+            "int" => "System.Int64",
+            "long" => "System.Int64",
+            "double" => "System.Double",
+            "float" => "System.Double",
+            "decimal" => "System.Decimal",
+            "list" => "System.Collections.Generic.List",
+            "dict" => "System.Collections.Generic.Dictionary",
+            "dictionary" => "System.Collections.Generic.Dictionary",
+            _ => NormalizeClrTypeName(name),
+        };
+    }
+
+    private static string NormalizeClrTypeName(string? name)
+    {
+        if (string.IsNullOrEmpty(name))
+        {
+            return string.Empty;
+        }
+
+        var tickIndex = name.IndexOf('`', StringComparison.Ordinal);
+        return tickIndex >= 0 ? name[..tickIndex] : name;
+    }
+
+    private static bool ValuesEqual(object? left, object? right)
+    {
+        if (left is null || right is null)
+        {
+            return left is null && right is null;
+        }
+
+        if (IsNumericValue(left) && IsNumericValue(right))
+        {
+            return IsFloatingPointValue(left) || IsFloatingPointValue(right)
+                ? Convert.ToDouble(left, CultureInfo.InvariantCulture) == Convert.ToDouble(right, CultureInfo.InvariantCulture)
+                : Convert.ToDecimal(left, CultureInfo.InvariantCulture) == Convert.ToDecimal(right, CultureInfo.InvariantCulture);
+        }
+
+        return Equals(left, right);
+    }
+
+    private static int CompareValues(object? left, object? right)
+    {
+        if (left is null || right is null)
+        {
+            throw new InvalidOperationException("Cannot compare null values in pattern predicates.");
+        }
+
+        if (IsNumericValue(left) && IsNumericValue(right))
+        {
+            return IsFloatingPointValue(left) || IsFloatingPointValue(right)
+                ? Convert.ToDouble(left, CultureInfo.InvariantCulture).CompareTo(Convert.ToDouble(right, CultureInfo.InvariantCulture))
+                : Convert.ToDecimal(left, CultureInfo.InvariantCulture).CompareTo(Convert.ToDecimal(right, CultureInfo.InvariantCulture));
+        }
+
+        if (left is string leftText && right is string rightText)
+        {
+            return string.CompareOrdinal(leftText, rightText);
+        }
+
+        if (left is IComparable comparable && left.GetType().IsInstanceOfType(right))
+        {
+            return comparable.CompareTo(right);
+        }
+
+        throw new InvalidOperationException("Pattern predicate values are not comparable.");
+    }
+
+    private static object? AddValues(object? left, object? right)
+    {
+        if (left is string || right is string)
+        {
+            return $"{left}{right}";
+        }
+
+        return ApplyNumericBinary(left, right, (l, r) => l + r, (l, r) => l + r);
+    }
+
+    private static object? SubtractValues(object? left, object? right)
+    {
+        return ApplyNumericBinary(left, right, (l, r) => l - r, (l, r) => l - r);
+    }
+
+    private static object? MultiplyValues(object? left, object? right)
+    {
+        return ApplyNumericBinary(left, right, (l, r) => l * r, (l, r) => l * r);
+    }
+
+    private static object? DivideValues(object? left, object? right)
+    {
+        return ApplyNumericBinary(left, right, (l, r) => l / r, (l, r) => l / r);
+    }
+
+    private static object? ApplyNumericBinary(
+        object? left,
+        object? right,
+        Func<decimal, decimal, decimal> decimalOp,
+        Func<double, double, double> doubleOp)
+    {
+        if (left is null || right is null || !IsNumericValue(left) || !IsNumericValue(right))
+        {
+            throw new InvalidOperationException("Pattern predicate arithmetic requires numeric values.");
+        }
+
+        return IsFloatingPointValue(left) || IsFloatingPointValue(right)
+            ? doubleOp(Convert.ToDouble(left, CultureInfo.InvariantCulture), Convert.ToDouble(right, CultureInfo.InvariantCulture))
+            : decimalOp(Convert.ToDecimal(left, CultureInfo.InvariantCulture), Convert.ToDecimal(right, CultureInfo.InvariantCulture));
+    }
+
+    private static bool IsNumericValue(object value)
+    {
+        return value is byte or sbyte or short or ushort or int or uint or long or ulong or float or double or decimal;
+    }
+
+    private static bool IsIntegralNumericValue(object value)
+    {
+        return value is byte or sbyte or short or ushort or int or uint or long or ulong;
+    }
+
+    private static bool IsTruthy(object? value)
+    {
+        return value switch
+        {
+            null => false,
+            bool boolean => boolean,
+            string text => text.Length > 0,
+            Array array => array.Length > 0,
+            IList list => list.Count > 0,
+            IDictionary dictionary => dictionary.Count > 0,
+            byte or sbyte or short or ushort or int or uint or long or ulong => Convert.ToDecimal(value, CultureInfo.InvariantCulture) != 0,
+            float or double or decimal => Convert.ToDouble(value, CultureInfo.InvariantCulture) != 0d,
+            _ => true,
+        };
+    }
+
+    private static bool IsFloatingPointValue(object value)
+    {
+        return value is float or double or decimal;
+    }
+
     private static bool TryBindGenericMethod(
         MethodInfo methodDefinition,
         Type[] typeArguments,
@@ -690,4 +1238,12 @@ public static class MakrellCompilerRuntime
 
     private sealed record Candidate<TMember>(TMember Member, object?[] Arguments, int Score)
         where TMember : MethodBase;
+}
+
+internal static class TypeExtensions
+{
+    public static Type GetGenericTypeDefinitionOrSelf(this Type type)
+    {
+        return type.IsGenericType ? type.GetGenericTypeDefinition() : type;
+    }
 }

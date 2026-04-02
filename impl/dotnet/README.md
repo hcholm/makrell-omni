@@ -42,6 +42,7 @@ Implemented so far:
 - MRML parsing to `XDocument`
 - expression compilation for arithmetic, assignment, `if`, `do`, functions, pipe, indexing, and quoting
 - statement forms `when`, `while`, `for`, and `return`
+- initial pattern matching through `match`, `~=`, and `!~=`
 - compile-time `meta`
 - Makrell-defined macros with original whitespace-preserving nodes
 - dynamic compile/load with replayable `importm` metadata
@@ -53,7 +54,68 @@ Not implemented yet:
 
 - REPL
 - full parity with MakrellPy/MakrellTS
+- full MakrellPy pattern-matching parity
 - broader CLR overload/generic-method ergonomics
+
+## Pattern matching
+
+Makrell# now has a first pattern-matching slice with:
+- wildcard `_`
+- literal patterns
+- alternation with `|`
+- fixed-length list/array patterns
+- `_:Type` checks
+- `$type` constructor patterns with type-only, positional tuple/sequence, and keyword member matching
+- self truthiness pattern `$`
+- composite patterns with `&`
+- self-based predicate patterns such as `$ < 3`
+- short-form boolean matches
+- `~=` and `!~=`
+
+Examples:
+
+```makrell
+{match 3
+    2
+        "two"
+    3
+        "three"
+    _
+        "other"}
+```
+
+```makrell
+{match [2 3]
+    []
+        "empty"
+    [_]
+        "one"
+    [_ _]
+        "two"}
+```
+
+```makrell
+[2 3] ~= [_ _]
+```
+
+```makrell
+{match 2
+    _:string & $ < 3
+        "string"
+    _:int & $ < 3
+        "int"
+    _
+        "other"}
+```
+
+```makrell
+date = {new System.DateTime [2024 6 7]}
+{match date
+    {$type System.DateTime [Year=2024 Month=6 Day=7]}
+        "date"
+    _
+        "other"}
+```
 
 ## Interop notes
 

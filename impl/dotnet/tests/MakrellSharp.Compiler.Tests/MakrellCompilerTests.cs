@@ -25,6 +25,166 @@ public sealed class MakrellCompilerTests
     }
 
     [Fact]
+    public void Run_EvaluatesMatchExpression_WithLiteralsAndWildcard()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {match 3
+                2
+                    "two"
+                3
+                    "three"
+                _
+                    "other"}
+            """);
+
+        Assert.Equal("three", result);
+    }
+
+    [Fact]
+    public void Run_EvaluatesMatchExpression_WithListPatterns()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {match [2 3]
+                []
+                    "empty"
+                [_]
+                    "one"
+                [_ _]
+                    "two"}
+            """);
+
+        Assert.Equal("two", result);
+    }
+
+    [Fact]
+    public void Run_EvaluatesMatchExpression_WithTypePatterns()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {match 2
+                _:string
+                    "string"
+                _:int
+                    "int"
+                _
+                    "other"}
+            """);
+
+        Assert.Equal("int", result);
+    }
+
+    [Fact]
+    public void Run_EvaluatesMatchShortForm_AsBoolean()
+    {
+        var result = MakrellCompiler.Run("{match [2 3] [_ _]}");
+
+        Assert.True(Convert.ToBoolean(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesPatternMatchOperators()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            a = [2 3] ~= [_ _]
+            b = [2 3] !~= [_]
+            a && b
+            """);
+
+        Assert.True(Convert.ToBoolean(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesMatchExpression_WithSelfPatternTruthiness()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {match [null]
+                $
+                    "self"
+                _
+                    "other"}
+            """);
+
+        Assert.Equal("self", result);
+    }
+
+    [Fact]
+    public void Run_EvaluatesMatchExpression_WithCompositePatterns()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {match 2
+                _:string & $ < 3
+                    "string"
+                _:int & $ < 3
+                    "int"
+                _
+                    "other"}
+            """);
+
+        Assert.Equal("int", result);
+    }
+
+    [Fact]
+    public void Run_EvaluatesMatchShortForm_WithCompositeListPattern()
+    {
+        var result = MakrellCompiler.Run("{match [2 3] [_ $ > 2 & $ < 5]}");
+
+        Assert.True(Convert.ToBoolean(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesMatchExpression_WithTypeConstructorPattern_TypeOnly()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            date = {new System.DateTime [2024 6 7]}
+            {match date
+                {$type System.DateTime}
+                    "date"
+                _
+                    "other"}
+            """);
+
+        Assert.Equal("date", result);
+    }
+
+    [Fact]
+    public void Run_EvaluatesMatchExpression_WithTypeConstructorPattern_KeywordProperties()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            date = {new System.DateTime [2024 6 7]}
+            {match date
+                {$type System.DateTime [Year=2024 Month=6 Day=7]}
+                    "date"
+                _
+                    "other"}
+            """);
+
+        Assert.Equal("date", result);
+    }
+
+    [Fact]
+    public void Run_EvaluatesMatchExpression_WithTypeConstructorPattern_PositionalTuple()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            pair = {new (System.ValueTuple string int) ["mak" 2]}
+            {match pair
+                {$type System.ValueTuple ["mak" 2]}
+                    "pair"
+                _
+                    "other"}
+            """);
+
+        Assert.Equal("pair", result);
+    }
+
+    [Fact]
     public void Run_EvaluatesWhenStatement()
     {
         var result = MakrellCompiler.Run(

@@ -223,6 +223,7 @@ internal static class CSharpEmitter
                 "if" => EmitIf(curly.Nodes.Skip(1).ToArray(), state),
                 "do" => EmitDo(curly.Nodes.Skip(1).ToArray(), state),
                 "fun" => EmitAnonymousFunction(curly, state),
+                "match" => EmitMatch(curly, state),
                 "new" => EmitNew(curly, state),
                 "quote" => EmitQuote(curly.Nodes.Skip(1).ToArray(), state),
                 _ => EmitCall(curly, state),
@@ -268,6 +269,55 @@ internal static class CSharpEmitter
                Indent(2) + "{" + Environment.NewLine +
                body +
                Indent(2) + "}))()";
+    }
+
+    private static string EmitMatch(CurlyBracketsNode curly, EmitterState state)
+    {
+        if (curly.Nodes.Count < 3)
+        {
+            throw new InvalidOperationException("Match form must be {match value pattern} or {match value pattern result ...}.");
+        }
+
+        var valueExpression = EmitExpression(curly.Nodes[1], state);
+        if (curly.Nodes.Count == 3)
+        {
+            return $"MakrellSharp.Compiler.MakrellCompilerRuntime.PatternMatches({valueExpression}, {EmitPatternNode(curly.Nodes[2], state)})";
+        }
+
+        var clauseNodes = curly.Nodes.Skip(2).ToArray();
+        if (clauseNodes.Length % 2 != 0)
+        {
+            throw new InvalidOperationException("Match form requires pattern/result pairs.");
+        }
+
+        var matchValueName = NextGeneratedName("matchValue");
+        var builder = new StringBuilder();
+        builder.Append("((Func<dynamic>)(() =>");
+        builder.AppendLine();
+        builder.Append(Indent(2));
+        builder.Append("{");
+        builder.AppendLine();
+        builder.Append($"{Indent(3)}var {matchValueName} = {valueExpression};");
+        builder.AppendLine();
+
+        for (var i = 0; i < clauseNodes.Length; i += 2)
+        {
+            var patternExpression = EmitPatternNode(clauseNodes[i], state);
+            var resultExpression = EmitExpression(clauseNodes[i + 1], state);
+            builder.Append($"{Indent(3)}if (MakrellSharp.Compiler.MakrellCompilerRuntime.PatternMatches({matchValueName}, {patternExpression}))");
+            builder.AppendLine();
+            builder.Append($"{Indent(3)}{{");
+            builder.AppendLine();
+            builder.Append($"{Indent(4)}return {resultExpression};");
+            builder.AppendLine();
+            builder.Append($"{Indent(3)}}}");
+            builder.AppendLine();
+        }
+
+        builder.Append($"{Indent(3)}return null;");
+        builder.AppendLine();
+        builder.Append($"{Indent(2)}}}))()");
+        return builder.ToString();
     }
 
     private static string EmitAnonymousFunction(CurlyBracketsNode curly, EmitterState state)
@@ -462,6 +512,16 @@ internal static class CSharpEmitter
         if (binOp.Operator == "@")
         {
             return $"MakrellSharp.Compiler.MakrellCompilerRuntime.Index({EmitExpression(binOp.Left, state)}, {EmitExpression(binOp.Right, state)})";
+        }
+
+        if (binOp.Operator == "~=")
+        {
+            return $"MakrellSharp.Compiler.MakrellCompilerRuntime.PatternMatches({EmitExpression(binOp.Left, state)}, {EmitPatternNode(binOp.Right, state)})";
+        }
+
+        if (binOp.Operator == "!~=")
+        {
+            return $"(!MakrellSharp.Compiler.MakrellCompilerRuntime.PatternMatches({EmitExpression(binOp.Left, state)}, {EmitPatternNode(binOp.Right, state)}))";
         }
 
         if (binOp.Operator == ".")
@@ -953,6 +1013,11 @@ internal static class CSharpEmitter
         return results;
     }
 
+    private static string EmitPatternNode(Node node, EmitterState state)
+    {
+        return EmitQuotedNode(node, state, allowSpecialForms: false);
+    }
+
     private static string EmitTypeArgumentsArrayExpression(IReadOnlyList<Node> nodes)
     {
         var typeArguments = nodes.Select(node => $"typeof({EmitTypeReferenceNode(node)})");
@@ -1156,6 +1221,8 @@ internal static class CSharpEmitter
         "\"" + value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal) + "\"";
 
     private static string Indent(int level) => new(' ', level * 4);
+
+    private static string NextGeneratedName(string prefix) => $"__makrell_{prefix}_{Guid.NewGuid():N}";
 
     private sealed class EmitterState
     {
