@@ -81,12 +81,25 @@ public static class OperatorParser
     private static Node Transform(Node node, Func<string, (int Precedence, Associativity Associativity)> precedenceLookup)
     {
         return node switch
+            {
+                SequenceNode sequence => sequence with { Nodes = Parse(sequence.Nodes, precedenceLookup) },
+                RoundBracketsNode round => round with { Nodes = Parse(round.Nodes, precedenceLookup) },
+                SquareBracketsNode square => square with { Nodes = Parse(square.Nodes, precedenceLookup) },
+                CurlyBracketsNode curly => TransformCurly(curly, precedenceLookup),
+                _ => node,
+            };
+    }
+
+    private static CurlyBracketsNode TransformCurly(
+        CurlyBracketsNode curly,
+        Func<string, (int Precedence, Associativity Associativity)> precedenceLookup)
+    {
+        if (curly.Nodes.Count > 0 && curly.Nodes[0] is OperatorNode headOperator)
         {
-            SequenceNode sequence => sequence with { Nodes = Parse(sequence.Nodes, precedenceLookup) },
-            RoundBracketsNode round => round with { Nodes = Parse(round.Nodes, precedenceLookup) },
-            SquareBracketsNode square => square with { Nodes = Parse(square.Nodes, precedenceLookup) },
-            CurlyBracketsNode curly => curly with { Nodes = Parse(curly.Nodes, precedenceLookup) },
-            _ => node,
-        };
+            var parsedTail = Parse(curly.Nodes.Skip(1).ToArray(), precedenceLookup);
+            return curly with { Nodes = new Node[] { headOperator }.Concat(parsedTail).ToArray() };
+        }
+
+        return curly with { Nodes = Parse(curly.Nodes, precedenceLookup) };
     }
 }

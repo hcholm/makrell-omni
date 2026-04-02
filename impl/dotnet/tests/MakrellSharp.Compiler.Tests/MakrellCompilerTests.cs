@@ -59,6 +59,36 @@ public sealed class MakrellCompilerTests
     }
 
     [Fact]
+    public void Run_EvaluatesMatchExpression_WithListRestPattern()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {match [2 3 5 7]
+                [2 _ $rest]
+                    "many"
+                _
+                    "other"}
+            """);
+
+        Assert.Equal("many", result);
+    }
+
+    [Fact]
+    public void Run_EvaluatesMatchExpression_WithCapturedListRestPattern()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {match [2 3 5 7]
+                [2 tail=$rest]
+                    tail @ 1
+                _
+                    0}
+            """);
+
+        Assert.Equal(5, Convert.ToInt32(result));
+    }
+
+    [Fact]
     public void Run_EvaluatesMatchExpression_WithTypePatterns()
     {
         var result = MakrellCompiler.Run(
@@ -137,6 +167,72 @@ public sealed class MakrellCompilerTests
     }
 
     [Fact]
+    public void Run_EvaluatesMatchExpression_WithRoundAlternativePattern()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {match 3
+                (2 3 5)
+                    "yes"
+                _
+                    "no"}
+            """);
+
+        Assert.Equal("yes", result);
+    }
+
+    [Fact]
+    public void Run_EvaluatesMatchExpression_WithGuardedClause()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {match 3
+                _
+                    {when false "no"}
+                _
+                    "yes"}
+            """);
+
+        Assert.Equal("yes", result);
+    }
+
+    [Fact]
+    public void Run_EvaluatesMatchExpression_WithGuardedClauseUsingCaptures()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {match [2 5]
+                [x=_ y=_]
+                    {when x > y
+                        "descending"}
+                [x=_ y=_]
+                    {when x < y
+                        x + y}
+                _
+                    0}
+            """);
+
+        Assert.Equal(7, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesMatchExpression_WithGuardedClauseBlockBody()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {match [2 5]
+                [x=_ y=_]
+                    {when x < y
+                        total = x + y
+                        total * 2}
+                _
+                    0}
+            """);
+
+        Assert.Equal(14, Convert.ToInt32(result));
+    }
+
+    [Fact]
     public void Run_EvaluatesMatchExpression_WithTypeConstructorPattern_TypeOnly()
     {
         var result = MakrellCompiler.Run(
@@ -182,6 +278,22 @@ public sealed class MakrellCompilerTests
             """);
 
         Assert.Equal("pair", result);
+    }
+
+    [Fact]
+    public void Run_EvaluatesMatchExpression_WithTypeConstructorPattern_PositionalDeconstruct()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            date = {new System.DateOnly [2024 6 7]}
+            {match date
+                {$type System.DateOnly [_ 6 _]}
+                    "date"
+                _
+                    "other"}
+            """);
+
+        Assert.Equal("date", result);
     }
 
     [Fact]
@@ -272,6 +384,21 @@ public sealed class MakrellCompilerTests
             """);
 
         Assert.Equal(5, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesMatchExpression_WithAlternationCaptureIsolation()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {match [2 4]
+                [x=_ 3] | [_ x=_]
+                    x
+                _
+                    0}
+            """);
+
+        Assert.Equal(4, Convert.ToInt32(result));
     }
 
     [Fact]
@@ -407,6 +534,46 @@ public sealed class MakrellCompilerTests
     }
 
     [Fact]
+    public void Run_EvaluatesPlaceholderLambda_FromSingleUnderscoreCall()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {fun add [x y]
+                x + y}
+            add3 = {add 3 _}
+            {add3 2}
+            """);
+
+        Assert.Equal(5, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesPlaceholderLambda_FromMultipleUnderscoreCall()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {fun pack [x y z]
+                x * 100 + y * 10 + z}
+            f = {pack _ 2 _}
+            {f 3 5}
+            """);
+
+        Assert.Equal(325, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesPlaceholderLambda_ForClrInteropCall()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            suffixer = {String.Concat "Mak" _}
+            {suffixer "rell#"}
+            """);
+
+        Assert.Equal("Makrell#", result);
+    }
+
+    [Fact]
     public void Run_EvaluatesPipeCalls()
     {
         var result = MakrellCompiler.Run(
@@ -417,6 +584,99 @@ public sealed class MakrellCompilerTests
             """);
 
         Assert.Equal(5, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesReversePipeCalls()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {fun add3 [x]
+                x + 3}
+            add3 \ 2
+            """);
+
+        Assert.Equal(5, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesMapPipe()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {fun add3 [x]
+                x + 3}
+            values = [2 5 8] |* add3
+            values @ 1
+            """);
+
+        Assert.Equal(8, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesReverseMapPipe()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {fun add3 [x]
+                x + 3}
+            values = add3 *\ [2 5 8]
+            values @ 2
+            """);
+
+        Assert.Equal(11, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesOperatorAsFunction()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            mul = {*}
+            {mul 2 3}
+            """);
+
+        Assert.Equal(6, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesNestedOperatorAsFunctionCall()
+    {
+        var result = MakrellCompiler.Run("{{*} 5 7}");
+
+        Assert.Equal(35, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesOperatorPartialApplication()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            add2 = {+ 2}
+            {add2 3}
+            """);
+
+        Assert.Equal(5, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesOperatorPartialApplication_ForSubtraction()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            minusFrom2 = {- 2}
+            {minusFrom2 3}
+            """);
+
+        Assert.Equal(-1, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesPipeCalls_WithOperatorHeadCurly()
+    {
+        var result = MakrellCompiler.Run("2 | {+ 3} | {* 5}");
+
+        Assert.Equal(25, Convert.ToInt32(result));
     }
 
     [Fact]

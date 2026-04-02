@@ -40,7 +40,7 @@ Implemented so far:
 - MBF parsing with optional whitespace preservation
 - MRON parsing to `JsonDocument`
 - MRML parsing to `XDocument`
-- expression compilation for arithmetic, assignment, `if`, `do`, functions, pipe, indexing, and quoting
+- expression compilation for arithmetic, assignment, `if`, `do`, functions, placeholder lambdas, pipe/reverse-pipe, map pipe, indexing, and quoting
 - statement forms `when`, `while`, `for`, and `return`
 - initial pattern matching through `match`, `~=`, and `!~=`
 - compile-time `meta`
@@ -57,20 +57,77 @@ Not implemented yet:
 - full MakrellPy pattern-matching parity
 - broader CLR overload/generic-method ergonomics
 
+## Function calls and lambdas
+
+Ordinary calls use curly form:
+
+```makrell
+{add 2 3}
+```
+
+Arrow lambdas are supported:
+
+```makrell
+x -> x + 1
+[x y] -> x + y
+```
+
+Direct call arguments can also use `_` as a placeholder, which lowers to a generated lambda:
+
+```makrell
+{fun add [x y]
+    x + y}
+
+add3 = {add 3 _}
+{add3 2}
+```
+
+Multiple placeholders bind left-to-right:
+
+```makrell
+{fun pack [x y z]
+    x * 100 + y * 10 + z}
+
+f = {pack _ 2 _}
+{f 3 5}
+```
+
+Operators can also be used as first-class functions:
+
+```makrell
+mul = {*}
+{mul 2 3}
+
+add2 = {+ 2}
+{add2 3}
+```
+
+Pipe operators are also supported:
+
+```makrell
+2 | add3
+add3 \ 2
+[2 5 8] |* add3
+add3 *\ [2 5 8]
+```
+
 ## Pattern matching
 
 Makrell# now has a first pattern-matching slice with:
 - wildcard `_`
 - literal patterns
+- round-bracket grouped alternatives such as `(2 3 5)`
 - alternation with `|`
 - capture bindings with `name=pattern`
 - fixed-length list/array patterns
+- trailing list rest patterns such as `[head tail=$rest]` or `[x y $rest]`
 - `_:Type` checks
-- `$type` constructor patterns with type-only, positional tuple/sequence, and keyword member matching
+- `$type` constructor patterns with type-only, positional tuple/sequence/`Deconstruct(...)`, and keyword member matching
 - `$r` regular patterns with exact sequence matching, `_`, `$rest`, grouped alternatives, `maybe`/`some`/`any` quantifiers, range quantifiers, nested regular patterns, and binding-compatible `name=pattern` forms
 - self truthiness pattern `$`
 - composite patterns with `&`
 - self-based predicate patterns such as `$ < 3`
+- guarded clauses via a result wrapper of the form `{when condition result...}`
 - short-form boolean matches
 - `~=` and `!~=`
 
@@ -94,6 +151,18 @@ Examples:
         "one"
     [_ _]
         "two"}
+```
+
+```makrell
+{match [2 3 5 7]
+    [2 tail=$rest]
+        tail @ 1
+    _
+        0}
+```
+
+```makrell
+[2 3 5] ~= ([1 2] [2 3 5])
 ```
 
 ```makrell
@@ -139,6 +208,15 @@ date = {new System.DateTime [2024 6 7]}
 {match [2 3]
     [a=_ b=_]
         a + b
+    _
+        0}
+```
+
+```makrell
+{match [2 5]
+    [x=_ y=_]
+        {when x < y
+            x + y}
     _
         0}
 ```

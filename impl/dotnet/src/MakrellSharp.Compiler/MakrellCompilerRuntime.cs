@@ -62,10 +62,8 @@ public static class MakrellCompilerRuntime
             SquareBracketsNode square => MatchListPattern(value, square, bindings),
             CurlyBracketsNode curly when IsRegularPattern(curly) => MatchRegularPattern(value, curly, bindings),
             CurlyBracketsNode curly when IsTypeConstructorPattern(curly) => MatchTypeConstructorPattern(value, curly, bindings),
-            BinOpNode { Operator: "|" } orPattern => TryPatternMatch(value, orPattern.Left, bindings)
-                || TryPatternMatch(value, orPattern.Right, bindings),
-            BinOpNode { Operator: "&" } andPattern => TryPatternMatch(value, andPattern.Left, bindings)
-                && TryPatternMatch(value, andPattern.Right, bindings),
+            BinOpNode { Operator: "|" } orPattern => MatchOrPattern(value, orPattern, bindings),
+            BinOpNode { Operator: "&" } andPattern => MatchAndPattern(value, andPattern, bindings),
             BinOpNode { Operator: "=" } assignmentPattern => MatchAssignmentPattern(value, assignmentPattern, bindings),
             BinOpNode { Operator: ":" } typePattern => TryPatternMatch(value, typePattern.Left, bindings)
                 && MatchesTypePattern(value, typePattern.Right),
@@ -206,6 +204,56 @@ public static class MakrellCompilerRuntime
         throw new InvalidOperationException($"Value of type '{targetType.FullName}' is not index-assignable.");
     }
 
+    public static object?[] Map(object? values, object? mapper)
+    {
+        ArgumentNullException.ThrowIfNull(values);
+        ArgumentNullException.ThrowIfNull(mapper);
+
+        if (values is string)
+        {
+            throw new InvalidOperationException("Strings are not valid inputs for Makrell map pipe.");
+        }
+
+        if (values is not IEnumerable enumerable)
+        {
+            throw new InvalidOperationException($"Value of type '{values.GetType().FullName}' is not enumerable.");
+        }
+
+        var result = new List<object?>();
+        foreach (var item in enumerable)
+        {
+            result.Add(InvokeCallable(mapper, item));
+        }
+
+        return result.ToArray();
+    }
+
+    public static object GetOperatorFunction(string op)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(op);
+        return new Func<dynamic, dynamic, dynamic>((left, right) => ApplyBinaryOperator(op, left, right));
+    }
+
+    public static object? ApplyOperator(string op, object?[]? args)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(op);
+        args ??= [];
+
+        return args.Length switch
+        {
+            0 => GetOperatorFunction(op),
+            1 => throw new InvalidOperationException($"Operator '{op}' requires at least two operands for direct application."),
+            _ => ApplyOperatorFold(op, args),
+        };
+    }
+
+    public static object? Call(object? callable, object?[]? args)
+    {
+        ArgumentNullException.ThrowIfNull(callable);
+        args ??= [];
+        return InvokeCallable(callable, args);
+    }
+
     public static object? CreateInstance(Type targetType, object?[]? args)
     {
         ArgumentNullException.ThrowIfNull(targetType);
@@ -331,6 +379,54 @@ public static class MakrellCompilerRuntime
         }
 
         return match.Member.Invoke(null, match.Arguments);
+    }
+
+    private static object? ApplyOperatorFold(string op, IReadOnlyList<object?> args)
+    {
+        var result = args[0];
+        for (var i = 1; i < args.Count; i += 1)
+        {
+            result = ApplyBinaryOperator(op, result, args[i]);
+        }
+
+        return result;
+    }
+
+    private static object? ApplyBinaryOperator(string op, object? left, object? right)
+    {
+        return op switch
+        {
+            "==" => ValuesEqual(left, right),
+            "!=" => !ValuesEqual(left, right),
+            "<" => CompareValues(left, right) < 0,
+            "<=" => CompareValues(left, right) <= 0,
+            ">" => CompareValues(left, right) > 0,
+            ">=" => CompareValues(left, right) >= 0,
+            "+" => AddValues(left, right),
+            "-" => SubtractValues(left, right),
+            "*" => MultiplyValues(left, right),
+            "/" => DivideValues(left, right),
+            "&&" => IsTruthy(left) && IsTruthy(right),
+            "||" => IsTruthy(left) || IsTruthy(right),
+            _ => throw new InvalidOperationException($"Unsupported operator-as-function '{op}'."),
+        };
+    }
+
+    private static object? InvokeCallable(object mapper, params object?[] args)
+    {
+        if (mapper is Delegate del)
+        {
+            return del.DynamicInvoke(args);
+        }
+
+        return args.Length switch
+        {
+            0 => ((dynamic)mapper)(),
+            1 => ((dynamic)mapper)(args[0]),
+            2 => ((dynamic)mapper)(args[0], args[1]),
+            3 => ((dynamic)mapper)(args[0], args[1], args[2]),
+            _ => throw new InvalidOperationException("Callable invocation currently supports up to 3 arguments."),
+        };
     }
 
     private static int NormalizeIntIndex(int length, object? index)
@@ -743,13 +839,20 @@ public static class MakrellCompilerRuntime
 
     private static bool MatchAssignmentPattern(object? value, BinOpNode assignmentPattern, Dictionary<string, object?> bindings)
     {
-        if (!TryPatternMatch(value, assignmentPattern.Right, bindings))
+        var localBindings = CloneBindings(bindings);
+        if (!TryPatternMatch(value, assignmentPattern.Right, localBindings))
         {
             return false;
         }
 
-        return assignmentPattern.Left is IdentifierNode identifier
-            && TryBindCapture(identifier.Value, value, bindings);
+        if (assignmentPattern.Left is not IdentifierNode identifier
+            || !TryBindCapture(identifier.Value, value, localBindings))
+        {
+            return false;
+        }
+
+        CopyBindings(localBindings, bindings);
+        return true;
     }
 
     private static bool TryBindCapture(string name, object? value, Dictionary<string, object?> bindings)
@@ -789,20 +892,76 @@ public static class MakrellCompilerRuntime
             return false;
         }
 
+        if (TryGetListRestCapture(pattern, out var restCaptureName))
+        {
+            if (items.Count < pattern.Nodes.Count - 1)
+            {
+                return false;
+            }
+
+            var restBindings = CloneBindings(bindings);
+            for (var i = 0; i < pattern.Nodes.Count - 1; i += 1)
+            {
+                if (!TryPatternMatch(items[i], pattern.Nodes[i], restBindings))
+                {
+                    return false;
+                }
+            }
+
+            if (restCaptureName is not null
+                && !TryBindCapture(restCaptureName, items.Skip(pattern.Nodes.Count - 1).ToArray(), restBindings))
+            {
+                return false;
+            }
+
+            CopyBindings(restBindings, bindings);
+            return true;
+        }
+
         if (items.Count != pattern.Nodes.Count)
         {
             return false;
         }
 
+        var localBindings = CloneBindings(bindings);
         for (var i = 0; i < pattern.Nodes.Count; i += 1)
         {
-            if (!TryPatternMatch(items[i], pattern.Nodes[i], bindings))
+            if (!TryPatternMatch(items[i], pattern.Nodes[i], localBindings))
             {
                 return false;
             }
         }
 
+        CopyBindings(localBindings, bindings);
         return true;
+    }
+
+    private static bool TryGetListRestCapture(SquareBracketsNode pattern, out string? captureName)
+    {
+        captureName = null;
+        if (pattern.Nodes.Count == 0)
+        {
+            return false;
+        }
+
+        var tail = pattern.Nodes[^1];
+        if (tail is IdentifierNode { Value: "$rest" })
+        {
+            return true;
+        }
+
+        if (tail is BinOpNode
+            {
+                Operator: "=",
+                Left: IdentifierNode left,
+                Right: IdentifierNode { Value: "$rest" }
+            })
+        {
+            captureName = left.Value;
+            return true;
+        }
+
+        return false;
     }
 
     private static bool MatchRoundPattern(object? value, RoundBracketsNode pattern, Dictionary<string, object?> bindings)
@@ -810,8 +969,8 @@ public static class MakrellCompilerRuntime
         return pattern.Nodes.Count switch
         {
             0 => value is null,
-            1 => TryPatternMatch(value, pattern.Nodes[0], bindings),
-            _ => pattern.Nodes.Any(node => TryPatternMatch(value, node, bindings)),
+            1 => MatchPatternTransactional(value, pattern.Nodes[0], bindings),
+            _ => pattern.Nodes.Any(node => MatchPatternTransactional(value, node, bindings)),
         };
     }
 
@@ -833,7 +992,14 @@ public static class MakrellCompilerRuntime
             return false;
         }
 
-        return MatchRegularPatternFrom(items, pattern.Nodes, valueIndex: 0, patternIndex: 1, bindings);
+        var localBindings = CloneBindings(bindings);
+        if (!MatchRegularPatternFrom(items, pattern.Nodes, valueIndex: 0, patternIndex: 1, localBindings))
+        {
+            return false;
+        }
+
+        CopyBindings(localBindings, bindings);
+        return true;
     }
 
     private static bool MatchRegularPatternFrom(
@@ -957,6 +1123,7 @@ public static class MakrellCompilerRuntime
 
         SquareBracketsNode? positionalBlock = null;
         var keywordPatterns = new List<BinOpNode>();
+        var localBindings = CloneBindings(bindings);
 
         foreach (var extra in pattern.Nodes.Skip(2))
         {
@@ -992,7 +1159,7 @@ public static class MakrellCompilerRuntime
             positionalBlock = block;
         }
 
-        if (positionalBlock is not null && !MatchPositionalTypePattern(value, positionalBlock, bindings))
+        if (positionalBlock is not null && !MatchPositionalTypePattern(value, positionalBlock, localBindings))
         {
             return false;
         }
@@ -1005,18 +1172,19 @@ public static class MakrellCompilerRuntime
             }
 
             var memberValue = GetMemberValue(value, memberName.Value);
-            if (!TryPatternMatch(memberValue, keywordPattern.Right, bindings))
+            if (!TryPatternMatch(memberValue, keywordPattern.Right, localBindings))
             {
                 return false;
             }
         }
 
+        CopyBindings(localBindings, bindings);
         return true;
     }
 
     private static bool MatchPositionalTypePattern(object value, SquareBracketsNode positionalBlock, Dictionary<string, object?> bindings)
     {
-        if (!TryGetPositionalItems(value, out var items))
+        if (!TryGetPositionalItems(value, positionalBlock.Nodes.Count, out var items))
         {
             return false;
         }
@@ -1034,6 +1202,37 @@ public static class MakrellCompilerRuntime
             }
         }
 
+        return true;
+    }
+
+    private static bool MatchOrPattern(object? value, BinOpNode orPattern, Dictionary<string, object?> bindings)
+    {
+        return MatchPatternTransactional(value, orPattern.Left, bindings)
+            || MatchPatternTransactional(value, orPattern.Right, bindings);
+    }
+
+    private static bool MatchAndPattern(object? value, BinOpNode andPattern, Dictionary<string, object?> bindings)
+    {
+        var localBindings = CloneBindings(bindings);
+        if (!TryPatternMatch(value, andPattern.Left, localBindings)
+            || !TryPatternMatch(value, andPattern.Right, localBindings))
+        {
+            return false;
+        }
+
+        CopyBindings(localBindings, bindings);
+        return true;
+    }
+
+    private static bool MatchPatternTransactional(object? value, Node pattern, Dictionary<string, object?> bindings)
+    {
+        var localBindings = CloneBindings(bindings);
+        if (!TryPatternMatch(value, pattern, localBindings))
+        {
+            return false;
+        }
+
+        CopyBindings(localBindings, bindings);
         return true;
     }
 
@@ -1075,7 +1274,7 @@ public static class MakrellCompilerRuntime
         }
     }
 
-    private static bool TryGetPositionalItems(object value, out IReadOnlyList<object?> items)
+    private static bool TryGetPositionalItems(object value, int arity, out IReadOnlyList<object?> items)
     {
         if (TryGetSequenceItems(value, out items))
         {
@@ -1086,29 +1285,65 @@ public static class MakrellCompilerRuntime
             .GetInterfaces()
             .FirstOrDefault(type => type.FullName == "System.Runtime.CompilerServices.ITuple");
 
-        if (tupleInterface is null)
+        if (tupleInterface is not null)
+        {
+            var lengthProperty = tupleInterface.GetProperty("Length");
+            var itemProperty = tupleInterface.GetProperty("Item");
+            if (lengthProperty is not null && itemProperty is not null)
+            {
+                var length = Convert.ToInt32(lengthProperty.GetValue(value), CultureInfo.InvariantCulture);
+                var tupleItems = new object?[length];
+                for (var i = 0; i < length; i += 1)
+                {
+                    tupleItems[i] = itemProperty.GetValue(value, [i]);
+                }
+
+                items = tupleItems;
+                return true;
+            }
+        }
+
+        return TryGetDeconstructItems(value, arity, out items);
+    }
+
+    private static bool TryGetDeconstructItems(object value, int arity, out IReadOnlyList<object?> items)
+    {
+        var deconstructMethod = value.GetType()
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance)
+            .Where(method => method.Name == "Deconstruct" && method.ReturnType == typeof(void))
+            .Select(method => new { Method = method, Parameters = method.GetParameters() })
+            .Where(candidate => candidate.Parameters.Length == arity
+                && candidate.Parameters.All(parameter => parameter.ParameterType.IsByRef))
+            .Select(candidate => candidate.Method)
+            .FirstOrDefault();
+
+        if (deconstructMethod is null)
         {
             items = Array.Empty<object?>();
             return false;
         }
 
-        var lengthProperty = tupleInterface.GetProperty("Length");
-        var itemProperty = tupleInterface.GetProperty("Item");
-        if (lengthProperty is null || itemProperty is null)
+        var parameters = deconstructMethod.GetParameters();
+        var deconstructArgs = new object?[parameters.Length];
+        for (var i = 0; i < parameters.Length; i += 1)
         {
-            items = Array.Empty<object?>();
-            return false;
+            var parameterType = parameters[i].ParameterType.GetElementType() ?? typeof(object);
+            deconstructArgs[i] = CreateOutParameterPlaceholder(parameterType);
         }
 
-        var length = Convert.ToInt32(lengthProperty.GetValue(value), CultureInfo.InvariantCulture);
-        var tupleItems = new object?[length];
-        for (var i = 0; i < length; i += 1)
-        {
-            tupleItems[i] = itemProperty.GetValue(value, [i]);
-        }
-
-        items = tupleItems;
+        deconstructMethod.Invoke(value, deconstructArgs);
+        items = deconstructArgs;
         return true;
+    }
+
+    private static object? CreateOutParameterPlaceholder(Type parameterType)
+    {
+        if (!parameterType.IsValueType)
+        {
+            return null;
+        }
+
+        return Activator.CreateInstance(parameterType);
     }
 
     private static bool MatchesTypePattern(object? value, Node typeNode)
@@ -1224,22 +1459,7 @@ public static class MakrellCompilerRuntime
         var left = EvaluatePatternExpression(binOp.Left, self);
         var right = EvaluatePatternExpression(binOp.Right, self);
 
-        return binOp.Operator switch
-        {
-            "==" => ValuesEqual(left, right),
-            "!=" => !ValuesEqual(left, right),
-            "<" => CompareValues(left, right) < 0,
-            "<=" => CompareValues(left, right) <= 0,
-            ">" => CompareValues(left, right) > 0,
-            ">=" => CompareValues(left, right) >= 0,
-            "+" => AddValues(left, right),
-            "-" => SubtractValues(left, right),
-            "*" => MultiplyValues(left, right),
-            "/" => DivideValues(left, right),
-            "&&" => IsTruthy(left) && IsTruthy(right),
-            "||" => IsTruthy(left) || IsTruthy(right),
-            _ => throw new InvalidOperationException($"Unsupported operator '{binOp.Operator}' in pattern predicate."),
-        };
+        return ApplyBinaryOperator(binOp.Operator, left, right);
     }
 
     private static object? GetMemberValue(object? target, string memberName)

@@ -41,6 +41,19 @@ Lambda operator:
 - `x -> expr`
 - `[x y] -> expr`
 
+If `_` appears as a direct call argument, the call MUST be compiled as a lambda with generated placeholder parameters bound left-to-right.
+
+Examples:
+- `{add 3 _}`
+- `{pack _ 2 _}`
+
+Operators may also be used as first-class function values and partially applied through curly call form.
+
+Examples:
+- `{*}`
+- `{+ 2}`
+- `{{*} 5 7}`
+
 Functions and `do` blocks return the value of their final expression unless an explicit `{return ...}` is used.
 
 ## 5. Reserved Curly Forms
@@ -69,6 +82,9 @@ The following reserved forms are currently implemented in Makrell#:
 Makrell# currently implements:
 - `+`, `-`, `*`, `/`, comparison operators through normal compiled expression lowering
 - `|` pipe
+- `\\` reverse pipe
+- `|*` map pipe
+- `*\\` reverse map pipe
 - `->` lambda construction
 - `@` indexing
 - `.` member access
@@ -77,6 +93,11 @@ Makrell# currently implements:
 
 Operator semantics:
 - `a | f` rewrites to `{f a}`
+- `f \\ a` rewrites to `{f a}`
+- `values |* f` maps `f` across `values`
+- `f *\\ values` maps `f` across `values`
+- `{*}` produces an operator function value
+- `{+ 2}` partially applies the operator with its left operand fixed
 - `x @ i` indexes sequences, strings, dictionaries, CLR indexers, and arrays
 - `x.y` is CLR member/property access
 - `x = y` assigns to identifiers
@@ -90,15 +111,18 @@ Makrell# now includes an initial pattern-matching slice.
 Implemented forms:
 - wildcard `_`
 - literal number, string, boolean, and null patterns
+- round-bracket grouped alternatives such as `(2 3 5)`
 - alternation with `|`
 - capture bindings with `name=pattern`
 - fixed-length list/array patterns such as `[_ _]`
+- trailing list rest patterns such as `[head tail=$rest]` or `[x y $rest]`
 - type patterns of the form `_:Type`
-- `$type` constructor patterns with type-only, positional tuple/sequence, and keyword member matching
+- `$type` constructor patterns with type-only, positional tuple/sequence/`Deconstruct(...)`, and keyword member matching
 - `$r` regular patterns with exact sequence matching, `_`, `$rest`, grouped alternatives, `maybe`/`some`/`any` quantifiers, range quantifiers, nested regular patterns, and binding-compatible `name=pattern` forms
 - self truthiness pattern `$`
 - composite patterns with `&`
 - self-based predicate patterns such as `$ < 3`
+- guarded clauses via a result wrapper of the form `{when condition result...}`
 - short-form boolean matching: `{match value pattern}`
 - expression matching with pattern/result pairs
 - binary operator forms `value ~= pattern` and `value !~= pattern`
@@ -126,6 +150,18 @@ Examples:
 ```
 
 ```makrell
+{match [2 3 5 7]
+    [2 tail=$rest]
+        tail @ 1
+    _
+        0}
+```
+
+```makrell
+[2 3 5] ~= ([1 2] [2 3 5])
+```
+
+```makrell
 [2 3] ~= [_ _]
 ```
 
@@ -135,6 +171,15 @@ Examples:
         "string"
     _:int & $ < 3
         "int"
+    _
+        "other"}
+```
+
+```makrell
+date = {new System.DateOnly [2024 6 7]}
+{match date
+    {$type System.DateOnly [_ 6 _]}
+        "june"
     _
         "other"}
 ```
@@ -168,6 +213,15 @@ date = {new System.DateTime [2024 6 7]}
 {match [2 3]
     [a=_ b=_]
         a + b
+    _
+        0}
+```
+
+```makrell
+{match [2 5]
+    [x=_ y=_]
+        {when x < y
+            x + y}
     _
         0}
 ```

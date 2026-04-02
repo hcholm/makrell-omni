@@ -305,7 +305,7 @@ internal static class CSharpEmitter
             var patternExpression = EmitPatternNode(clauseNodes[i], state);
             var captureNames = CollectPatternCaptureNames(clauseNodes[i]);
             var matchResultName = NextGeneratedName("matchResult");
-            var resultExpression = EmitExpression(clauseNodes[i + 1], state);
+            var clauseResult = clauseNodes[i + 1];
             builder.Append($"{Indent(3)}var {matchResultName} = MakrellSharp.Compiler.MakrellCompilerRuntime.MatchWithBindings({matchValueName}, {patternExpression});");
             builder.AppendLine();
             builder.Append($"{Indent(3)}if ({matchResultName}.IsMatch)");
@@ -317,8 +317,21 @@ internal static class CSharpEmitter
                 builder.Append($"{Indent(4)}dynamic {captureName} = MakrellSharp.Compiler.MakrellCompilerRuntime.GetBinding({matchResultName}, {Quote(captureName)});");
                 builder.AppendLine();
             }
-            builder.Append($"{Indent(4)}return {resultExpression};");
-            builder.AppendLine();
+            if (TryGetGuardedMatchClause(clauseResult, out var guardNode, out var guardedResultNodes))
+            {
+                var guardExpression = EmitExpression(guardNode, state);
+                builder.Append($"{Indent(4)}if ({guardExpression})");
+                builder.AppendLine();
+                builder.Append($"{Indent(4)}{{");
+                builder.AppendLine();
+                builder.Append(EmitMatchClauseReturn(guardedResultNodes, state, 5));
+                builder.Append($"{Indent(4)}}}");
+                builder.AppendLine();
+            }
+            else
+            {
+                builder.Append(EmitMatchClauseReturn([clauseResult], state, 4));
+            }
             builder.Append($"{Indent(3)}}}");
             builder.AppendLine();
         }
@@ -327,6 +340,43 @@ internal static class CSharpEmitter
         builder.AppendLine();
         builder.Append($"{Indent(2)}}}))()");
         return builder.ToString();
+    }
+
+    private static bool TryGetGuardedMatchClause(Node clauseResult, out Node guardNode, out IReadOnlyList<Node> guardedResultNodes)
+    {
+        if (clauseResult is CurlyBracketsNode
+            {
+                Nodes.Count: >= 3,
+                Nodes:
+                [
+                    IdentifierNode { Value: "when" },
+                    ..
+                ]
+            } guarded)
+        {
+            guardNode = guarded.Nodes[1];
+            guardedResultNodes = guarded.Nodes.Skip(2).ToArray();
+            return true;
+        }
+
+        guardNode = null!;
+        guardedResultNodes = Array.Empty<Node>();
+        return false;
+    }
+
+    private static string EmitMatchClauseReturn(IReadOnlyList<Node> resultNodes, EmitterState state, int indentLevel)
+    {
+        if (resultNodes.Count == 0)
+        {
+            return $"{Indent(indentLevel)}return null;{Environment.NewLine}";
+        }
+
+        if (resultNodes.Count == 1)
+        {
+            return $"{Indent(indentLevel)}return {EmitExpression(resultNodes[0], state)};{Environment.NewLine}";
+        }
+
+        return $"{Indent(indentLevel)}return {EmitDo(resultNodes, state)};{Environment.NewLine}";
     }
 
     private static string EmitAnonymousFunction(CurlyBracketsNode curly, EmitterState state)
@@ -394,13 +444,78 @@ internal static class CSharpEmitter
 
     private static string EmitCall(CurlyBracketsNode curly, EmitterState state)
     {
-        var args = string.Join(", ", curly.Nodes.Skip(1).Select(arg => EmitExpression(arg, state)));
+        if (curly.Nodes[0] is OperatorNode op)
+        {
+            return EmitOperatorCall(op.Value, curly.Nodes.Skip(1).ToArray(), state);
+        }
+
+        var args = curly.Nodes.Skip(1).ToArray();
+        var placeholderPositions = args
+            .Select((arg, index) => (arg, index))
+            .Where(static item => item.arg is IdentifierNode { Value: "_" })
+            .Select(static item => item.index)
+            .ToArray();
+
+        if (placeholderPositions.Length > 0)
+        {
+            return EmitPlaceholderLambdaCall(curly.Nodes[0], args, placeholderPositions, state);
+        }
+
+        var emittedArgs = args.Select(arg => EmitExpression(arg, state)).ToArray();
+        return EmitCallCore(curly.Nodes[0], emittedArgs, state);
+    }
+
+    private static string EmitOperatorCall(string op, IReadOnlyList<Node> args, EmitterState state)
+    {
+        if (args.Count == 0)
+        {
+            return $"MakrellSharp.Compiler.MakrellCompilerRuntime.GetOperatorFunction({Quote(op)})";
+        }
+
+        if (args.Count == 1)
+        {
+            var parameterName = NextGeneratedName("operatorarg");
+            var leftArg = EmitExpression(args[0], state);
+            return $"((Func<dynamic, dynamic>)(({parameterName}) => MakrellSharp.Compiler.MakrellCompilerRuntime.ApplyOperator({Quote(op)}, new object?[] {{ {leftArg}, {parameterName} }})))";
+        }
+
+        var emittedArgs = args.Select(arg => EmitExpression(arg, state)).ToArray();
+        return $"MakrellSharp.Compiler.MakrellCompilerRuntime.ApplyOperator({Quote(op)}, new object?[] {{ {string.Join(", ", emittedArgs)} }})";
+    }
+
+    private static string EmitPlaceholderLambdaCall(
+        Node head,
+        IReadOnlyList<Node> args,
+        IReadOnlyList<int> placeholderPositions,
+        EmitterState state)
+    {
+        var parameterNames = placeholderPositions
+            .Select(_ => NextGeneratedName("placeholder"))
+            .ToArray();
+        var emittedArgs = new string[args.Count];
+        var placeholderIndex = 0;
+        for (var i = 0; i < args.Count; i += 1)
+        {
+            emittedArgs[i] = args[i] is IdentifierNode { Value: "_" }
+                ? parameterNames[placeholderIndex++]
+                : EmitExpression(args[i], state);
+        }
+
+        var funcType = GetFuncType(parameterNames.Length);
+        var parameterList = string.Join(", ", parameterNames.Select(static name => $"dynamic {name}"));
+        var body = EmitCallCore(head, emittedArgs, state);
+        return $"({funcType})(({parameterList}) => {body})";
+    }
+
+    private static string EmitCallCore(Node head, IReadOnlyList<string> emittedArgs, EmitterState state)
+    {
+        var args = string.Join(", ", emittedArgs);
         var argsArray = $"new object?[] {{ {args} }}";
-        var target = ClassifyCallTarget(curly.Nodes[0], state);
+        var target = ClassifyCallTarget(head, state);
 
         return target.Kind switch
         {
-            CallTargetKind.Direct => $"{target.Expression!}({args})",
+            CallTargetKind.Direct => $"MakrellSharp.Compiler.MakrellCompilerRuntime.Call({target.Expression!}, {argsArray})",
             CallTargetKind.RuntimeInstanceMember => $"MakrellSharp.Compiler.MakrellCompilerRuntime.InvokeMember({target.Expression!}, {Quote(target.MemberName!)}, {argsArray})",
             CallTargetKind.RuntimeInstanceGenericMember => $"MakrellSharp.Compiler.MakrellCompilerRuntime.InvokeMemberGeneric({target.Expression!}, {Quote(target.MemberName!)}, {target.GenericTypeArgumentsExpression!}, {argsArray})",
             CallTargetKind.RuntimeStaticMember => $"MakrellSharp.Compiler.MakrellCompilerRuntime.InvokeStatic(typeof({target.TypeExpression!}), {Quote(target.MemberName!)}, {argsArray})",
@@ -518,6 +633,21 @@ internal static class CSharpEmitter
             return EmitPipe(binOp.Left, binOp.Right, state);
         }
 
+        if (binOp.Operator == "\\")
+        {
+            return EmitReversePipe(binOp.Left, binOp.Right, state);
+        }
+
+        if (binOp.Operator == "|*")
+        {
+            return $"MakrellSharp.Compiler.MakrellCompilerRuntime.Map({EmitExpression(binOp.Left, state)}, {EmitExpression(binOp.Right, state)})";
+        }
+
+        if (binOp.Operator == "*\\")
+        {
+            return $"MakrellSharp.Compiler.MakrellCompilerRuntime.Map({EmitExpression(binOp.Right, state)}, {EmitExpression(binOp.Left, state)})";
+        }
+
         if (binOp.Operator == "@")
         {
             return $"MakrellSharp.Compiler.MakrellCompilerRuntime.Index({EmitExpression(binOp.Left, state)}, {EmitExpression(binOp.Right, state)})";
@@ -553,8 +683,24 @@ internal static class CSharpEmitter
         {
             IdentifierNode identifier => $"{identifier.Value}({leftExpr})",
             CurlyBracketsNode curly when curly.Nodes.Count > 0 =>
-                $"{EmitExpression(curly.Nodes[0], state)}({string.Join(", ", new[] { leftExpr }.Concat(curly.Nodes.Skip(1).Select(arg => EmitExpression(arg, state))))})",
+                curly.Nodes[0] is OperatorNode op
+                    ? $"MakrellSharp.Compiler.MakrellCompilerRuntime.ApplyOperator({Quote(op.Value)}, new object?[] {{ {string.Join(", ", new[] { leftExpr }.Concat(curly.Nodes.Skip(1).Select(arg => EmitExpression(arg, state))))} }})"
+                    : EmitCallCore(curly.Nodes[0], new[] { leftExpr }.Concat(curly.Nodes.Skip(1).Select(arg => EmitExpression(arg, state))).ToArray(), state),
             _ => $"{EmitExpression(right, state)}({leftExpr})",
+        };
+    }
+
+    private static string EmitReversePipe(Node left, Node right, EmitterState state)
+    {
+        var rightExpr = EmitExpression(right, state);
+        return left switch
+        {
+            IdentifierNode identifier => $"{identifier.Value}({rightExpr})",
+            CurlyBracketsNode curly when curly.Nodes.Count > 0 =>
+                curly.Nodes[0] is OperatorNode op
+                    ? $"MakrellSharp.Compiler.MakrellCompilerRuntime.ApplyOperator({Quote(op.Value)}, new object?[] {{ {string.Join(", ", new[] { rightExpr }.Concat(curly.Nodes.Skip(1).Select(arg => EmitExpression(arg, state))))} }})"
+                    : EmitCallCore(curly.Nodes[0], new[] { rightExpr }.Concat(curly.Nodes.Skip(1).Select(arg => EmitExpression(arg, state))).ToArray(), state),
+            _ => $"{EmitExpression(left, state)}({rightExpr})",
         };
     }
 
