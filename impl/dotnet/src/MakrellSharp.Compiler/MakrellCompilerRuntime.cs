@@ -8,30 +8,70 @@ namespace MakrellSharp.Compiler;
 
 public static class MakrellCompilerRuntime
 {
+    public sealed record PatternMatchResult(bool IsMatch, IReadOnlyDictionary<string, object?> Bindings);
+
+    public static PatternMatchResult MatchWithBindings(object? value, Node pattern)
+    {
+        ArgumentNullException.ThrowIfNull(pattern);
+
+        try
+        {
+            var bindings = new Dictionary<string, object?>(StringComparer.Ordinal);
+            return TryPatternMatch(value, pattern, bindings)
+                ? new PatternMatchResult(true, bindings)
+                : new PatternMatchResult(false, new Dictionary<string, object?>(StringComparer.Ordinal));
+        }
+        catch (Exception)
+        {
+            return new PatternMatchResult(false, new Dictionary<string, object?>(StringComparer.Ordinal));
+        }
+    }
+
+    public static object? GetBinding(PatternMatchResult result, string name)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        ArgumentException.ThrowIfNullOrEmpty(name);
+
+        return result.Bindings.TryGetValue(name, out var value)
+            ? value
+            : throw new KeyNotFoundException($"Pattern binding '{name}' was not found.");
+    }
+
     public static bool PatternMatches(object? value, Node pattern)
     {
         ArgumentNullException.ThrowIfNull(pattern);
 
         try
         {
-            return pattern switch
-            {
-                IdentifierNode identifier => MatchIdentifierPattern(value, identifier.Value),
-                NumberNode number => ValuesEqual(value, NumberLiteral(number.Value, number.Suffix)),
-                StringNode str => ValuesEqual(value, StringLiteral(str.Value, str.Suffix)),
-                SquareBracketsNode square => MatchListPattern(value, square),
-                CurlyBracketsNode curly when IsTypeConstructorPattern(curly) => MatchTypeConstructorPattern(value, curly),
-                BinOpNode { Operator: "|" } orPattern => PatternMatches(value, orPattern.Left) || PatternMatches(value, orPattern.Right),
-                BinOpNode { Operator: "&" } andPattern => PatternMatches(value, andPattern.Left) && PatternMatches(value, andPattern.Right),
-                BinOpNode { Operator: ":" } typePattern => PatternMatches(value, typePattern.Left) && MatchesTypePattern(value, typePattern.Right),
-                BinOpNode binOp when ContainsSelfReference(binOp) => IsTruthy(EvaluatePatternExpression(binOp, value)),
-                _ => false,
-            };
+            return TryPatternMatch(value, pattern, new Dictionary<string, object?>(StringComparer.Ordinal));
         }
         catch (Exception)
         {
             return false;
         }
+    }
+
+    private static bool TryPatternMatch(object? value, Node pattern, Dictionary<string, object?> bindings)
+    {
+        return pattern switch
+        {
+            IdentifierNode identifier => MatchIdentifierPattern(value, identifier.Value),
+            NumberNode number => ValuesEqual(value, NumberLiteral(number.Value, number.Suffix)),
+            StringNode str => ValuesEqual(value, StringLiteral(str.Value, str.Suffix)),
+            RoundBracketsNode round => MatchRoundPattern(value, round, bindings),
+            SquareBracketsNode square => MatchListPattern(value, square, bindings),
+            CurlyBracketsNode curly when IsRegularPattern(curly) => MatchRegularPattern(value, curly, bindings),
+            CurlyBracketsNode curly when IsTypeConstructorPattern(curly) => MatchTypeConstructorPattern(value, curly, bindings),
+            BinOpNode { Operator: "|" } orPattern => TryPatternMatch(value, orPattern.Left, bindings)
+                || TryPatternMatch(value, orPattern.Right, bindings),
+            BinOpNode { Operator: "&" } andPattern => TryPatternMatch(value, andPattern.Left, bindings)
+                && TryPatternMatch(value, andPattern.Right, bindings),
+            BinOpNode { Operator: "=" } assignmentPattern => MatchAssignmentPattern(value, assignmentPattern, bindings),
+            BinOpNode { Operator: ":" } typePattern => TryPatternMatch(value, typePattern.Left, bindings)
+                && MatchesTypePattern(value, typePattern.Right),
+            BinOpNode binOp when ContainsSelfReference(binOp) => IsTruthy(EvaluatePatternExpression(binOp, value)),
+            _ => false,
+        };
     }
 
     public static object? NumberLiteral(string value, string suffix)
@@ -701,7 +741,48 @@ public static class MakrellCompilerRuntime
         };
     }
 
-    private static bool MatchListPattern(object? value, SquareBracketsNode pattern)
+    private static bool MatchAssignmentPattern(object? value, BinOpNode assignmentPattern, Dictionary<string, object?> bindings)
+    {
+        if (!TryPatternMatch(value, assignmentPattern.Right, bindings))
+        {
+            return false;
+        }
+
+        return assignmentPattern.Left is IdentifierNode identifier
+            && TryBindCapture(identifier.Value, value, bindings);
+    }
+
+    private static bool TryBindCapture(string name, object? value, Dictionary<string, object?> bindings)
+    {
+        if (name is "_" or "$")
+        {
+            return true;
+        }
+
+        if (bindings.TryGetValue(name, out var existing))
+        {
+            return ValuesEqual(existing, value);
+        }
+
+        bindings[name] = value;
+        return true;
+    }
+
+    private static Dictionary<string, object?> CloneBindings(Dictionary<string, object?> bindings)
+    {
+        return new Dictionary<string, object?>(bindings, StringComparer.Ordinal);
+    }
+
+    private static void CopyBindings(Dictionary<string, object?> source, Dictionary<string, object?> target)
+    {
+        target.Clear();
+        foreach (var pair in source)
+        {
+            target[pair.Key] = pair.Value;
+        }
+    }
+
+    private static bool MatchListPattern(object? value, SquareBracketsNode pattern, Dictionary<string, object?> bindings)
     {
         if (!TryGetSequenceItems(value, out var items))
         {
@@ -715,7 +796,7 @@ public static class MakrellCompilerRuntime
 
         for (var i = 0; i < pattern.Nodes.Count; i += 1)
         {
-            if (!PatternMatches(items[i], pattern.Nodes[i]))
+            if (!TryPatternMatch(items[i], pattern.Nodes[i], bindings))
             {
                 return false;
             }
@@ -724,13 +805,145 @@ public static class MakrellCompilerRuntime
         return true;
     }
 
+    private static bool MatchRoundPattern(object? value, RoundBracketsNode pattern, Dictionary<string, object?> bindings)
+    {
+        return pattern.Nodes.Count switch
+        {
+            0 => value is null,
+            1 => TryPatternMatch(value, pattern.Nodes[0], bindings),
+            _ => pattern.Nodes.Any(node => TryPatternMatch(value, node, bindings)),
+        };
+    }
+
+    private static bool IsRegularPattern(CurlyBracketsNode pattern)
+    {
+        return pattern.Nodes.Count > 0
+            && pattern.Nodes[0] is IdentifierNode { Value: "$r" };
+    }
+
+    private static bool MatchRegularPattern(object? value, CurlyBracketsNode pattern, Dictionary<string, object?> bindings)
+    {
+        if (!TryGetSequenceItems(value, out var items))
+        {
+            return false;
+        }
+
+        if (pattern.Nodes.Count == 0)
+        {
+            return false;
+        }
+
+        return MatchRegularPatternFrom(items, pattern.Nodes, valueIndex: 0, patternIndex: 1, bindings);
+    }
+
+    private static bool MatchRegularPatternFrom(
+        IReadOnlyList<object?> values,
+        IReadOnlyList<Node> patterns,
+        int valueIndex,
+        int patternIndex,
+        Dictionary<string, object?> bindings)
+    {
+        if (patternIndex >= patterns.Count)
+        {
+            return valueIndex == values.Count;
+        }
+
+        var pattern = patterns[patternIndex];
+        if (pattern is IdentifierNode { Value: "$rest" })
+        {
+            return true;
+        }
+
+        if (pattern is BinOpNode { Operator: "*" } repetition)
+        {
+            var bounds = GetRegularPatternQuantifierBounds(repetition.Left);
+            if (bounds is null)
+            {
+                return false;
+            }
+
+            var (minCount, maxCount) = bounds.Value;
+            var maxTry = maxCount is null ? values.Count - valueIndex : Math.Min(maxCount.Value, values.Count - valueIndex);
+            for (var count = minCount; count <= maxTry; count += 1)
+            {
+                var localBindings = CloneBindings(bindings);
+                var matchedAll = true;
+                for (var i = 0; i < count; i += 1)
+                {
+                    if (!TryPatternMatch(values[valueIndex + i], repetition.Right, localBindings))
+                    {
+                        matchedAll = false;
+                        break;
+                    }
+                }
+
+                if (matchedAll && MatchRegularPatternFrom(values, patterns, valueIndex + count, patternIndex + 1, localBindings))
+                {
+                    CopyBindings(localBindings, bindings);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        if (valueIndex >= values.Count)
+        {
+            return false;
+        }
+
+        if (!TryPatternMatch(values[valueIndex], pattern, bindings))
+        {
+            return false;
+        }
+
+        return MatchRegularPatternFrom(values, patterns, valueIndex + 1, patternIndex + 1, bindings);
+    }
+
+    private static (int Min, int? Max)? GetRegularPatternQuantifierBounds(Node quantifier)
+    {
+        return quantifier switch
+        {
+            RoundBracketsNode { Nodes.Count: 1 } round => GetRegularPatternQuantifierBounds(round.Nodes[0]),
+            NumberNode number => GetExactNumericBounds(number),
+            IdentifierNode identifier => GetNamedQuantifierBounds(identifier.Value),
+            BinOpNode { Operator: "..", Left: NumberNode left, Right: NumberNode right } => GetRangeBounds(left, right),
+            _ => null,
+        };
+    }
+
+    private static (int Min, int? Max)? GetExactNumericBounds(NumberNode number)
+    {
+        var exact = Convert.ToInt32(NumberLiteral(number.Value, number.Suffix), CultureInfo.InvariantCulture);
+        return (exact, exact);
+    }
+
+    private static (int Min, int? Max)? GetRangeBounds(NumberNode left, NumberNode right)
+    {
+        var min = Convert.ToInt32(NumberLiteral(left.Value, left.Suffix), CultureInfo.InvariantCulture);
+        var max = Convert.ToInt32(NumberLiteral(right.Value, right.Suffix), CultureInfo.InvariantCulture);
+        return (min, max);
+    }
+
+    private static (int Min, int? Max)? GetNamedQuantifierBounds(string quantifier)
+    {
+        var normalized = quantifier.StartsWith('$') ? quantifier[1..] : quantifier;
+        return normalized switch
+        {
+            "maybe" => (0, 1),
+            "some" => (1, null),
+            "any" => (0, null),
+            _ => null,
+        };
+    }
+
     private static bool IsTypeConstructorPattern(CurlyBracketsNode pattern)
     {
         return pattern.Nodes.Count > 0
             && pattern.Nodes[0] is IdentifierNode { Value: "$type" };
     }
 
-    private static bool MatchTypeConstructorPattern(object? value, CurlyBracketsNode pattern)
+    private static bool MatchTypeConstructorPattern(object? value, CurlyBracketsNode pattern, Dictionary<string, object?> bindings)
     {
         if (value is null || pattern.Nodes.Count < 2)
         {
@@ -779,7 +992,7 @@ public static class MakrellCompilerRuntime
             positionalBlock = block;
         }
 
-        if (positionalBlock is not null && !MatchPositionalTypePattern(value, positionalBlock))
+        if (positionalBlock is not null && !MatchPositionalTypePattern(value, positionalBlock, bindings))
         {
             return false;
         }
@@ -792,7 +1005,7 @@ public static class MakrellCompilerRuntime
             }
 
             var memberValue = GetMemberValue(value, memberName.Value);
-            if (!PatternMatches(memberValue, keywordPattern.Right))
+            if (!TryPatternMatch(memberValue, keywordPattern.Right, bindings))
             {
                 return false;
             }
@@ -801,7 +1014,7 @@ public static class MakrellCompilerRuntime
         return true;
     }
 
-    private static bool MatchPositionalTypePattern(object value, SquareBracketsNode positionalBlock)
+    private static bool MatchPositionalTypePattern(object value, SquareBracketsNode positionalBlock, Dictionary<string, object?> bindings)
     {
         if (!TryGetPositionalItems(value, out var items))
         {
@@ -815,7 +1028,7 @@ public static class MakrellCompilerRuntime
 
         for (var i = 0; i < items.Count; i += 1)
         {
-            if (!PatternMatches(items[i], positionalBlock.Nodes[i]))
+            if (!TryPatternMatch(items[i], positionalBlock.Nodes[i], bindings))
             {
                 return false;
             }

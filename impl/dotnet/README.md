@@ -63,9 +63,11 @@ Makrell# now has a first pattern-matching slice with:
 - wildcard `_`
 - literal patterns
 - alternation with `|`
+- capture bindings with `name=pattern`
 - fixed-length list/array patterns
 - `_:Type` checks
 - `$type` constructor patterns with type-only, positional tuple/sequence, and keyword member matching
+- `$r` regular patterns with exact sequence matching, `_`, `$rest`, grouped alternatives, `maybe`/`some`/`any` quantifiers, range quantifiers, nested regular patterns, and binding-compatible `name=pattern` forms
 - self truthiness pattern `$`
 - composite patterns with `&`
 - self-based predicate patterns such as `$ < 3`
@@ -115,6 +117,30 @@ date = {new System.DateTime [2024 6 7]}
         "date"
     _
         "other"}
+```
+
+```makrell
+{match [2 7 5]
+    {$r 2 any*(_ | 7) 5}
+        true
+    _
+        false}
+```
+
+```makrell
+{match [[2 3] 7]
+    {$r {$r 2 3} 7}
+        true
+    _
+        false}
+```
+
+```makrell
+{match [2 3]
+    [a=_ b=_]
+        a + b
+    _
+        0}
 ```
 
 ## Interop notes

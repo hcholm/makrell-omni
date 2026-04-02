@@ -303,11 +303,20 @@ internal static class CSharpEmitter
         for (var i = 0; i < clauseNodes.Length; i += 2)
         {
             var patternExpression = EmitPatternNode(clauseNodes[i], state);
+            var captureNames = CollectPatternCaptureNames(clauseNodes[i]);
+            var matchResultName = NextGeneratedName("matchResult");
             var resultExpression = EmitExpression(clauseNodes[i + 1], state);
-            builder.Append($"{Indent(3)}if (MakrellSharp.Compiler.MakrellCompilerRuntime.PatternMatches({matchValueName}, {patternExpression}))");
+            builder.Append($"{Indent(3)}var {matchResultName} = MakrellSharp.Compiler.MakrellCompilerRuntime.MatchWithBindings({matchValueName}, {patternExpression});");
+            builder.AppendLine();
+            builder.Append($"{Indent(3)}if ({matchResultName}.IsMatch)");
             builder.AppendLine();
             builder.Append($"{Indent(3)}{{");
             builder.AppendLine();
+            foreach (var captureName in captureNames)
+            {
+                builder.Append($"{Indent(4)}dynamic {captureName} = MakrellSharp.Compiler.MakrellCompilerRuntime.GetBinding({matchResultName}, {Quote(captureName)});");
+                builder.AppendLine();
+            }
             builder.Append($"{Indent(4)}return {resultExpression};");
             builder.AppendLine();
             builder.Append($"{Indent(3)}}}");
@@ -1016,6 +1025,82 @@ internal static class CSharpEmitter
     private static string EmitPatternNode(Node node, EmitterState state)
     {
         return EmitQuotedNode(node, state, allowSpecialForms: false);
+    }
+
+    private static IReadOnlyList<string> CollectPatternCaptureNames(Node node)
+    {
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        CollectPatternCaptureNames(node, names);
+        return names.ToArray();
+    }
+
+    private static void CollectPatternCaptureNames(Node node, HashSet<string> names)
+    {
+        switch (node)
+        {
+            case BinOpNode { Operator: "=" } assignment when assignment.Left is IdentifierNode identifier:
+                if (identifier.Value is not "_" and not "$")
+                {
+                    names.Add(identifier.Value);
+                }
+
+                CollectPatternCaptureNames(assignment.Right, names);
+                return;
+            case BinOpNode binOp:
+                CollectPatternCaptureNames(binOp.Left, names);
+                CollectPatternCaptureNames(binOp.Right, names);
+                return;
+            case RoundBracketsNode round:
+                foreach (var child in round.Nodes)
+                {
+                    CollectPatternCaptureNames(child, names);
+                }
+
+                return;
+            case SquareBracketsNode square:
+                foreach (var child in square.Nodes)
+                {
+                    CollectPatternCaptureNames(child, names);
+                }
+
+                return;
+            case CurlyBracketsNode curly:
+                if (curly.Nodes.Count > 0 && curly.Nodes[0] is IdentifierNode { Value: "$type" })
+                {
+                    for (var i = 1; i < curly.Nodes.Count; i += 1)
+                    {
+                        if (curly.Nodes[i] is SquareBracketsNode block
+                            && block.Nodes.Count > 0
+                            && block.Nodes.All(static node => node is BinOpNode { Operator: "=" } assignment && assignment.Left is IdentifierNode))
+                        {
+                            foreach (var assignment in block.Nodes.Cast<BinOpNode>())
+                            {
+                                CollectPatternCaptureNames(assignment.Right, names);
+                            }
+
+                            continue;
+                        }
+
+                        CollectPatternCaptureNames(curly.Nodes[i], names);
+                    }
+
+                    return;
+                }
+
+                foreach (var child in curly.Nodes)
+                {
+                    CollectPatternCaptureNames(child, names);
+                }
+
+                return;
+            case SequenceNode sequence:
+                foreach (var child in sequence.Nodes)
+                {
+                    CollectPatternCaptureNames(child, names);
+                }
+
+                return;
+        }
     }
 
     private static string EmitTypeArgumentsArrayExpression(IReadOnlyList<Node> nodes)

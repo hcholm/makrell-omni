@@ -185,6 +185,171 @@ public sealed class MakrellCompilerTests
     }
 
     [Fact]
+    public void Run_EvaluatesMatchExpression_WithRegularPattern_Exact()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {match [2 3 5]
+                {$r 2 3 5}
+                    true
+                _
+                    false}
+            """);
+
+        Assert.True(Convert.ToBoolean(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesMatchExpression_WithRegularPattern_RestAndWildcard()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {match [2 3 5 7]
+                {$r 2 _ $rest}
+                    true
+                _
+                    false}
+            """);
+
+        Assert.True(Convert.ToBoolean(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesMatchExpression_WithRegularPattern_Quantifier()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {match [2 5 5 3]
+                {$r 2 some*5 3}
+                    true
+                _
+                    false}
+            """);
+
+        Assert.True(Convert.ToBoolean(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesMatchExpression_WithRegularPattern_GroupAlternatives()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {match [2 7 5]
+                {$r 2 any*(_ | 7) 5}
+                    true
+                _
+                    false}
+            """);
+
+        Assert.True(Convert.ToBoolean(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesMatchExpression_WithCaptureBinding()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {match 2
+                x=_
+                    x + 3
+                _
+                    0}
+            """);
+
+        Assert.Equal(5, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesMatchExpression_WithNestedCaptureBindings()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {match [2 3]
+                [a=_ b=_]
+                    a + b
+                _
+                    0}
+            """);
+
+        Assert.Equal(5, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesMatchExpression_WithRepeatedCaptureConsistency()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {match [2 2]
+                [x=_ x=_]
+                    x
+                _
+                    0}
+            """);
+
+        Assert.Equal(2, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesMatchExpression_WithRegularPattern_RangeQuantifier()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {match [2 3 3 5]
+                {$r 2 (2..3)*3 5}
+                    true
+                _
+                    false}
+            """);
+
+        Assert.True(Convert.ToBoolean(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesMatchExpression_WithRegularPattern_CaptureBindings()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {match [2 3 5]
+                {$r a=2 b=3 c=5}
+                    b
+                _
+                    0}
+            """);
+
+        Assert.Equal(3, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesMatchExpression_WithRegularPattern_BindingCompatibleEquals()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {match [2 3 5]
+                {$r a=2 b=3 c=5}
+                    true
+                _
+                    false}
+            """);
+
+        Assert.True(Convert.ToBoolean(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesMatchExpression_WithNestedRegularPattern()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {match [[2 3] 7]
+                {$r {$r 2 3} 7}
+                    true
+                _
+                    false}
+            """);
+
+        Assert.True(Convert.ToBoolean(result));
+    }
+
+    [Fact]
     public void Run_EvaluatesWhenStatement()
     {
         var result = MakrellCompiler.Run(

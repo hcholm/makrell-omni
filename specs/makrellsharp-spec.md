@@ -91,9 +91,11 @@ Implemented forms:
 - wildcard `_`
 - literal number, string, boolean, and null patterns
 - alternation with `|`
+- capture bindings with `name=pattern`
 - fixed-length list/array patterns such as `[_ _]`
 - type patterns of the form `_:Type`
 - `$type` constructor patterns with type-only, positional tuple/sequence, and keyword member matching
+- `$r` regular patterns with exact sequence matching, `_`, `$rest`, grouped alternatives, `maybe`/`some`/`any` quantifiers, range quantifiers, nested regular patterns, and binding-compatible `name=pattern` forms
 - self truthiness pattern `$`
 - composite patterns with `&`
 - self-based predicate patterns such as `$ < 3`
@@ -146,8 +148,32 @@ date = {new System.DateTime [2024 6 7]}
         "other"}
 ```
 
+```makrell
+{match [2 7 5]
+    {$r 2 any*(_ | 7) 5}
+        true
+    _
+        false}
+```
+
+```makrell
+{match [[2 3] 7]
+    {$r {$r 2 3} 7}
+        true
+    _
+        false}
+```
+
+```makrell
+{match [2 3]
+    [a=_ b=_]
+        a + b
+    _
+        0}
+```
+
 This is intentionally only a first slice of MakrellPy-style pattern matching.
-The current Makrell# implementation does not yet include user-defined patterns, `$r` regular patterns, binding patterns, or full MakrellPy pattern parity.
+The current Makrell# implementation does not yet include user-defined patterns or full MakrellPy pattern parity.
 
 ## 7. Quote, Meta, and Macros
 
