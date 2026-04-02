@@ -45,7 +45,8 @@ Implemented so far:
 - compile-time `meta`
 - Makrell-defined macros with original whitespace-preserving nodes
 - dynamic compile/load with replayable `importm` metadata
-- first-pass .NET interop through `import`, `new`, member calls, property assignment, and index assignment
+- first-pass .NET interop through `import`, `new`, member calls, generic member calls, property assignment, and index assignment
+- basic constructor and instance-method overload coercion for common scalar CLR arguments
 
 Not implemented yet:
 
@@ -84,6 +85,17 @@ sb = {new StringBuilder ["Mak"]}
 ```makrell
 items = {new (array string) ["Mak" "rell#"]}
 {String.Join "" items}
+```
+
+```makrell
+empty = {Array.Empty@(string)}
+empty.Length
+```
+
+```makrell
+{import System.Linq}
+repeated = {Enumerable.Repeat@(string) "ha" 3}
+{String.Join "" repeated}
 ```
 
 ```makrell

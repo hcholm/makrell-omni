@@ -316,7 +316,7 @@ internal static class CSharpEmitter
         }
 
         var args = string.Join(", ", argsNode.Nodes.Select(arg => EmitExpression(arg, state)));
-        return $"new {typeExpression}({args})";
+        return $"MakrellSharp.Compiler.MakrellCompilerRuntime.CreateInstance(typeof({typeExpression}), new object?[] {{ {args} }})";
     }
 
     private static string EmitQuote(
@@ -335,9 +335,19 @@ internal static class CSharpEmitter
 
     private static string EmitCall(CurlyBracketsNode curly, EmitterState state)
     {
-        var callee = EmitExpression(curly.Nodes[0], state);
         var args = string.Join(", ", curly.Nodes.Skip(1).Select(arg => EmitExpression(arg, state)));
-        return $"{callee}({args})";
+        var argsArray = $"new object?[] {{ {args} }}";
+        var target = ClassifyCallTarget(curly.Nodes[0], state);
+
+        return target.Kind switch
+        {
+            CallTargetKind.Direct => $"{target.Expression!}({args})",
+            CallTargetKind.RuntimeInstanceMember => $"MakrellSharp.Compiler.MakrellCompilerRuntime.InvokeMember({target.Expression!}, {Quote(target.MemberName!)}, {argsArray})",
+            CallTargetKind.RuntimeInstanceGenericMember => $"MakrellSharp.Compiler.MakrellCompilerRuntime.InvokeMemberGeneric({target.Expression!}, {Quote(target.MemberName!)}, {target.GenericTypeArgumentsExpression!}, {argsArray})",
+            CallTargetKind.RuntimeStaticMember => $"MakrellSharp.Compiler.MakrellCompilerRuntime.InvokeStatic(typeof({target.TypeExpression!}), {Quote(target.MemberName!)}, {argsArray})",
+            CallTargetKind.RuntimeStaticGenericMember => $"MakrellSharp.Compiler.MakrellCompilerRuntime.InvokeStaticGeneric(typeof({target.TypeExpression!}), {Quote(target.MemberName!)}, {target.GenericTypeArgumentsExpression!}, {argsArray})",
+            _ => throw new InvalidOperationException("Unknown call target kind."),
+        };
     }
 
     private static string EmitQuotedNode(
@@ -943,6 +953,12 @@ internal static class CSharpEmitter
         return results;
     }
 
+    private static string EmitTypeArgumentsArrayExpression(IReadOnlyList<Node> nodes)
+    {
+        var typeArguments = nodes.Select(node => $"typeof({EmitTypeReferenceNode(node)})");
+        return $"new global::System.Type[] {{ {string.Join(", ", typeArguments)} }}";
+    }
+
     private static string MapTypeAlias(string value)
     {
         return value switch
@@ -972,6 +988,170 @@ internal static class CSharpEmitter
         };
     }
 
+    private static CallTarget ClassifyCallTarget(Node node, EmitterState state)
+    {
+        if (TryClassifyGenericMethodCallTarget(node, state, out var genericTarget))
+        {
+            return genericTarget;
+        }
+
+        if (node is BinOpNode { Operator: "." } memberCall && memberCall.Right is IdentifierNode memberName)
+        {
+            if (ShouldUseRuntimeMemberInvocation(memberCall.Left, state))
+            {
+                return new CallTarget(
+                    CallTargetKind.RuntimeInstanceMember,
+                    EmitExpression(memberCall.Left, state),
+                    memberName.Value,
+                    null,
+                    null);
+            }
+
+            if (TryGetStaticTypeExpression(memberCall.Left, state, out var typeExpression))
+            {
+                return new CallTarget(
+                    CallTargetKind.RuntimeStaticMember,
+                    null,
+                    memberName.Value,
+                    typeExpression,
+                    null);
+            }
+        }
+
+        return new CallTarget(
+            CallTargetKind.Direct,
+            EmitExpression(node, state),
+            null,
+            null,
+            null);
+    }
+
+    private static bool TryClassifyGenericMethodCallTarget(Node node, EmitterState state, out CallTarget target)
+    {
+        target = new CallTarget(
+            CallTargetKind.Direct,
+            null,
+            null,
+            null,
+            null);
+
+        if (node is not BinOpNode { Operator: "@" } genericMethod
+            || genericMethod.Left is not BinOpNode { Operator: "." } memberCall
+            || memberCall.Right is not IdentifierNode memberName
+            || genericMethod.Right is not RoundBracketsNode typeArguments
+            || typeArguments.Nodes.Count == 0)
+        {
+            return false;
+        }
+
+        var genericTypeArgumentsExpression = EmitTypeArgumentsArrayExpression(typeArguments.Nodes);
+
+        if (ShouldUseRuntimeMemberInvocation(memberCall.Left, state))
+        {
+            target = new CallTarget(
+                CallTargetKind.RuntimeInstanceGenericMember,
+                EmitExpression(memberCall.Left, state),
+                memberName.Value,
+                null,
+                genericTypeArgumentsExpression);
+            return true;
+        }
+
+        if (TryGetStaticTypeExpression(memberCall.Left, state, out var typeExpression))
+        {
+            target = new CallTarget(
+                CallTargetKind.RuntimeStaticGenericMember,
+                null,
+                memberName.Value,
+                typeExpression,
+                genericTypeArgumentsExpression);
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool ShouldUseRuntimeMemberInvocation(Node target, EmitterState state)
+    {
+        return TryGetRootIdentifier(target, out var root) && state.IsDeclared(root);
+    }
+
+    private static bool TryGetRootIdentifier(Node node, out string identifier)
+    {
+        switch (node)
+        {
+            case IdentifierNode id:
+                identifier = id.Value;
+                return true;
+            case BinOpNode { Operator: "." } dotted:
+                return TryGetRootIdentifier(dotted.Left, out identifier);
+            default:
+                identifier = string.Empty;
+                return false;
+        }
+    }
+
+    private static string ExtractMemberName(Node node)
+    {
+        return node switch
+        {
+            IdentifierNode identifier => identifier.Value,
+            _ => throw new InvalidOperationException("Member invocation requires an identifier member name."),
+        };
+    }
+
+    private static bool TryGetStaticTypeExpression(Node node, EmitterState state, out string typeExpression)
+    {
+        typeExpression = string.Empty;
+
+        if (TryGetRootIdentifier(node, out var root) && state.IsDeclared(root))
+        {
+            return false;
+        }
+
+        if (!IsLikelyStaticTypeTarget(node))
+        {
+            return false;
+        }
+
+        try
+        {
+            typeExpression = EmitTypeReference([node]);
+            return true;
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
+    }
+
+    private static bool IsLikelyStaticTypeTarget(Node node)
+    {
+        return node switch
+        {
+            IdentifierNode identifier => LooksLikeTypeName(identifier.Value),
+            RoundBracketsNode => true,
+            BinOpNode { Operator: "." } dotted => IsLikelyStaticTypeTarget(dotted.Left) && dotted.Right is IdentifierNode right && LooksLikeTypeName(right.Value),
+            _ => false,
+        };
+    }
+
+    private static bool LooksLikeTypeName(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return false;
+        }
+
+        if (value is "string" or "bool" or "object" or "long" or "int" or "double" or "float" or "decimal" or "list" or "dict" or "dictionary" or "array")
+        {
+            return true;
+        }
+
+        var first = value[0];
+        return char.IsUpper(first) && !value.All(static ch => char.IsUpper(ch) || char.IsDigit(ch) || ch == '_');
+    }
+
     private static string Quote(string value) =>
         "\"" + value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal) + "\"";
 
@@ -982,6 +1162,8 @@ internal static class CSharpEmitter
         private readonly HashSet<string> declared = new(StringComparer.Ordinal);
 
         public bool Declare(string name) => declared.Add(name);
+
+        public bool IsDeclared(string name) => declared.Contains(name);
 
         public EmitterState Fork()
         {
@@ -1001,6 +1183,22 @@ internal static class CSharpEmitter
         List,
         Dictionary,
     }
+
+    private enum CallTargetKind
+    {
+        Direct,
+        RuntimeInstanceMember,
+        RuntimeStaticMember,
+        RuntimeInstanceGenericMember,
+        RuntimeStaticGenericMember,
+    }
+
+    private sealed record CallTarget(
+        CallTargetKind Kind,
+        string? Expression,
+        string? MemberName,
+        string? TypeExpression,
+        string? GenericTypeArgumentsExpression);
 
     private sealed record ModuleImports(
         IReadOnlyList<string> UsingDirectives,

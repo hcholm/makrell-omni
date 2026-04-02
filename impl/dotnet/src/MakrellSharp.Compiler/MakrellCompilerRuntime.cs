@@ -138,6 +138,133 @@ public static class MakrellCompilerRuntime
         throw new InvalidOperationException($"Value of type '{targetType.FullName}' is not index-assignable.");
     }
 
+    public static object? CreateInstance(Type targetType, object?[]? args)
+    {
+        ArgumentNullException.ThrowIfNull(targetType);
+        args ??= [];
+
+        var match = targetType
+            .GetConstructors(BindingFlags.Public | BindingFlags.Instance)
+            .Select(constructor => TryBindArguments(constructor.GetParameters(), args, out var convertedArgs, out var score)
+                ? new Candidate<ConstructorInfo>(constructor, convertedArgs, score)
+                : null)
+            .Where(static candidate => candidate is not null)
+            .OrderBy(static candidate => candidate!.Score)
+            .FirstOrDefault();
+
+        if (match is null)
+        {
+            throw new InvalidOperationException(
+                $"No matching public constructor found on '{targetType.FullName}' for {args.Length} argument(s).");
+        }
+
+        return match.Member.Invoke(match.Arguments);
+    }
+
+    public static object? InvokeMember(object? target, string memberName, object?[]? args)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        ArgumentException.ThrowIfNullOrEmpty(memberName);
+        args ??= [];
+
+        var targetType = target.GetType();
+        var match = targetType
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance)
+            .Where(method => method.Name == memberName)
+            .Select(method => TryBindArguments(method.GetParameters(), args, out var convertedArgs, out var score)
+                ? new Candidate<MethodInfo>(method, convertedArgs, score)
+                : null)
+            .Where(static candidate => candidate is not null)
+            .OrderBy(static candidate => candidate!.Score)
+            .FirstOrDefault();
+
+        if (match is null)
+        {
+            throw new InvalidOperationException(
+                $"No matching public instance method '{memberName}' found on '{targetType.FullName}' for {args.Length} argument(s).");
+        }
+
+        return match.Member.Invoke(target, match.Arguments);
+    }
+
+    public static object? InvokeMemberGeneric(object? target, string memberName, Type[] typeArguments, object?[]? args)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        ArgumentException.ThrowIfNullOrEmpty(memberName);
+        ArgumentNullException.ThrowIfNull(typeArguments);
+        args ??= [];
+
+        var targetType = target.GetType();
+        var match = targetType
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance)
+            .Where(method => method.Name == memberName
+                && method.IsGenericMethodDefinition
+                && method.GetGenericArguments().Length == typeArguments.Length)
+            .Select(method => TryBindGenericMethod(method, typeArguments, args, out var candidate) ? candidate : null)
+            .Where(static candidate => candidate is not null)
+            .OrderBy(static candidate => candidate!.Score)
+            .FirstOrDefault();
+
+        if (match is null)
+        {
+            throw new InvalidOperationException(
+                $"No matching public generic instance method '{memberName}' found on '{targetType.FullName}' for {typeArguments.Length} type argument(s) and {args.Length} value argument(s).");
+        }
+
+        return match.Member.Invoke(target, match.Arguments);
+    }
+
+    public static object? InvokeStatic(Type targetType, string memberName, object?[]? args)
+    {
+        ArgumentNullException.ThrowIfNull(targetType);
+        ArgumentException.ThrowIfNullOrEmpty(memberName);
+        args ??= [];
+
+        var match = targetType
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Where(method => method.Name == memberName)
+            .Select(method => TryBindArguments(method.GetParameters(), args, out var convertedArgs, out var score)
+                ? new Candidate<MethodInfo>(method, convertedArgs, score)
+                : null)
+            .Where(static candidate => candidate is not null)
+            .OrderBy(static candidate => candidate!.Score)
+            .FirstOrDefault();
+
+        if (match is null)
+        {
+            throw new InvalidOperationException(
+                $"No matching public static method '{memberName}' found on '{targetType.FullName}' for {args.Length} argument(s).");
+        }
+
+        return match.Member.Invoke(null, match.Arguments);
+    }
+
+    public static object? InvokeStaticGeneric(Type targetType, string memberName, Type[] typeArguments, object?[]? args)
+    {
+        ArgumentNullException.ThrowIfNull(targetType);
+        ArgumentException.ThrowIfNullOrEmpty(memberName);
+        ArgumentNullException.ThrowIfNull(typeArguments);
+        args ??= [];
+
+        var match = targetType
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Where(method => method.Name == memberName
+                && method.IsGenericMethodDefinition
+                && method.GetGenericArguments().Length == typeArguments.Length)
+            .Select(method => TryBindGenericMethod(method, typeArguments, args, out var candidate) ? candidate : null)
+            .Where(static candidate => candidate is not null)
+            .OrderBy(static candidate => candidate!.Score)
+            .FirstOrDefault();
+
+        if (match is null)
+        {
+            throw new InvalidOperationException(
+                $"No matching public generic static method '{memberName}' found on '{targetType.FullName}' for {typeArguments.Length} type argument(s) and {args.Length} value argument(s).");
+        }
+
+        return match.Member.Invoke(null, match.Arguments);
+    }
+
     private static int NormalizeIntIndex(int length, object? index)
     {
         var converted = Convert.ToInt32(index, CultureInfo.InvariantCulture);
@@ -228,4 +355,267 @@ public static class MakrellCompilerRuntime
 
         return Convert.ChangeType(value, targetType, CultureInfo.InvariantCulture);
     }
+
+    private static bool TryBindArguments(
+        ParameterInfo[] parameters,
+        object?[] args,
+        out object?[] convertedArgs,
+        out int score)
+    {
+        convertedArgs = [];
+        score = 0;
+
+        var hasParamsArray = parameters.Length > 0
+            && parameters[^1].GetCustomAttribute<ParamArrayAttribute>() is not null;
+
+        if (!hasParamsArray && parameters.Length != args.Length)
+        {
+            return false;
+        }
+
+        if (hasParamsArray && args.Length < parameters.Length - 1)
+        {
+            return false;
+        }
+
+        var bound = new object?[parameters.Length];
+        var totalScore = 0;
+
+        for (var i = 0; i < parameters.Length; i += 1)
+        {
+            var parameter = parameters[i];
+            if (hasParamsArray && i == parameters.Length - 1)
+            {
+                var elementType = parameter.ParameterType.GetElementType()
+                    ?? throw new InvalidOperationException("Params array element type is missing.");
+                var paramCount = args.Length - (parameters.Length - 1);
+                var array = Array.CreateInstance(elementType, paramCount);
+                for (var j = 0; j < paramCount; j += 1)
+                {
+                    if (!TryConvertArgument(args[i + j], elementType, out var converted, out var argScore))
+                    {
+                        return false;
+                    }
+
+                    array.SetValue(converted, j);
+                    totalScore += argScore + 2;
+                }
+
+                bound[i] = array;
+                continue;
+            }
+
+            if (!TryConvertArgument(args[i], parameter.ParameterType, out var convertedArg, out var parameterScore))
+            {
+                return false;
+            }
+
+            bound[i] = convertedArg;
+            totalScore += parameterScore;
+        }
+
+        convertedArgs = bound;
+        score = totalScore;
+        return true;
+    }
+
+    private static bool TryConvertArgument(object? value, Type targetType, out object? converted, out int score)
+    {
+        converted = null;
+        score = 0;
+
+        if (value is null)
+        {
+            if (!targetType.IsValueType || Nullable.GetUnderlyingType(targetType) is not null)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        var nullableTarget = Nullable.GetUnderlyingType(targetType);
+        if (nullableTarget is not null)
+        {
+            targetType = nullableTarget;
+            score += 1;
+        }
+
+        if (targetType.IsInstanceOfType(value))
+        {
+            converted = value;
+            return true;
+        }
+
+        if (targetType.IsArray && value is object?[] objectArray)
+        {
+            var elementType = targetType.GetElementType()
+                ?? throw new InvalidOperationException("Array element type is missing.");
+            var array = Array.CreateInstance(elementType, objectArray.Length);
+            var totalScore = score;
+            for (var i = 0; i < objectArray.Length; i += 1)
+            {
+                if (!TryConvertArgument(objectArray[i], elementType, out var convertedElement, out var elementScore))
+                {
+                    return false;
+                }
+
+                array.SetValue(convertedElement, i);
+                totalScore += elementScore + 1;
+            }
+
+            converted = array;
+            score = totalScore;
+            return true;
+        }
+
+        if (targetType.IsEnum)
+        {
+            if (value is string enumName)
+            {
+                converted = Enum.Parse(targetType, enumName, ignoreCase: false);
+                score += 3;
+                return true;
+            }
+
+            try
+            {
+                var underlying = Enum.GetUnderlyingType(targetType);
+                var numeric = Convert.ChangeType(value, underlying, CultureInfo.InvariantCulture);
+                converted = Enum.ToObject(targetType, numeric!);
+                score += 3;
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        try
+        {
+            converted = ConvertScalarValue(value, targetType);
+            score += 2;
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    private static object? ConvertScalarValue(object value, Type targetType)
+    {
+        if (targetType == typeof(string))
+        {
+            return Convert.ToString(value, CultureInfo.InvariantCulture);
+        }
+
+        if (targetType == typeof(bool))
+        {
+            return Convert.ToBoolean(value, CultureInfo.InvariantCulture);
+        }
+
+        if (targetType == typeof(byte))
+        {
+            return Convert.ToByte(value, CultureInfo.InvariantCulture);
+        }
+
+        if (targetType == typeof(sbyte))
+        {
+            return Convert.ToSByte(value, CultureInfo.InvariantCulture);
+        }
+
+        if (targetType == typeof(short))
+        {
+            return Convert.ToInt16(value, CultureInfo.InvariantCulture);
+        }
+
+        if (targetType == typeof(ushort))
+        {
+            return Convert.ToUInt16(value, CultureInfo.InvariantCulture);
+        }
+
+        if (targetType == typeof(int))
+        {
+            return Convert.ToInt32(value, CultureInfo.InvariantCulture);
+        }
+
+        if (targetType == typeof(uint))
+        {
+            return Convert.ToUInt32(value, CultureInfo.InvariantCulture);
+        }
+
+        if (targetType == typeof(long))
+        {
+            return Convert.ToInt64(value, CultureInfo.InvariantCulture);
+        }
+
+        if (targetType == typeof(ulong))
+        {
+            return Convert.ToUInt64(value, CultureInfo.InvariantCulture);
+        }
+
+        if (targetType == typeof(float))
+        {
+            return Convert.ToSingle(value, CultureInfo.InvariantCulture);
+        }
+
+        if (targetType == typeof(double))
+        {
+            return Convert.ToDouble(value, CultureInfo.InvariantCulture);
+        }
+
+        if (targetType == typeof(decimal))
+        {
+            return Convert.ToDecimal(value, CultureInfo.InvariantCulture);
+        }
+
+        if (targetType == typeof(char))
+        {
+            return value switch
+            {
+                char ch => ch,
+                string text when text.Length == 1 => text[0],
+                _ => Convert.ToChar(value, CultureInfo.InvariantCulture),
+            };
+        }
+
+        if (targetType == typeof(object))
+        {
+            return value;
+        }
+
+        return Convert.ChangeType(value, targetType, CultureInfo.InvariantCulture);
+    }
+
+    private static bool TryBindGenericMethod(
+        MethodInfo methodDefinition,
+        Type[] typeArguments,
+        object?[] args,
+        out Candidate<MethodInfo>? candidate)
+    {
+        candidate = null;
+
+        MethodInfo closedMethod;
+        try
+        {
+            closedMethod = methodDefinition.MakeGenericMethod(typeArguments);
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+
+        if (!TryBindArguments(closedMethod.GetParameters(), args, out var convertedArgs, out var score))
+        {
+            return false;
+        }
+
+        candidate = new Candidate<MethodInfo>(closedMethod, convertedArgs, score);
+        return true;
+    }
+
+    private sealed record Candidate<TMember>(TMember Member, object?[] Arguments, int Score)
+        where TMember : MethodBase;
 }

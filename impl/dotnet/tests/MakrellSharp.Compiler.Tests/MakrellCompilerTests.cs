@@ -132,6 +132,18 @@ public sealed class MakrellCompilerTests
     }
 
     [Fact]
+    public void Run_CoercesMakrellIntegers_ForClrConstructors()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            sb = {new System.Text.StringBuilder [2 10]}
+            sb.MaxCapacity
+            """);
+
+        Assert.Equal(10, Convert.ToInt32(result));
+    }
+
+    [Fact]
     public void Run_ImportsNamespaceForTypeResolution()
     {
         var result = MakrellCompiler.Run(
@@ -198,6 +210,45 @@ public sealed class MakrellCompilerTests
     }
 
     [Fact]
+    public void Run_CallsGenericStaticClrMethods_WithoutArguments()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            empty = {Array.Empty@(string)}
+            empty.Length
+            """);
+
+        Assert.Equal(0, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_CallsGenericStaticClrMethods_WithArguments()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {import System.Linq}
+            repeated = {Enumerable.Repeat@(string) "ha" 3}
+            {String.Join "" repeated}
+            """);
+
+        Assert.Equal("hahaha", result);
+    }
+
+    [Fact]
+    public void Run_CoercesMakrellIntegers_ForStaticClrMethodOverloads()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {import System.Text@[Encoding]}
+            codepage = 65001
+            enc = {Encoding.GetEncoding codepage}
+            enc.WebName
+            """);
+
+        Assert.Equal("utf-8", result);
+    }
+
+    [Fact]
     public void Run_ConstructsTypedArrays()
     {
         var result = MakrellCompiler.Run(
@@ -245,6 +296,20 @@ public sealed class MakrellCompilerTests
             """);
 
         Assert.Equal(32, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_CoercesMakrellIntegers_ForClrMethodOverloads()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {import System.Text}
+            sb = {new StringBuilder ["bc"]}
+            {sb.Insert 0 "A"}
+            {sb.ToString}
+            """);
+
+        Assert.Equal("Abc", result);
     }
 
     [Fact]
@@ -716,7 +781,7 @@ public sealed class MakrellCompilerTests
         Assert.Contains("Makrell# runtime execution failed", exception.Message, StringComparison.Ordinal);
         Assert.Contains("NoSuchMethod", exception.Message, StringComparison.Ordinal);
         Assert.Contains("__MakrellModule", exception.CSharpSource, StringComparison.Ordinal);
-        Assert.Contains("sb.NoSuchMethod()", exception.CSharpSource, StringComparison.Ordinal);
+        Assert.Contains("InvokeMember(sb, \"NoSuchMethod\"", exception.CSharpSource, StringComparison.Ordinal);
     }
 
     [Fact]

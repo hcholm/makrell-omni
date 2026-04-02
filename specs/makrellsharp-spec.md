@@ -118,8 +118,10 @@ Current implemented interop includes:
 - imported type aliases such as `{import System.Text.StringBuilder}`
 - construction with `{new Type [args...]}`
 - static/member calls via normal curly call syntax
+- generic CLR method calls via `head@(types...)` in call position
 - writable property assignment
 - index access and assignment for CLR types with indexers
+- basic constructor and instance-method overload coercion for common scalar values
 
 Examples:
 
@@ -134,6 +136,17 @@ sb = {new StringBuilder ["Mak"]}
 {import (list string)}
 items = {new List ["a" "b"]}
 items @ 1
+```
+
+```makrell
+empty = {Array.Empty@(string)}
+empty.Length
+```
+
+```makrell
+{import System.Linq}
+repeated = {Enumerable.Repeat@(string) "ha" 3}
+{String.Join "" repeated}
 ```
 
 ## 9. Type Reference Forms
