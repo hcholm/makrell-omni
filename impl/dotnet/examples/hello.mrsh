@@ -1,0 +1,2 @@
+{import System}
+{String.Join " " {new (array string) ["Hello" "from" "Makrell#"]}}

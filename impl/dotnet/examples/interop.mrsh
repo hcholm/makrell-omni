@@ -1,0 +1,9 @@
+{import System}
+{import System.Text}
+
+items = {new (list string) ["Mak" "rell#"]}
+joined = {String.Join "" items}
+
+sb = {new StringBuilder [joined]}
+{sb.Append " on .NET"}
+{sb.ToString}

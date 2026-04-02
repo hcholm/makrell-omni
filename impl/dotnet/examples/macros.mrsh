@@ -1,0 +1,8 @@
+{meta
+    base = 2}
+
+{def macro adda [ns]
+    ns = {regular ns}
+    {quote {unquote ns@0} + {unquote base}}}
+
+{adda 5}

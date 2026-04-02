@@ -531,13 +531,13 @@ Suggested package ownership:
 
 CLI commands should include:
 
-- `makrellsharp run file.mrsharp`
-- `makrellsharp build file.mrsharp`
+- `makrellsharp run file.mrsh`
+- `makrellsharp build file.mrsh`
 - `makrellsharp repl`
 - `makrellsharp test`
 - `makrellsharp fmt` later
-- `makrellsharp emit-csharp file.mrsharp`
-- `makrellsharp emit-il file.mrsharp` later if direct IL backend is added
+- `makrellsharp emit-csharp file.mrsh`
+- `makrellsharp emit-il file.mrsh` later if direct IL backend is added
 
 Development tooling to adopt:
 

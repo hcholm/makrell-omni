@@ -12,7 +12,7 @@ internal static class CSharpEmitter
         var body = EmitBlock(module.BodyNodes, state, autoReturn: true, indentLevel: 2);
         var usingDirectives = string.Join(
             Environment.NewLine,
-            new[] { "using System;" }.Concat(module.UsingDirectives.Distinct(StringComparer.Ordinal)));
+            new[] { "using System;" }.Concat(module.UsingDirectives).Distinct(StringComparer.Ordinal));
 
         return usingDirectives +
             Environment.NewLine +
@@ -72,6 +72,11 @@ internal static class CSharpEmitter
             return isLast
                 ? assign + Environment.NewLine + $"{Indent(indentLevel)}return {identifier.Value};"
                 : assign;
+        }
+
+        if (node is BinOpNode { Operator: "=" })
+        {
+            return EmitNonIdentifierAssignmentStatement((BinOpNode)node, state, isLast, indentLevel);
         }
 
         var expr = EmitExpression(node, state);
@@ -305,6 +310,11 @@ internal static class CSharpEmitter
 
         var typeNodes = curly.Nodes.Skip(1).Take(curly.Nodes.Count - 2).ToArray();
         var typeExpression = EmitTypeReference(typeNodes);
+        if (TryEmitCollectionInitializer(typeNodes, argsNode, state, out var initializer))
+        {
+            return $"new {typeExpression} {initializer}";
+        }
+
         var args = string.Join(", ", argsNode.Nodes.Select(arg => EmitExpression(arg, state)));
         return $"new {typeExpression}({args})";
     }
@@ -431,9 +441,7 @@ internal static class CSharpEmitter
     {
         if (binOp.Operator == "=")
         {
-            return binOp.Left is IdentifierNode identifier
-                ? $"({identifier.Value} = {EmitExpression(binOp.Right, state)})"
-                : throw new InvalidOperationException("Assignment target must be identifier.");
+            return EmitAssignment(binOp, state);
         }
 
         if (binOp.Operator == "|")
@@ -469,6 +477,46 @@ internal static class CSharpEmitter
                 $"{EmitExpression(curly.Nodes[0], state)}({string.Join(", ", new[] { leftExpr }.Concat(curly.Nodes.Skip(1).Select(arg => EmitExpression(arg, state))))})",
             _ => $"{EmitExpression(right, state)}({leftExpr})",
         };
+    }
+
+    private static string EmitAssignment(BinOpNode binOp, EmitterState state)
+    {
+        var rhs = EmitExpression(binOp.Right, state);
+        return binOp.Left switch
+        {
+            IdentifierNode identifier => $"({identifier.Value} = {rhs})",
+            BinOpNode { Operator: "." } member => $"({EmitExpression(member.Left, state)}.{EmitExpression(member.Right, state)} = {rhs})",
+            BinOpNode { Operator: "@" } index => $"MakrellSharp.Compiler.MakrellCompilerRuntime.SetIndex({EmitExpression(index.Left, state)}, {EmitExpression(index.Right, state)}, {rhs})",
+            _ => throw new InvalidOperationException("Assignment target must be identifier, member access, or index access."),
+        };
+    }
+
+    private static string EmitNonIdentifierAssignmentStatement(BinOpNode assignment, EmitterState state, bool isLast, int indentLevel)
+    {
+        var rhs = EmitExpression(assignment.Right, state);
+        return assignment.Left switch
+        {
+            BinOpNode { Operator: "." } member => EmitMemberAssignmentStatement(member, rhs, isLast, indentLevel, state),
+            BinOpNode { Operator: "@" } index => EmitIndexAssignmentStatement(index, rhs, isLast, indentLevel, state),
+            _ => throw new InvalidOperationException("Assignment target must be identifier, member access, or index access."),
+        };
+    }
+
+    private static string EmitMemberAssignmentStatement(BinOpNode member, string rhs, bool isLast, int indentLevel, EmitterState state)
+    {
+        var lhs = $"{EmitExpression(member.Left, state)}.{EmitExpression(member.Right, state)}";
+        var assign = $"{Indent(indentLevel)}{lhs} = {rhs};";
+        return isLast
+            ? assign + Environment.NewLine + $"{Indent(indentLevel)}return {lhs};"
+            : assign;
+    }
+
+    private static string EmitIndexAssignmentStatement(BinOpNode index, string rhs, bool isLast, int indentLevel, EmitterState state)
+    {
+        var setCall = $"MakrellSharp.Compiler.MakrellCompilerRuntime.SetIndex({EmitExpression(index.Left, state)}, {EmitExpression(index.Right, state)}, {rhs})";
+        return isLast
+            ? $"{Indent(indentLevel)}return {setCall};"
+            : $"{Indent(indentLevel)}{setCall};";
     }
 
     private static string EmitLambda(BinOpNode binOp, EmitterState state)
@@ -768,6 +816,16 @@ internal static class CSharpEmitter
 
     private static string EmitRoundTypeReference(RoundBracketsNode round)
     {
+        if (IsArrayTypeReference(round))
+        {
+            if (round.Nodes.Count != 2)
+            {
+                throw new InvalidOperationException("Array type references must be of the form (array Type).");
+            }
+
+            return $"{EmitTypeReferenceNode(round.Nodes[1])}[]";
+        }
+
         var root = EmitTypeReferenceNode(round.Nodes[0]);
         if (round.Nodes.Count == 1)
         {
@@ -776,6 +834,89 @@ internal static class CSharpEmitter
 
         var typeArguments = round.Nodes.Skip(1).Select(EmitTypeReferenceNode);
         return $"{root}<{string.Join(", ", typeArguments)}>";
+    }
+
+    private static bool TryEmitCollectionInitializer(
+        IReadOnlyList<Node> typeNodes,
+        SquareBracketsNode argsNode,
+        EmitterState state,
+        out string initializer)
+    {
+        initializer = string.Empty;
+        var collectionKind = GetCollectionInitializerKind(typeNodes);
+        if (collectionKind is null)
+        {
+            return false;
+        }
+
+        initializer = collectionKind switch
+        {
+            CollectionInitializerKind.Array => EmitArrayInitializer(argsNode, state),
+            CollectionInitializerKind.List => EmitListInitializer(argsNode, state),
+            CollectionInitializerKind.Dictionary => EmitDictionaryInitializer(argsNode, state),
+            _ => string.Empty,
+        };
+
+        return initializer.Length > 0;
+    }
+
+    private static string EmitListInitializer(SquareBracketsNode argsNode, EmitterState state)
+    {
+        return "{ " + string.Join(", ", argsNode.Nodes.Select(arg => EmitExpression(arg, state))) + " }";
+    }
+
+    private static string EmitArrayInitializer(SquareBracketsNode argsNode, EmitterState state)
+    {
+        return "{ " + string.Join(", ", argsNode.Nodes.Select(arg => EmitExpression(arg, state))) + " }";
+    }
+
+    private static string EmitDictionaryInitializer(SquareBracketsNode argsNode, EmitterState state)
+    {
+        var entries = argsNode.Nodes.Select(arg =>
+        {
+            var pair = arg switch
+            {
+                SquareBracketsNode square when square.Nodes.Count == 2 => square.Nodes,
+                RoundBracketsNode round when round.Nodes.Count == 2 => round.Nodes,
+                SequenceNode sequence when sequence.Nodes.Count == 2 => sequence.Nodes,
+                _ => throw new InvalidOperationException("Dictionary collection initializers must use two-item entries."),
+            };
+
+            return $"{{ {EmitExpression(pair[0], state)}, {EmitExpression(pair[1], state)} }}";
+        });
+
+        return "{ " + string.Join(", ", entries) + " }";
+    }
+
+    private static CollectionInitializerKind? GetCollectionInitializerKind(IReadOnlyList<Node> typeNodes)
+    {
+        if (typeNodes.Count == 0)
+        {
+            return null;
+        }
+
+        return GetCollectionInitializerKind(typeNodes[0]);
+    }
+
+    private static CollectionInitializerKind? GetCollectionInitializerKind(Node node)
+    {
+        if (node is RoundBracketsNode round && IsArrayTypeReference(round))
+        {
+            return CollectionInitializerKind.Array;
+        }
+
+        return GetTerminalIdentifier(node) switch
+        {
+            "List" => CollectionInitializerKind.List,
+            "Dictionary" => CollectionInitializerKind.Dictionary,
+            _ => null,
+        };
+    }
+
+    private static bool IsArrayTypeReference(RoundBracketsNode round)
+    {
+        return round.Nodes.Count > 0
+            && round.Nodes[0] is IdentifierNode { Value: "array" };
     }
 
     private static string EmitGenericTypeReference(Node root, SquareBracketsNode genericArguments)
@@ -852,6 +993,13 @@ internal static class CSharpEmitter
 
             return fork;
         }
+    }
+
+    private enum CollectionInitializerKind
+    {
+        Array,
+        List,
+        Dictionary,
     }
 
     private sealed record ModuleImports(

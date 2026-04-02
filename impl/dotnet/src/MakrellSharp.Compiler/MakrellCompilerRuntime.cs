@@ -95,6 +95,49 @@ public static class MakrellCompilerRuntime
         throw new InvalidOperationException($"Value of type '{targetType.FullName}' is not indexable.");
     }
 
+    public static object? SetIndex(object? target, object? index, object? value)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+
+        if (target is Array array)
+        {
+            var arrayIndex = NormalizeIntIndex(array.Length, index);
+            array.SetValue(ConvertValue(value, array.GetType().GetElementType() ?? typeof(object)), arrayIndex);
+            return value;
+        }
+
+        var targetType = target.GetType();
+        var defaultIndexer = targetType
+            .GetDefaultMembers()
+            .OfType<PropertyInfo>()
+            .FirstOrDefault(property => property.GetIndexParameters().Length == 1 && property.CanWrite);
+
+        if (defaultIndexer is not null)
+        {
+            var parameterType = defaultIndexer.GetIndexParameters()[0].ParameterType;
+            var convertedIndex = ConvertIndex(index, parameterType);
+            var convertedValue = ConvertValue(value, defaultIndexer.PropertyType);
+            defaultIndexer.SetValue(target, convertedValue, [convertedIndex]);
+            return convertedValue;
+        }
+
+        if (target is IList list)
+        {
+            var listIndex = NormalizeIntIndex(list.Count, index);
+            list[listIndex] = value;
+            return value;
+        }
+
+        if (target is IDictionary dictionary)
+        {
+            ArgumentNullException.ThrowIfNull(index);
+            dictionary[index] = value;
+            return value;
+        }
+
+        throw new InvalidOperationException($"Value of type '{targetType.FullName}' is not index-assignable.");
+    }
+
     private static int NormalizeIntIndex(int length, object? index)
     {
         var converted = Convert.ToInt32(index, CultureInfo.InvariantCulture);
@@ -139,5 +182,50 @@ public static class MakrellCompilerRuntime
         }
 
         return Convert.ChangeType(index, targetType, CultureInfo.InvariantCulture);
+    }
+
+    private static object? ConvertValue(object? value, Type targetType)
+    {
+        if (value is null)
+        {
+            return null;
+        }
+
+        if (targetType.IsInstanceOfType(value))
+        {
+            return value;
+        }
+
+        if (targetType == typeof(int))
+        {
+            return Convert.ToInt32(value, CultureInfo.InvariantCulture);
+        }
+
+        if (targetType == typeof(long))
+        {
+            return Convert.ToInt64(value, CultureInfo.InvariantCulture);
+        }
+
+        if (targetType == typeof(double))
+        {
+            return Convert.ToDouble(value, CultureInfo.InvariantCulture);
+        }
+
+        if (targetType == typeof(float))
+        {
+            return Convert.ToSingle(value, CultureInfo.InvariantCulture);
+        }
+
+        if (targetType == typeof(decimal))
+        {
+            return Convert.ToDecimal(value, CultureInfo.InvariantCulture);
+        }
+
+        if (targetType == typeof(string))
+        {
+            return Convert.ToString(value, CultureInfo.InvariantCulture);
+        }
+
+        return Convert.ChangeType(value, targetType, CultureInfo.InvariantCulture);
     }
 }

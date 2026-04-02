@@ -30,9 +30,26 @@ public static class MakrellCompiler
         return RoslynExecutor.Load(image);
     }
 
+    public static MakrellModule LoadAssembly(string assemblyPath)
+    {
+        return RoslynExecutor.LoadFromFile(assemblyPath);
+    }
+
+    public static IReadOnlyList<string> GetAssemblyMetaSources(string assemblyPath)
+    {
+        using var module = LoadAssembly(assemblyPath);
+        return module.GetMetaSources();
+    }
+
     public static object? Run(string source, MakrellCompilerOptions? options = null)
     {
         using var module = LoadModule(source, options);
+        return module.Run();
+    }
+
+    public static object? RunAssembly(string assemblyPath)
+    {
+        using var module = LoadAssembly(assemblyPath);
         return module.Run();
     }
 }

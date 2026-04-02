@@ -37,7 +37,28 @@ internal static class RoslynExecutor
         var assembly = pdbStream is null
             ? loadContext.LoadFromStream(peStream)
             : loadContext.LoadFromStream(peStream, pdbStream);
-        return new MakrellModule(assembly, loadContext);
+        return new MakrellModule(assembly, loadContext, image.CSharpSource);
+    }
+
+    public static MakrellModule LoadFromFile(string assemblyPath)
+    {
+        ArgumentNullException.ThrowIfNull(assemblyPath);
+
+        var fullPath = Path.GetFullPath(assemblyPath);
+        if (!File.Exists(fullPath))
+        {
+            throw new FileNotFoundException($"Makrell# assembly file not found: {fullPath}");
+        }
+
+        var peBytes = File.ReadAllBytes(fullPath);
+        var pdbPath = Path.ChangeExtension(fullPath, ".pdb");
+        var pdbBytes = File.Exists(pdbPath) ? File.ReadAllBytes(pdbPath) : Array.Empty<byte>();
+        var image = new MakrellAssemblyImage(
+            "// Generated C# source unavailable for assembly loaded from disk.",
+            peBytes,
+            pdbBytes,
+            Array.Empty<string>());
+        return Load(image);
     }
 
     private static ImmutableArray<MetadataReference> BuildReferences()

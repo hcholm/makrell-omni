@@ -177,9 +177,7 @@ public sealed class MakrellCompilerTests
         var result = MakrellCompiler.Run(
             """
             {import System.Collections.Generic}
-            items = {new (list string) []}
-            {items.Add "Mak"}
-            {items.Add "rell#"}
+            items = {new (list string) ["Mak" "rell#"]}
             items @ 1
             """);
 
@@ -187,16 +185,105 @@ public sealed class MakrellCompilerTests
     }
 
     [Fact]
+    public void Run_CallsStaticClrMethods()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {import System.Collections.Generic}
+            items = {new (list string) ["Mak" "rell#"]}
+            {String.Join "" items}
+            """);
+
+        Assert.Equal("Makrell#", result);
+    }
+
+    [Fact]
+    public void Run_ConstructsTypedArrays()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            items = {new (array string) ["Mak" "rell#"]}
+            items @ 1
+            """);
+
+        Assert.Equal("rell#", result);
+    }
+
+    [Fact]
+    public void Run_PassesTypedArraysToClrCalls()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            items = {new (array string) ["Mak" "rell#"]}
+            {String.Join "" items}
+            """);
+
+        Assert.Equal("Makrell#", result);
+    }
+
+    [Fact]
     public void Run_ConstructsFullyQualifiedGenericDictionary()
     {
         var result = MakrellCompiler.Run(
             """
-            dict = {new (System.Collections.Generic.Dictionary string int) []}
-            {dict.Add "a" 2}
+            dict = {new (System.Collections.Generic.Dictionary string int) [["a" 2]]}
             dict @ "a"
             """);
 
         Assert.Equal(2, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_AssignsClrProperties()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {import System.Text}
+            sb = {new StringBuilder []}
+            sb.Capacity = 32
+            sb.Capacity
+            """);
+
+        Assert.Equal(32, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_AssignsIndex_OnGenericList()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            items = {new (list string) ["a" "b"]}
+            items @ 1 = "c"
+            items @ 1
+            """);
+
+        Assert.Equal("c", result);
+    }
+
+    [Fact]
+    public void Run_AssignsIndex_OnDictionary()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            dict = {new (dict string int) []}
+            dict @ "a" = 4
+            dict @ "a"
+            """);
+
+        Assert.Equal(4, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_AssignsIndex_OnTypedArray()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            items = {new (array string) ["a" "b"]}
+            items @ 1 = "c"
+            items @ 1
+            """);
+
+        Assert.Equal("c", result);
     }
 
     [Fact]
@@ -205,8 +292,7 @@ public sealed class MakrellCompilerTests
         var result = MakrellCompiler.Run(
             """
             {import (list string)}
-            items = {new List []}
-            {items.Add "Makrell#"}
+            items = {new List ["Makrell#"]}
             items @ 0
             """);
 
@@ -615,6 +701,22 @@ public sealed class MakrellCompilerTests
             """);
 
         Assert.Equal(9, Convert.ToInt32(module.Run()));
+    }
+
+    [Fact]
+    public void Run_WrapsClrRuntimeFailuresWithGeneratedSourceContext()
+    {
+        var exception = Assert.Throws<MakrellRuntimeException>(() => MakrellCompiler.Run(
+            """
+            {import System.Text}
+            sb = {new StringBuilder []}
+            {sb.NoSuchMethod}
+            """));
+
+        Assert.Contains("Makrell# runtime execution failed", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("NoSuchMethod", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("__MakrellModule", exception.CSharpSource, StringComparison.Ordinal);
+        Assert.Contains("sb.NoSuchMethod()", exception.CSharpSource, StringComparison.Ordinal);
     }
 
     [Fact]

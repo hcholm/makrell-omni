@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>makrellsharp</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MakrellSharp.Compiler\MakrellSharp.Compiler.csproj" />
+    <ProjectReference Include="..\MakrellSharp.Mron\MakrellSharp.Mron.csproj" />
+    <ProjectReference Include="..\MakrellSharp.Mrml\MakrellSharp.Mrml.csproj" />
+  </ItemGroup>
+
+</Project>

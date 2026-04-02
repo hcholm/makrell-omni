@@ -1,0 +1,3 @@
+name "Makrell#"
+features ["macros" "mron" "mrml" "interop"]
+stable false
