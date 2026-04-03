@@ -22,6 +22,10 @@ What is here
     A practical comparison of the current implementation tracks and their main
     areas of focus.
 
+``vscode-makrell``
+    The current VS Code extension, its file coverage, diagnostics story, and
+    near-term tooling role.
+
 ``glossary``
     A compact reference for recurring Makrell terminology used across the site.
 
@@ -42,5 +46,6 @@ A simple way to use the reference pages is:
    :maxdepth: 2
 
    implementation-matrix
+   vscode-makrell
    glossary
    faq

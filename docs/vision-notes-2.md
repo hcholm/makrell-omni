@@ -52,7 +52,7 @@ The strongest version of Makrell is not:
 
 It is:
 
-- “Makrell is one structural family for programming languages, data formats,
+- “Makrell is a structural family for programming languages, data formats,
   markup formats, and embedded DSLs.”
 
 That proposition depends on three things:

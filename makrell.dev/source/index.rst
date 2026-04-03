@@ -6,7 +6,7 @@
 
     .. container:: home-hero-slogan
 
-        Makrell is one structural family for programming languages, data formats,
+        Makrell is a structural family for programming languages, data formats,
         markup formats, and embedded DSLs.
 
 Makrell
@@ -45,9 +45,27 @@ Use this site in the way that matches your goal:
 * learn the shared ideas first in :doc:`concepts/index`
 * start building immediately in :doc:`makrellpy/index`, :doc:`makrellts/index`, or :doc:`makrellsharp/index`
 * try the browser-first workspace in :doc:`playground/index`
+* check the current editor workflow in :doc:`reference/vscode-makrell`
 * explore formats directly in :doc:`mron/index`, :doc:`mrml/index`, and :doc:`mrtd/index`
 * learn by example in :doc:`tutorials/index`
 * solve concrete problems in :doc:`cookbook/index`
+
+Editor Workflow
+---------------
+
+If you want the quickest current development experience, start with
+:doc:`reference/vscode-makrell`.
+
+.. image:: /_static/ide.png
+    :alt: vscode-makrell showing Makrell code diagnostics in VS Code
+    :class: vscode-screenshot
+
+``vscode-makrell`` is now part of the practical front door for the project:
+
+* syntax highlighting and snippets for the family
+* run/check workflow for MakrellPy, MakrellTS, and Makrell#
+* editor-visible diagnostics for MakrellPy, MakrellTS, Makrell#, MRON, MRML, and MRTD
+* an optional path toward hover/go-to via ``makrell-langserver`` while the broader TS-family tooling path is being built
 
 Quick Taste
 -----------

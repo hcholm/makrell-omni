@@ -1,8 +1,14 @@
 # Makrell
 
-Makrell is a family of languages and formats built on a shared structural core.
-Makrell is one structural family for programming languages, data formats, markup formats, and embedded DSLs.
-This repository contains the specifications, implementations, tooling, editor integration, and documentation for that family.
+Makrell is a structural family for programming languages, data formats,
+markup formats, and embedded DSLs.
+
+This repository contains the specifications, implementations, tooling, editor
+integration, and documentation for that family.
+
+Project website and docs: [makrell.dev](https://makrell.dev)
+
+![vscode-makrell showing Makrell diagnostics in VS Code](makrell.dev/source/_static/ide.png)
 
 At the centre is **MBF**, the Makrell Base Format: a bracket-and-operator based representation that supports code, data, and markup without treating them as entirely separate worlds. On top of MBF, Makrell currently spans:
 
@@ -12,9 +18,6 @@ At the centre is **MBF**, the Makrell Base Format: a bracket-and-operator based 
 - **MRON**: Makrell Object Notation
 - **MRML**: Makrell Markup Language
 - **MRTD**: Makrell Tabular Data (draft)
-
-Project website and docs: [makrell.dev](https://makrell.dev)
-
 ## Why Makrell
 
 Makrell is aiming for a coherent language family rather than a single isolated syntax.
@@ -70,10 +73,37 @@ MRML:
 
 ## Start Here
 
+- Website: [makrell.dev](https://makrell.dev)
+- Playground and browser-facing direction: [makrell.dev/playground/](https://makrell.dev/playground/)
+- VS Code/editor workflow: [`vscode-makrell/README.md`](vscode-makrell/README.md)
 - Specification index: [`specs/main-spec.md`](specs/main-spec.md)
 - MakrellTS guide: [`impl/ts/README.md`](impl/ts/README.md#makrellts-by-example)
 - MakrellPy guide: [`impl/py/README.md`](impl/py/README.md#makrellpy-by-example)
 - Makrell# guide: [`impl/dotnet/README.md`](impl/dotnet/README.md)
+
+## Current Front Door
+
+For `v0.10.0`, the most practical current entry points are:
+
+- **`makrell.dev`** for the family overview, implementation docs, and the
+  MakrellTS-first playground track
+- **`vscode-makrell`** for the current editor workflow across:
+  - MakrellPy / `.mrpy`
+  - MakrellTS / `.mrts`
+  - Makrell# / `.mrsh`
+  - MRON / `.mron`
+  - MRML / `.mrml`
+  - MRTD / `.mrtd`
+- the three implementation READMEs for current install/run/check details
+
+Today, `vscode-makrell` gives you:
+
+- syntax highlighting and snippets
+- `Run Current File` for MakrellPy, MakrellTS, and Makrell#
+- CLI-backed diagnostics/code markings for MakrellPy, MakrellTS, Makrell#,
+  MRON, MRML, and MRTD
+- an optional `makrell-langserver` bridge while the longer-term TS-family
+  tooling path is being built
 
 ## Current Implementation Picture
 
@@ -91,6 +121,7 @@ From `impl/ts/`:
 bun install
 bun run ci
 bun run src/cli.ts examples/hello.mrts
+bun run src/cli.ts check examples/hello.mrts --json
 ```
 
 ## Working With MakrellPy
@@ -101,7 +132,8 @@ From `impl/py/`:
 pip install -e .
 python -m pytest
 makrell
-makrell path/to/script.mr
+makrell path/to/script.mrpy
+makrell check path/to/script.mrpy --json
 ```
 
 ## Working With Makrell#
@@ -112,11 +144,21 @@ From `impl/dotnet/`:
 dotnet build MakrellSharp.sln
 dotnet test MakrellSharp.sln
 dotnet run --project src/MakrellSharp.Cli -- examples/hello.mrsh
+dotnet run --project src/MakrellSharp.Cli -- check examples/hello.mrsh --json
 dotnet run --project src/MakrellSharp.Cli -- build examples/hello.mrsh
 dotnet run --project src/MakrellSharp.Cli -- run-assembly examples/hello.dll
 dotnet run --project src/MakrellSharp.Cli -- meta-sources examples/macros.dll
 dotnet run --project src/MakrellSharp.Cli -- parse-mron examples/sample.mron
 dotnet run --project src/MakrellSharp.Cli -- parse-mrml examples/sample.mrml
+dotnet run --project src/MakrellSharp.Cli -- parse-mrtd examples/sample.mrtd
+```
+
+Local tool install from a packed CLI package:
+
+```bash
+dotnet pack MakrellSharp.sln -c Release
+dotnet tool install MakrellSharp.Cli --tool-path .tmp-tools --add-source src/MakrellSharp.Cli/bin/Release
+.tmp-tools/makrellsharp examples/hello.mrsh
 ```
 
 ## Development Principle

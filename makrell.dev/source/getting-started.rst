@@ -26,9 +26,28 @@ If you already know what you want:
 * use **MakrellTS** for the TypeScript reference track, browser work, and JavaScript interop
 * use the **Playground** for browser-based exploration through the MakrellTS track
 * use **Makrell#** for .NET and CLR integration
+* use the **VS Code extension** for the current editor workflow across the family
 * use **MRON** for structured data
 * use **MRML** for markup and document-like trees
 * use **MRTD** for simple tabular data
+
+Editor-first start
+------------------
+
+If you want the most practical current entry point, start with
+:doc:`reference/vscode-makrell`.
+
+.. image:: /_static/ide.png
+    :alt: vscode-makrell showing diagnostics in VS Code
+    :class: vscode-screenshot
+
+That path currently gives you:
+
+* syntax highlighting and snippets across the Makrell family
+* ``Run Current File`` for MakrellPy, MakrellTS, and Makrell#
+* editor-visible diagnostics for MakrellPy, MakrellTS, Makrell#, MRON, MRML, and MRTD
+* an optional ``makrell-langserver`` bridge for richer editor features while
+  the broader TS-family tooling path is being built
 
 Suggested first hour
 --------------------
@@ -96,6 +115,13 @@ Different parts of the site serve different purposes:
 * **implementation sections** for practical host-specific usage
 * **reference** for lookup material
 * **specs in the repo** for more formal detail
+
+Editor entry point
+------------------
+
+If your first question is "what is the current editor experience?", start with:
+
+* :doc:`reference/vscode-makrell`
 
 Quick orientation by section
 ----------------------------

@@ -88,7 +88,7 @@ Family formats and tooling
      - ``extended-scalars`` is the first shared profile
    * - VS Code extension
      - active
-     - being refreshed for the current family
+     - active now with run/check workflow and diagnostics coverage; see :doc:`vscode-makrell`
    * - Shared editor assets
      - active
      - shared grammar, snippets, and language config exist

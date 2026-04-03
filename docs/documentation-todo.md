@@ -75,6 +75,9 @@ Suggested item format:
 - [ ] Add editor-visible diagnostics/code markings for MakrellPy, MakrellTS, Makrell#, MRON, MRML, and MRTD.
   - Source: `v0.10.0` should provide compiler/format errors with in-editor markings across the three language tracks plus the three family data formats
   - Target docs: `vscode-makrell/`, `docs/editor-support-audit.md`, implementation docs, possible TS tooling plan
+- [ ] Write down the current debug-information/source-mapping story for MakrellPy, MakrellTS, and Makrell#.
+  - Source: `v0.10.0` should state clearly what exists today (PDBs, host sourcemaps, traceback filenames) and what is still missing (Makrell-aware source maps)
+  - Target docs: `docs/v0.10.0-release-plan.md`, release notes, implementation docs, possible tooling/debug note
 ## Completed
 
 - [x] Implement and document baseline MakrellTS `async fun` / `await` support.
@@ -131,3 +134,9 @@ Suggested item format:
 - [x] Wire `vscode-makrell` diagnostics/code markings across MakrellPy, MakrellTS, Makrell#, MRON, MRML, and MRTD.
   - Source: `v0.10.0` editor requirement for the three main language tracks plus the three family data formats
   - Target docs: `vscode-makrell/README.md`, `docs/v0.10.0-release-plan.md`, `docs/editor-support-audit.md`
+- [x] Add a proper `makrell.dev` page for `vscode-makrell`.
+  - Source: extension README and repo capabilities are ahead of the site docs
+  - Target docs: `makrell.dev/`, homepage/getting-started/reference links
+- [x] Surface `vscode-makrell` earlier in `makrell.dev` with a real editor screenshot.
+  - Source: `v0.10.0` should treat editor support as part of the front-door experience rather than only reference material
+  - Target docs: `makrell.dev/source/index.rst`, `makrell.dev/source/getting-started.rst`, `makrell.dev/source/reference/vscode-makrell.rst`, related CSS/assets
