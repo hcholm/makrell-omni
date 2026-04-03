@@ -44,6 +44,7 @@ Use this site in the way that matches your goal:
 
 * learn the shared ideas first in :doc:`concepts/index`
 * start building immediately in :doc:`makrellpy/index`, :doc:`makrellts/index`, or :doc:`makrellsharp/index`
+* try the browser-first workspace in :doc:`playground/index`
 * explore formats directly in :doc:`mron/index`, :doc:`mrml/index`, and :doc:`mrtd/index`
 * learn by example in :doc:`tutorials/index`
 * solve concrete problems in :doc:`cookbook/index`
@@ -98,6 +99,7 @@ Start Here
 * :doc:`makrellpy/index`
 * :doc:`makrellts/index`
 * :doc:`makrellsharp/index`
+* :doc:`playground/index`
 * :doc:`mron/index`
 * :doc:`mrml/index`
 * :doc:`mrtd/index`
@@ -111,10 +113,21 @@ Popular Paths
 
 * Want the broadest current language experience? Start with :doc:`makrellpy/index`.
 * Want the TypeScript reference track? Go to :doc:`makrellts/index`.
+* Want a browser-facing workspace for examples and live exploration? Go to :doc:`playground/index`.
 * Want CLR interop and `.NET` workflows? Go to :doc:`makrellsharp/index`.
 * Want a compact data format? Start with :doc:`mron/index`.
 * Want compact structural markup? Start with :doc:`mrml/index`.
 * Want a simple tabular format? Start with :doc:`mrtd/index`.
+
+Playground
+----------
+
+If you want to try Makrell in the browser without starting with local setup,
+use the :doc:`playground/index`.
+
+The playground is the MakrellTS-first live workspace on ``makrell.dev``. It is
+intended to combine examples, editor-style exploration, output, and embedded
+guidance in one browser-facing surface.
 
 Why Makrell?
 ------------
@@ -159,6 +172,7 @@ Each implementation section explains what is available in that host today.
    makrellpy/index
    makrellts/index
    makrellsharp/index
+   playground/index
    mron/index
    mrml/index
    mrtd/index

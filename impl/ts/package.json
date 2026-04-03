@@ -1,8 +1,39 @@
 {
   "name": "makrellts",
   "version": "0.1.0",
-  "private": true,
+  "description": "TypeScript implementation of the Makrell language family, including MakrellTS, browser tooling, and MRTD helpers.",
+  "license": "MIT",
   "type": "module",
+  "homepage": "https://makrell.dev/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hcholm/makrell-omni.git",
+    "directory": "src/impl/ts"
+  },
+  "bugs": {
+    "url": "https://github.com/hcholm/makrell-omni/issues"
+  },
+  "keywords": [
+    "makrell",
+    "makrellts",
+    "mbf",
+    "mron",
+    "mrml",
+    "mrtd"
+  ],
+  "files": [
+    "dist",
+    "README.md",
+    "COMPATIBILITY.md",
+    "IMPORT_MODEL.md"
+  ],
+  "exports": {
+    ".": "./dist/index.js",
+    "./browser": "./dist/browser/browser.js"
+  },
+  "bin": {
+    "makrellts": "./dist/cli.js"
+  },
   "scripts": {
     "build": "bun build ./src/index.ts ./src/cli.ts --outdir dist --target bun --sourcemap",
     "build:browser": "bun build ./src/browser.ts ./src/meta_worker.ts --outdir dist/browser --target browser --format esm --sourcemap",

@@ -66,6 +66,16 @@
                 "command": "makrell.server.stopRepl",
                 "title": "Stop Makrell REPL",
                 "category": "makrell"
+            },
+            {
+                "command": "makrell.openDocs",
+                "title": "Open Makrell Docs",
+                "category": "makrell"
+            },
+            {
+                "command": "makrell.openRepo",
+                "title": "Open Makrell Repository",
+                "category": "makrell"
             }
         ],
         "keybindings": [
@@ -174,6 +184,14 @@
                 "path": "./snippets/makrell.code-snippets.json"
             },
             {
+                "language": "makrell-on",
+                "path": "./snippets/makrell.code-snippets.json"
+            },
+            {
+                "language": "makrell-ml",
+                "path": "./snippets/makrell.code-snippets.json"
+            },
+            {
                 "language": "makrell-td",
                 "path": "./snippets/makrell.code-snippets.json"
             }
@@ -232,6 +250,18 @@
                             {
                                 "scheme": "file",
                                 "language": "makrell"
+                            },
+                            {
+                                "scheme": "file",
+                                "language": "makrell-on"
+                            },
+                            {
+                                "scheme": "file",
+                                "language": "makrell-ml"
+                            },
+                            {
+                                "scheme": "file",
+                                "language": "makrell-td"
                             }
                         ],
                         "description": "The client uses this to decide which documents the server is able to help with.",

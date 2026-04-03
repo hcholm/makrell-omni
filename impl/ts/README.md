@@ -14,6 +14,15 @@ From `impl/ts/`:
 bun install
 ```
 
+The package is being prepared for npm publication as `makrellts`. The current
+CLI/build story is Bun-first.
+
+Planned package shape:
+
+- library entry: `makrellts`
+- browser entry: `makrellts/browser`
+- CLI entry: `makrellts`
+
 ## Commands
 
 ```bash

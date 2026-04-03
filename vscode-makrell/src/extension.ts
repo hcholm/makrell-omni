@@ -111,6 +111,18 @@ export async function activate(context: vscode.ExtensionContext) {
         })
     )
 
+    context.subscriptions.push(
+        vscode.commands.registerCommand("makrell.openDocs", async () => {
+            await vscode.env.openExternal(vscode.Uri.parse("https://makrell.dev/"))
+        })
+    )
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand("makrell.openRepo", async () => {
+            await vscode.env.openExternal(vscode.Uri.parse("https://github.com/hcholm/makrell-omni"))
+        })
+    )
+
     // Restart the language server if the user switches Python envs...
     context.subscriptions.push(
         python.environments.onDidChangeActiveEnvironmentPath(async () => {

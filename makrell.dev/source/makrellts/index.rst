@@ -27,10 +27,21 @@ Recommended reading path
 If you are new to MakrellTS, a practical order is:
 
 1. :doc:`quick-start`
-2. :doc:`guide`
-3. :doc:`cookbook`
-4. :doc:`interop`
-5. :doc:`metaprogramming`
+2. :doc:`../playground/index`
+3. :doc:`guide`
+4. :doc:`cookbook`
+5. :doc:`interop`
+6. :doc:`metaprogramming`
+
+Browser playground
+------------------
+
+If you want the fastest way into MakrellTS, start with the
+:doc:`../playground/index`.
+
+The playground is the browser-facing MakrellTS workspace on ``makrell.dev``. It
+is meant for trying examples, editing code live, and moving between runnable
+snippets and the surrounding documentation without leaving the site.
 
 Relationship to the rest of the family
 --------------------------------------

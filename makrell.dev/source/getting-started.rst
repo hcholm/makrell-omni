@@ -24,6 +24,7 @@ If you already know what you want:
 
 * use **MakrellPy** for the most mature language experience today
 * use **MakrellTS** for the TypeScript reference track, browser work, and JavaScript interop
+* use the **Playground** for browser-based exploration through the MakrellTS track
 * use **Makrell#** for .NET and CLR integration
 * use **MRON** for structured data
 * use **MRML** for markup and document-like trees
@@ -109,6 +110,9 @@ Quick orientation by section
 
 **MakrellTS**
     The TypeScript reference track for ongoing language evolution, with browser and Node.js relevance.
+
+**Playground**
+    A browser-based workspace for examples, live exploration, and docs tied to the MakrellTS implementation.
 
 **Makrell#**
     The .NET-hosted implementation with CLR interop, MRON/MRML support, and compile/load workflows.

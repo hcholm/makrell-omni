@@ -38,24 +38,9 @@ A simple way to use the reference pages is:
 #. use the glossary if a family term is unclear
 #. use the FAQ for short project-shape questions
 
-Compatibility pages
--------------------
-
-The hidden pages below preserve older entry points for readers arriving through
-previous site structure or external links. They redirect attention toward the
-new section layout without removing those older paths.
-
 .. toctree::
    :maxdepth: 2
 
    implementation-matrix
    glossary
    faq
-
-.. toctree::
-   :hidden:
-
-   ../base-format
-   ../mron
-   ../mrml
-   ../mrtd

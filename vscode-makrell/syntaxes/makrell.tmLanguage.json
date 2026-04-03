@@ -1,11 +1,50 @@
 {
 	"name": "Makrell",
 	"scopeName": "source.makrell",
-	"patterns": [{
-		"include": "#expression"
-	}],
+	"patterns": [
+		{
+			"include": "#expression"
+		}
+	],
 	"repository": {
 		"expression": {
+			"patterns": [
+				{
+					"include": "#comments"
+				},
+				{
+					"include": "#strings"
+				},
+				{
+					"include": "#numbers"
+				},
+				{
+					"include": "#keywords"
+				},
+				{
+					"include": "#constants"
+				},
+				{
+					"include": "#special-forms"
+				},
+				{
+					"include": "#operators"
+				},
+				{
+					"include": "#brackets"
+				},
+				{
+					"include": "#mrml-tag-head"
+				},
+				{
+					"include": "#types"
+				},
+				{
+					"include": "#identifiers"
+				}
+			]
+		},
+		"comments": {
 			"patterns": [
 				{
 					"name": "comment.line.number-sign.makrell",
@@ -18,88 +57,141 @@
 					"end": "$"
 				},
 				{
-					"begin": "(/\\*)",
-					"captures": {
-						"1": {
-							"name": "punctuation.definition.comment.makrell"
-						},
-						"2": {
-							"name": "punctuation.definition.comment.makrell"
+					"name": "comment.block.makrell",
+					"begin": "/\\*",
+					"beginCaptures": {
+						"0": {
+							"name": "punctuation.definition.comment.begin.makrell"
 						}
 					},
-					"end": "(\\*/)",
-					"name": "comment.block.makrell"
-				},
-				{
-					"include": "#paren-expression"
-				},
-				{
-					"name": "keyword.control.makrell",
-					"match": "\\b(?<![\\.\\$])(catch|do|each|finally|for|if|return|switch|throw|try|unless|when|while|until|loop|export|\\$import|default|from|as|yield|async|await|(?<=for)\\s+own)(?!\\s*:)\\b"
-				},
-				{
-					"name": "keyword.reserved.makrell",
-					"match": "\\b(?<![\\.\\$])(class|fun|with|const|let|enum|native|__hasProp|__extends|__slice|__bind|__indexOf|implements|interface|package|private|protected|public|static)(?!\\s*:)\\b"
-				},
-				{
-					"match": "\\$[a-z]+\\b",
-					"name": "keyword.reserved.makrell"
-				},
-				{
-					"name": "keyword.operator.makrell",
-					"match": "\\b[:\\.=+\\-\\*\\/<>@,~\\|!'%^;]\\b"
-				},
-				{
-					"name": "storage.type.class.makrell",
-					"match": "\\b(?<!\\.)(class)\\b"
-				},
-				{
-					"name": "string.quoted.double.makrell",
-					"match": "\".*?\""
-				},
-				{
-					"name": "entity.name.function.makrell",
-					"match": "\\b[[:alpha:]_]\\w*\\b(?=\\s*(fun)\\b)"
-				},
-				{
-					"name": "entity.name.type.class.makrell",
-					"match": "\\b[[:alpha:]_]\\w*\\b(?=\\s*(class)\\b)"
-				},
-				{
-					"name": "keyword.operator.other.makrell",
-					"match": "`[[:alpha:]_]\\w*\\b"
-				},
-				{
-					"name": "entity.name.tag.html",
-					"match": "[a-zA-Z][a-zA-Z0-9:._-]*>"
-				},
-				{
-					"name": "variable.other.makrell",
-					"match": "\\b[[:alpha:]_]\\w*\\b"
+					"end": "\\*/",
+					"endCaptures": {
+						"0": {
+							"name": "punctuation.definition.comment.end.makrell"
+						}
+					}
 				}
 			]
 		},
-		"letter": {
-			"match": "a|b|c",
-			"name": "keyword.letter"
+		"strings": {
+			"patterns": [
+				{
+					"name": "string.quoted.double.makrell",
+					"begin": "\"",
+					"beginCaptures": {
+						"0": {
+							"name": "punctuation.definition.string.begin.makrell"
+						}
+					},
+					"end": "\"([A-Za-z][A-Za-z0-9_-]*)?",
+					"endCaptures": {
+						"0": {
+							"name": "punctuation.definition.string.end.makrell"
+						},
+						"1": {
+							"name": "storage.modifier.suffix.makrell"
+						}
+					},
+					"patterns": [
+						{
+							"name": "constant.character.escape.makrell",
+							"match": "\\\\."
+						}
+					]
+				}
+			]
 		},
-		"paren-expression": {
-			"begin": "\\(",
-			"end": "\\)",
-			"beginCaptures": {
-				"0": {
-					"name": "punctuation.paren.open"
+		"numbers": {
+			"patterns": [
+				{
+					"name": "constant.numeric.makrell",
+					"match": "(?<![\\w.])-?\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?([A-Za-z][A-Za-z0-9_-]*)?"
 				}
-			},
-			"endCaptures": {
-				"0": {
-					"name": "punctuation.paren.close"
+			]
+		},
+		"keywords": {
+			"patterns": [
+				{
+					"name": "keyword.control.makrell",
+					"match": "\\b(def|macro|meta|fun|if|do|when|while|for|return|break|continue|match|new|class|import|importm|from|as)\\b"
 				}
-			},
-			"name": "expression.group",
-			"patterns": [{
-				"include": "#expression"
-			}]
+			]
+		},
+		"constants": {
+			"patterns": [
+				{
+					"name": "constant.language.makrell",
+					"match": "\\b(true|false|null)\\b"
+				}
+			]
+		},
+		"special-forms": {
+			"patterns": [
+				{
+					"name": "keyword.other.special.makrell",
+					"match": "\\$(?:[A-Za-z_][A-Za-z0-9_-]*)?"
+				}
+			]
+		},
+		"operators": {
+			"patterns": [
+				{
+					"name": "keyword.operator.makrell",
+					"match": "(->|!~=|~=|==|!=|<=|>=|&&|\\|\\||\\|\\*|\\*\\\\|\\\\|\\.\\.|[:=+\\-*/<>@.,~|!%^&\\\\])"
+				}
+			]
+		},
+		"brackets": {
+			"patterns": [
+				{
+					"name": "punctuation.section.curly.begin.makrell",
+					"match": "\\{"
+				},
+				{
+					"name": "punctuation.section.curly.end.makrell",
+					"match": "\\}"
+				},
+				{
+					"name": "punctuation.section.square.begin.makrell",
+					"match": "\\["
+				},
+				{
+					"name": "punctuation.section.square.end.makrell",
+					"match": "\\]"
+				},
+				{
+					"name": "punctuation.section.parens.begin.makrell",
+					"match": "\\("
+				},
+				{
+					"name": "punctuation.section.parens.end.makrell",
+					"match": "\\)"
+				}
+			]
+		},
+		"mrml-tag-head": {
+			"patterns": [
+				{
+					"name": "entity.name.tag.makrell",
+					"match": "\\b[a-z][A-Za-z0-9:._-]*\\b(?=>)"
+				}
+			]
+		},
+		"types": {
+			"patterns": [
+				{
+					"name": "storage.type.makrell",
+					"match": "\\b[A-Z][A-Za-z0-9_]*\\b"
+				}
+			]
+		},
+		"identifiers": {
+			"patterns": [
+				{
+					"name": "variable.other.makrell",
+					"match": "\\b[[:alpha:]_][[:alnum:]_:-]*\\b"
+				}
+			]
 		}
 	}
 }
