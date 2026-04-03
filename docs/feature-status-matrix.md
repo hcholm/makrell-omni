@@ -31,7 +31,7 @@ It is meant to answer:
 | CLI story | established | active | active |
 | Dynamic loading | import-oriented | evolving | compile/load active |
 | Typing story | planned / exploratory | active typed surface | discussion / exploratory |
-| Packaging | package-shaped | package-ready direction | library packaging decided, CLI tool deferred |
+| Packaging | package-shaped | package-ready direction | library packaging active, CLI tool packaged |
 | Editor support | active via repo tooling | active via shared assets | active via shared assets |
 | Browser story | limited | active and central | none |
 

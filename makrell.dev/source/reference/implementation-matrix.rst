@@ -51,7 +51,7 @@ flatten the differences between tracks, but to make them easier to see.
    * - Packaging
      - package-shaped
      - package-ready direction
-     - libraries decided, CLI deferred
+     - libraries active, CLI tool packaged
    * - Editor support
      - active via repo tooling
      - active via shared assets

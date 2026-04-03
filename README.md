@@ -1,5 +1,7 @@
 # Makrell
 
+![Makrell logo](makrell.dev/source/_static/makrell.png)
+
 Makrell is a structural family for programming languages, data formats,
 markup formats, and embedded DSLs.
 
