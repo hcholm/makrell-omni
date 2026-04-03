@@ -1321,6 +1321,105 @@ public sealed class MakrellCompilerTests
     }
 
     [Fact]
+    public void Run_MacroShowcase_SupportsPipeRpnAndLisp()
+    {
+        var result = Assert.IsType<object?[]>(MakrellCompiler.Run(
+            """
+            {import System}
+
+            {def macro pipe [ns]
+                ns = {regular ns}
+                p = ns@0
+                i = 1
+                {while i < {len ns}
+                    p = {quote {unquote p} | {unquote ns@i}}
+                    i = i + 1
+                }
+                p}
+
+            {def macro rpn [nodes]
+                nodes = {regular nodes}
+                {fun transform [ns]
+                    stack = []
+                    {for n ns
+                        handled = false
+                        {when {isinstance n Operator}
+                            b = {stack.pop}
+                            a = {stack.pop}
+                            {stack.append {BinOp a n.value b}}
+                            handled = true}
+                        {when handled == false
+                            {when {isinstance n RoundBrackets}
+                                func = {stack.pop}
+                                args = {stack.pop}
+                                callNodes = [func]
+                                {for arg args
+                                    {callNodes.append arg}}
+                                {stack.append {CurlyBrackets callNodes}}
+                                handled = true}}
+                        {when handled == false
+                            {stack.append n}}}
+                    stack}
+                {transform nodes} @ 0}
+
+            {def macro lisp [nodes]
+                nodes = {regular nodes}
+                {fun transform [n]
+                    {when {isinstance n RoundBrackets}
+                        ns = {regular n.Nodes}
+                        head = ns @ 0
+
+                        {when {isinstance head Operator}
+                            a = {transform (ns @ 1)}
+                            i = 2
+                            {while i < {len ns}
+                                b = {transform (ns @ i)}
+                                a = {BinOp a head.Value b}
+                                i = i + 1}
+                            {return a}}
+
+                        args = []
+                        i = 1
+                        {while i < {len ns}
+                            {args.append {transform (ns @ i)}}
+                            i = i + 1}
+                        callNodes = [{transform head}]
+                        {for arg args
+                            {callNodes.append arg}}
+                        {return {CurlyBrackets callNodes}}}
+
+                    {when {isinstance n SquareBrackets}
+                        tns = []
+                        {for child n.Nodes
+                            {tns.append {transform child}}}
+                        {return {SquareBrackets tns}}}
+
+                    n}
+
+                {transform (nodes @ 0)}}
+
+            doubleFn = [x] -> x * 2
+            bumpFn = [x] -> x + 3
+            squareFn = [x] -> x * x
+            lispAdd3 = [a b c] -> a + b + c
+
+            pipeResult = {pipe 5 bumpFn squareFn}
+            rpnResult = {rpn 2 3 * 5 7 * +}
+            lispResult = {lisp (+ (* 2 3) (* 5 7) 11)}
+            lispSumSquares = {lisp (lispAdd3 (* 2 2) (* 3 3) (* 5 5))}
+
+            [pipeResult rpnResult lispResult lispSumSquares]
+            """));
+
+        Assert.Collection(
+            result,
+            item => Assert.Equal(64, Convert.ToInt32(item)),
+            item => Assert.Equal(41, Convert.ToInt32(item)),
+            item => Assert.Equal(52, Convert.ToInt32(item)),
+            item => Assert.Equal(38, Convert.ToInt32(item)));
+    }
+
+    [Fact]
     public void CompileToAssemblyImage_PreservesReplayableMetaSources()
     {
         var image = MakrellCompiler.CompileToAssemblyImage(

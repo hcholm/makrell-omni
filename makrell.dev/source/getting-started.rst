@@ -62,7 +62,7 @@ MakrellTS
 
     cd impl/ts
     bun install
-    bun run src/cli.ts examples/hello.mrjs
+    bun run src/cli.ts examples/hello.mrts
 
 Makrell#
 ^^^^^^^^

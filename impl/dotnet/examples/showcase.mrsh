@@ -1,0 +1,123 @@
+{import System}
+
+# `pipe` rewrites `a f g` into `a | f | g`, so we can present a left-to-right
+# workflow without changing the runtime semantics.
+{def macro pipe [ns]
+    ns = {regular ns}
+    p = ns@0
+    i = 1
+    {while i < {len ns}
+        p = {quote {unquote p} | {unquote ns@i}}
+        i = i + 1
+    }
+    p
+}
+
+# `rpn` reads the macro input as reverse Polish notation and builds ordinary
+# Makrell binary/call expressions from the postfix token stream.
+{def macro rpn [nodes]
+    nodes = {regular nodes}
+    {fun transform [ns]
+        stack = []
+        {for n ns
+            handled = false
+            {when {isinstance n Operator}
+                b = {stack.pop}
+                a = {stack.pop}
+                {stack.append {BinOp a n.value b}}
+                handled = true
+            }
+            {when handled == false
+                {when {isinstance n RoundBrackets}
+                    func = {stack.pop}
+                    args = {stack.pop}
+                    callNodes = [func]
+                    {for arg args
+                        {callNodes.append arg}
+                    }
+                    {stack.append {CurlyBrackets callNodes}}
+                    handled = true
+                }
+            }
+            {when handled == false
+                {stack.append n}
+            }
+        }
+        stack
+    }
+    {transform nodes} @ 0
+}
+
+# `lisp` lets us write a small Lisp-shaped surface and lower it into normal
+# Makrell calls and binary operators at compile time.
+{def macro lisp [nodes]
+    nodes = {regular nodes}
+    {fun transform [n]
+        {when {isinstance n RoundBrackets}
+            ns = {regular n.Nodes}
+            head = ns @ 0
+
+            {when {isinstance head Operator}
+                a = {transform (ns @ 1)}
+                i = 2
+                {while i < {len ns}
+                    b = {transform (ns @ i)}
+                    a = {BinOp a head.Value b}
+                    i = i + 1
+                }
+                {return a}
+            }
+
+            args = []
+            i = 1
+            {while i < {len ns}
+                {args.append {transform (ns @ i)}}
+                i = i + 1
+            }
+            callNodes = [{transform head}]
+            {for arg args
+                {callNodes.append arg}
+            }
+            {return {CurlyBrackets callNodes}}
+        }
+
+        {when {isinstance n SquareBrackets}
+            tns = []
+            {for child n.Nodes
+                {tns.append {transform child}}
+            }
+            {return {SquareBrackets tns}}
+        }
+
+        n
+    }
+
+    {transform (nodes @ 0)}
+}
+
+{Console.WriteLine "== Makrell# macro showcase =="}
+
+# These are ordinary runtime functions. The macros below rearrange syntax, but
+# the generated code still calls plain Makrell#/CLR-compatible functions.
+doubleFn = [x] -> x * 2
+bumpFn = [x] -> x + 3
+squareFn = [x] -> x * x
+lispAdd3 = [a b c] -> a + b + c
+
+# `pipe` turns this into a left-to-right pipeline: `5 | bumpFn | squareFn`.
+pipeResult = {pipe 5 bumpFn squareFn}
+{Console.WriteLine {String.Concat "pipeResult = " pipeResult}}
+
+# `rpn` turns postfix arithmetic into an ordinary infix expression tree.
+rpnResult = {rpn 2 3 * 5 7 * +}
+{Console.WriteLine {String.Concat "rpnResult = " rpnResult}}
+
+# `lisp` converts the Lisp-style form into standard Makrell# calls/operators.
+lispResult = {lisp (+ (* 2 3) (* 5 7) 11)}
+{Console.WriteLine {String.Concat "lispResult = " lispResult}}
+
+# The same lowering works for function calls, not only operators.
+lispSumSquares = {lisp (lispAdd3 (* 2 2) (* 3 3) (* 5 5))}
+{Console.WriteLine {String.Concat "lispSumSquares = " lispSumSquares}}
+
+""

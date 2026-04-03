@@ -308,6 +308,7 @@ See:
 - [`examples/hello.mrsh`](examples/hello.mrsh)
 - [`examples/interop.mrsh`](examples/interop.mrsh)
 - [`examples/macros.mrsh`](examples/macros.mrsh)
+- [`examples/showcase.mrsh`](examples/showcase.mrsh)
 - [`examples/sample.mron`](examples/sample.mron)
 - [`examples/sample.mrml`](examples/sample.mrml)
 

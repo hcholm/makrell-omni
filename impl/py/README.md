@@ -87,6 +87,31 @@ See `examples/` and `tests/` for:
 - Python interoperability
 - LSP support
 
+### Macro showcase
+
+One of the nicest current MakrellPy showcase examples is:
+
+- `examples/macros/showcase.mr`
+
+It collects three small macros that are worth surfacing for `v0.10.0`:
+
+- `pipe`
+  - reshapes a sequence of forms into pipeline style
+- `rpn`
+  - turns postfix input into ordinary Makrell AST
+- `lisp`
+  - hosts a Lisp-like round-bracket notation inside Makrell
+
+Run it from `impl/py/`:
+
+```bash
+python -m makrell examples/macros/showcase.mr
+```
+
+These are good examples not because they are large, but because they show three
+different macro uses: ergonomic rewriting, alternative notation, and language
+embedding.
+
 ## MRON example
 
 ```mbf

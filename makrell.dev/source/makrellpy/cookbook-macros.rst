@@ -5,6 +5,26 @@ This page collects a few small MakrellPy macro patterns. The point is not to
 cover every macro feature, but to show the kinds of compile-time transformations
 that are practical in day-to-day use.
 
+Showcase: ``pipe``, ``rpn``, and ``lisp``
+-----------------------------------------
+
+MakrellPy already has a compact macro showcase in
+``impl/py/examples/macros/showcase.mr`` built around three examples:
+
+* ``pipe``
+  rewrites a sequence of forms into pipeline style
+* ``rpn``
+  interprets postfix input and builds ordinary Makrell syntax from it
+* ``lisp``
+  hosts a Lisp-like round-bracket notation inside Makrell
+
+Taken together, these are a good summary of why Makrell macros are interesting:
+they can improve surface ergonomics, introduce alternative notation styles, and
+embed small languages without leaving the normal Makrell structure model.
+
+The examples are intentionally small. They are useful because each one shows a
+different kind of compile-time transformation clearly.
+
 Recipe: duplicate an expression
 -------------------------------
 

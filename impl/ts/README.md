@@ -29,13 +29,13 @@ bun run ci
 Run a Makrell source file:
 
 ```bash
-bun run src/cli.ts examples/hello.mrjs
+bun run src/cli.ts examples/hello.mrts
 ```
 
 Emit generated JS:
 
 ```bash
-bun run src/cli.ts examples/hello.mrjs --emit-js
+bun run src/cli.ts examples/hello.mrts --emit-js
 ```
 
 Typed outputs (API):
@@ -87,6 +87,13 @@ mode:"option1" | "option2" = "option1"
 
 {twice {print "hello"}}
 ```
+
+Macro showcase:
+
+- `examples/macros/showcase.mrts`
+- includes `pipe`, `rpn`, and `lisp`
+- intended as the compact shared macro trio for `v0.10.0`
+- in the current TS version, `lisp` parses a Lisp-like source string before transforming it
 
 ## MRON example
 
@@ -163,7 +170,7 @@ when bonus
 - Node/browser support is tracked in `COMPATIBILITY.md`.
 - `import`/`importm` behaviour and browser module loading strategy are defined in `IMPORT_MODEL.md`.
 - Browser runtime bundle outputs are built to `dist/browser/` and mirrored in `src/browser-runtime/` for static hosting without build steps.
-- N-body simulator example is at `examples/nbody-browser/index.html` and uses MakrellTS source (`app.mrjs`).
+- N-body simulator example is at `examples/nbody-browser/index.html` and uses MakrellTS source (`app.mrts`).
 
 ## Licence
 

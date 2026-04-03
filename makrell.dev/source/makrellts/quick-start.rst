@@ -12,14 +12,14 @@ From ``impl/ts``:
 
 .. code-block:: bash
 
-    bun run src/cli.ts examples/hello.mrjs
+    bun run src/cli.ts examples/hello.mrts
 
 Emit generated JavaScript
 -------------------------
 
 .. code-block:: bash
 
-    bun run src/cli.ts examples/hello.mrjs --emit-js
+    bun run src/cli.ts examples/hello.mrts --emit-js
 
 This is useful when you want to see how a MakrellTS source file lowers into the
 current JavaScript output.

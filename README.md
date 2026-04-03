@@ -90,7 +90,7 @@ From `impl/ts/`:
 ```bash
 bun install
 bun run ci
-bun run src/cli.ts examples/hello.mrjs
+bun run src/cli.ts examples/hello.mrts
 ```
 
 ## Working With MakrellPy

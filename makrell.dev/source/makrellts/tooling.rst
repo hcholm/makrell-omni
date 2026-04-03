@@ -42,13 +42,13 @@ Run a source file:
 
 .. code-block:: bash
 
-    bun run src/cli.ts examples/hello.mrjs
+    bun run src/cli.ts examples/hello.mrts
 
 Emit generated JavaScript:
 
 .. code-block:: bash
 
-    bun run src/cli.ts examples/hello.mrjs --emit-js
+    bun run src/cli.ts examples/hello.mrts --emit-js
 
 Browser-related material
 ------------------------

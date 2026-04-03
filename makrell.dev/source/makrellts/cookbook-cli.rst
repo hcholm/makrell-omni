@@ -11,7 +11,7 @@ From ``impl/ts``:
 
 .. code-block:: bash
 
-    bun run src/cli.ts examples/hello.mrjs
+    bun run src/cli.ts examples/hello.mrts
 
 This is the simplest way to confirm that the TypeScript implementation is wired
 up and able to parse and run a small source file.
@@ -21,7 +21,7 @@ Recipe: emit generated JavaScript
 
 .. code-block:: bash
 
-    bun run src/cli.ts examples/hello.mrjs --emit-js
+    bun run src/cli.ts examples/hello.mrts --emit-js
 
 Use this when you want to inspect the current output shape or understand how a
 MakrellTS form maps onto generated JavaScript.

@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { compile, run } from "./index";
 
 function printHelp(): void {
-  console.log("Usage: bun run src/cli.ts <file.mrjs> [--emit-js]");
+  console.log("Usage: bun run src/cli.ts <file.mrts> [--emit-js]");
 }
 
 const args = process.argv.slice(2);

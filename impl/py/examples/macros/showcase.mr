@@ -1,0 +1,98 @@
+{import makrell.ast@[BinOp CurlyBrackets Operator RoundBrackets SquareBrackets]}
+
+{def macro pipe [ns]
+    ns = {regular ns}
+    p = ns@0
+    i = 1
+    {while i < {len ns}
+        p = {quote {unquote p} | {unquote ns@i}}
+        i = i + 1
+    }
+    p
+}
+
+{def macro rpn [nodes]
+    nodes = {regular nodes}
+    {fun transform [ns]
+        stack = []
+        {for n ns
+            {when {isinstance n Operator}
+                b = {stack.pop}
+                a = {stack.pop}
+                {stack.append {BinOp a n.value b}}
+                {continue}
+            }
+            {when {isinstance n RoundBrackets}
+                func = {stack.pop}
+                args = {stack.pop}
+                {stack.append {CurlyBrackets [func] + args}}
+                {continue}
+            }
+            {stack.append n}
+        }
+        stack
+    }
+    {transform nodes}@0
+}
+
+{def macro lisp [nodes]
+    nodes = {regular nodes}
+    {fun transform [n]
+        {when {isinstance n RoundBrackets}
+            ns = {regular n.nodes}
+            head = ns@0
+
+            {when {isinstance head Operator}
+                a = {transform ns@1}
+                i = 2
+                {while i < {len ns}
+                    b = {transform ns@i}
+                    a = {BinOp a head.value b}
+                    i = i + 1
+                }
+                {return a}
+            }
+
+            args = []
+            i = 1
+            {while i < {len ns}
+                {args.append {transform ns@i}}
+                i = i + 1
+            }
+            {return {CurlyBrackets [{transform head}] + args}}
+        }
+
+        {when {isinstance n SquareBrackets}
+            tns = n.nodes | {map transform _} | list
+            {return {SquareBrackets tns}}
+        }
+
+        n
+    }
+
+    {transform nodes@0}
+}
+
+{print "== Makrell macro showcase =="}
+
+double = [x] -> x * 2
+bump = [x] -> x + 3
+mul = [x y] -> x * y
+
+pipe_result = {pipe 5 bump double {mul 4 _}}
+{print "pipe_result =" pipe_result}
+
+rpn_result = {rpn 2 3 * 5 7 * +}
+{print "rpn_result =" rpn_result}
+
+rpn_add = {rpn [x y] x y + ->}
+rpn_add_result = {rpn_add 4 9}
+{print "rpn_add_result =" rpn_add_result}
+
+lisp_result = {lisp (+ (* 2 3) (* 5 7) 11)}
+{print "lisp_result =" lisp_result}
+
+lisp_sum_squares = {lisp (sum (map (-> [x] (* x x)) [2 3 5]))}
+{print "lisp_sum_squares =" lisp_sum_squares}
+
+[pipe_result rpn_result rpn_add_result lisp_result lisp_sum_squares]

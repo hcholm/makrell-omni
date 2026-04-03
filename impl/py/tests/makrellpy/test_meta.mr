@@ -216,7 +216,7 @@
     }
 }
 
-{test "Macro"
+{test "Pipe macro"
     {def macro pipe [ns]
         ns = {regular ns}
         p = ns@0
@@ -235,6 +235,12 @@
 
     {print c}
     {assert c == 480}
+
+    bump = [x] -> x + 3
+    square = [x] -> x * x
+    d = {pipe 5 bump square f}
+    {print d}
+    {assert d == 128}
 }
 
 {test "RPN macro"
@@ -281,6 +287,10 @@
     cres = {c 2 3}
     {print cres}
     {assert cres == 5}
+
+    d = {rpn 9 4 - 3 *}
+    {print d}
+    {assert d == 15}
 }
 
 {test "Lisp macro"
@@ -331,6 +341,11 @@
     c = 100 + {{lisp (-> [x y] (+ x y))} 2 3 * 5}
     {print c}
     {assert c == 117}
+
+    d = {lisp
+        (sum (map (-> [x] (* x x)) [2 3 5]))}
+    {print d}
+    {assert d == 38}
 }
 
 {test "Multi-node macro"

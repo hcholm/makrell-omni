@@ -87,6 +87,118 @@ describe("MakrellTs MVP", () => {
     expect(run(src)).toBe(11);
   });
 
+  test("macro showcase supports pipe, rpn, and lisp", () => {
+    const src = `
+      {def macro pipe [ns]
+        ns = {regular ns}
+        p = ns@0
+        i = 1
+        {while i < {len ns}
+          p = {quote {unquote p} | {unquote ns@i}}
+          i = i + 1
+        }
+        p
+      }
+
+      {def macro rpn [nodes]
+        nodes = {regular nodes}
+        {fun transform [ns]
+          stack = []
+          {for n ns
+            handled = false
+            {when {isinstance n Operator}
+              b = {stack.pop}
+              a = {stack.pop}
+              {stack.push {BinOp a n.value b}}
+              handled = true
+            }
+            {when handled == false
+              {when {isinstance n RoundBrackets}
+                func = {stack.pop}
+                args = {stack.pop}
+                callNodes = [func]
+                {for arg args
+                  {callNodes.push arg}
+                }
+                {stack.push {CurlyBrackets callNodes}}
+                handled = true
+              }
+            }
+            {when handled == false
+              {stack.push n}
+            }
+          }
+          stack
+        }
+        {transform nodes}@0
+      }
+
+      {def macro lisp [nodes]
+        nodes = {regular nodes}
+        sourceNode = nodes@0
+        source = sourceNode.value
+        parsed = {parse source}
+        {fun transform [n]
+          {when {isinstance n RoundBrackets}
+            ns = {regular n.nodes}
+            head = ns@0
+
+            {when {isinstance head Operator}
+              a = {transform ns@1}
+              i = 2
+              {while i < {len ns}
+                b = {transform ns@i}
+                a = {BinOp a head.value b}
+                i = i + 1
+              }
+              {return a}
+            }
+
+            args = []
+            i = 1
+            {while i < {len ns}
+              {args.push {transform ns@i}}
+              i = i + 1
+            }
+            callNodes = [{transform head}]
+            {for arg args
+              {callNodes.push arg}
+            }
+            {return {CurlyBrackets callNodes}}
+          }
+
+          {when {isinstance n SquareBrackets}
+            tns = []
+            {for child n.nodes
+              {tns.push {transform child}}
+            }
+            {return {SquareBrackets tns}}
+          }
+
+          n
+        }
+
+        {transform parsed@0}
+      }
+
+      double = [x] -> x * 2
+      bump = [x] -> x + 3
+      square = [x] -> x * x
+
+      pipeResult = {pipe 5 bump square}
+      rpnResult = {rpn 2 3 * 5 7 * +}
+      rpnAdd = {rpn [x y] x y + ->}
+      rpnAddResult = {rpnAdd 4 9}
+      lispAdd = [x y z] -> x + y + z
+      lispSquare = [x] -> x * x
+      lispResult = {lisp "(lispAdd 6 35 11)"}
+      lispSumSquares = {lisp "(lispAdd (lispSquare 2) (lispSquare 3) (lispSquare 5))"}
+
+      [pipeResult rpnResult rpnAddResult lispResult lispSumSquares]
+    `;
+    expect(run(src)).toEqual([64, 107, 13, 52, 38]);
+  });
+
   test("class + new with TS-style semantics baseline", () => {
     const src = `
       {class Point []

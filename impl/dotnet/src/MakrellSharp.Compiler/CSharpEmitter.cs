@@ -1,5 +1,6 @@
 using System.Text;
 using MakrellSharp.Ast;
+using MakrellSharp.BaseFormat;
 
 namespace MakrellSharp.Compiler;
 
@@ -190,7 +191,7 @@ internal static class CSharpEmitter
             NumberNode number => string.IsNullOrEmpty(number.Suffix)
                 ? number.Value
                 : $"MakrellSharp.Compiler.MakrellCompilerRuntime.NumberLiteral({Quote(number.Value)}, {Quote(number.Suffix)})",
-            SquareBracketsNode square => $"new object?[] {{ {string.Join(", ", square.Nodes.Select(child => EmitExpression(child, state)))} }}",
+            SquareBracketsNode square => EmitSquare(square, state),
             RoundBracketsNode round => EmitRound(round, state),
             CurlyBracketsNode curly => EmitCurly(curly, state),
             BinOpNode binOp => EmitBinOp(binOp, state),
@@ -199,33 +200,43 @@ internal static class CSharpEmitter
         };
     }
 
+    private static string EmitSquare(SquareBracketsNode square, EmitterState state)
+    {
+        var nodes = RegularNodes.Filter(square.Nodes);
+        return $"new object?[] {{ {string.Join(", ", nodes.Select(child => EmitExpression(child, state)))} }}";
+    }
+
     private static string EmitRound(RoundBracketsNode round, EmitterState state)
     {
-        return round.Nodes.Count switch
+        var nodes = RegularNodes.Filter(round.Nodes);
+        return nodes.Count switch
         {
             0 => "null",
-            1 => $"({EmitExpression(round.Nodes[0], state)})",
-            _ => $"new object?[] {{ {string.Join(", ", round.Nodes.Select(child => EmitExpression(child, state)))} }}",
+            1 => $"({EmitExpression(nodes[0], state)})",
+            _ => $"new object?[] {{ {string.Join(", ", nodes.Select(child => EmitExpression(child, state)))} }}",
         };
     }
 
     private static string EmitCurly(CurlyBracketsNode curly, EmitterState state)
     {
-        if (curly.Nodes.Count == 0)
+        var nodes = RegularNodes.Filter(curly.Nodes);
+        if (nodes.Count == 0)
         {
             return "null";
         }
 
-        if (curly.Nodes[0] is IdentifierNode identifier)
+        curly = curly with { Nodes = nodes };
+
+        if (nodes[0] is IdentifierNode identifier)
         {
             return identifier.Value switch
             {
-                "if" => EmitIf(curly.Nodes.Skip(1).ToArray(), state),
-                "do" => EmitDo(curly.Nodes.Skip(1).ToArray(), state),
+                "if" => EmitIf(nodes.Skip(1).ToArray(), state),
+                "do" => EmitDo(nodes.Skip(1).ToArray(), state),
                 "fun" => EmitAnonymousFunction(curly, state),
                 "match" => EmitMatch(curly, state),
                 "new" => EmitNew(curly, state),
-                "quote" => EmitQuote(curly.Nodes.Skip(1).ToArray(), state),
+                "quote" => EmitQuote(nodes.Skip(1).ToArray(), state),
                 _ => EmitCall(curly, state),
             };
         }
@@ -749,7 +760,7 @@ internal static class CSharpEmitter
         var parameters = binOp.Left switch
         {
             IdentifierNode identifier => new[] { identifier },
-            SquareBracketsNode square => square.Nodes.Select(static node => node as IdentifierNode ?? throw new InvalidOperationException("Lambda parameters must be identifiers.")).ToArray(),
+            SquareBracketsNode square => RegularNodes.Filter(square.Nodes).Select(static node => node as IdentifierNode ?? throw new InvalidOperationException("Lambda parameters must be identifiers.")).ToArray(),
             _ => throw new InvalidOperationException("Lambda parameters must be identifiers or square-bracket list."),
         };
 

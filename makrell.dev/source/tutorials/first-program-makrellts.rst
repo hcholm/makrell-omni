@@ -13,7 +13,7 @@ From ``impl/ts`` run:
 .. code-block:: bash
 
     bun install
-    bun run src/cli.ts examples/hello.mrjs
+    bun run src/cli.ts examples/hello.mrts
 
 That gives you a quick end-to-end check that the TypeScript implementation is
 installed and the CLI path is working.

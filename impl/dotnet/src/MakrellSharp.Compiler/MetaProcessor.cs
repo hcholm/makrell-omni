@@ -16,6 +16,7 @@ internal sealed class MetaProcessor
     {
         this.registry = registry ?? throw new ArgumentNullException(nameof(registry));
         this.source = source ?? throw new ArgumentNullException(nameof(source));
+        InitializeBuiltins();
     }
 
     public IReadOnlyList<string> ReplaySources => replaySources;
@@ -162,7 +163,7 @@ internal sealed class MetaProcessor
             IdentifierNode identifier => EvaluateIdentifier(identifier),
             NumberNode number => EvaluateNumber(number),
             StringNode str => EvaluateString(str),
-            SquareBracketsNode square => square.Nodes.Select(EvaluateExpression).ToArray(),
+            SquareBracketsNode square => EvaluateSquare(square),
             RoundBracketsNode round => EvaluateRound(round),
             CurlyBracketsNode curly => EvaluateCurly(curly),
             BinOpNode binOp => EvaluateBinary(binOp),
@@ -215,6 +216,11 @@ internal sealed class MetaProcessor
 
     private object? EvaluateCurly(CurlyBracketsNode curly)
     {
+        if (curly.Nodes.Count == 0)
+        {
+            return null;
+        }
+
         if (curly.Nodes.Count > 0 && curly.Nodes[0] is IdentifierNode head)
         {
             if (head.Value == "quote")
@@ -246,19 +252,20 @@ internal sealed class MetaProcessor
             {
                 return EvaluateIf(curly);
             }
-
-            if (symbols.TryGetValue(head.Value, out var symbol) && symbol is MetaFunction function)
-            {
-                var arguments = curly.Nodes.Skip(1).Select(EvaluateExpression).ToArray();
-                return InvokeFunction(function, arguments);
-            }
         }
 
-        throw new NotSupportedException("Only quote, regular, len, if, and meta function calls are implemented inside meta expressions for now.");
+        var callable = EvaluateExpression(curly.Nodes[0]);
+        var arguments = curly.Nodes.Skip(1).Select(EvaluateExpression).ToArray();
+        return InvokeCallable(callable, arguments);
     }
 
     private object? EvaluateBinary(BinOpNode binOp)
     {
+        if (binOp.Operator == ".")
+        {
+            return EvaluateMemberAccess(binOp);
+        }
+
         var left = EvaluateExpression(binOp.Left);
         var right = EvaluateExpression(binOp.Right);
 
@@ -276,6 +283,199 @@ internal sealed class MetaProcessor
             "<=" => Compare(left, right) <= 0,
             ">=" => Compare(left, right) >= 0,
             _ => throw new NotSupportedException($"Binary operator '{binOp.Operator}' is not implemented in meta expressions yet."),
+        };
+    }
+
+    private object? EvaluateSquare(SquareBracketsNode square)
+    {
+        var values = new List<object?>(square.Nodes.Count);
+        foreach (var node in square.Nodes)
+        {
+            values.Add(EvaluateExpression(node));
+        }
+
+        return values;
+    }
+
+    private object? EvaluateMemberAccess(BinOpNode binOp)
+    {
+        var left = EvaluateExpression(binOp.Left);
+        if (binOp.Right is not IdentifierNode member)
+        {
+            throw new InvalidOperationException("Meta member access expects an identifier on the right-hand side.");
+        }
+
+        return GetMemberValue(left, member.Value);
+    }
+
+    private object? InvokeCallable(object? callable, IReadOnlyList<object?> arguments)
+    {
+        return callable switch
+        {
+            MetaFunction function => InvokeFunction(function, arguments),
+            MetaBuiltin builtin => builtin.Implementation(arguments),
+            MetaConstructor constructor => constructor.Implementation(arguments),
+            _ => throw new InvalidOperationException("Meta expression head is not callable."),
+        };
+    }
+
+    private object? GetMemberValue(object? target, string memberName)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+
+        if (TryGetListMethod(target, memberName, out var listMethod))
+        {
+            return listMethod;
+        }
+
+        var type = target.GetType();
+        var resolvedName = ResolveMemberName(type, memberName);
+
+        var property = type.GetProperty(resolvedName, BindingFlags.Instance | BindingFlags.Public);
+        if (property is not null)
+        {
+            return property.GetValue(target);
+        }
+
+        var field = type.GetField(resolvedName, BindingFlags.Instance | BindingFlags.Public);
+        if (field is not null)
+        {
+            return field.GetValue(target);
+        }
+
+        throw new InvalidOperationException($"Unknown meta member '{memberName}' on type '{type.Name}'.");
+    }
+
+    private static string ResolveMemberName(Type type, string memberName)
+    {
+        if (type.GetProperty(memberName, BindingFlags.Instance | BindingFlags.Public) is not null
+            || type.GetField(memberName, BindingFlags.Instance | BindingFlags.Public) is not null)
+        {
+            return memberName;
+        }
+
+        var pascalName = ToPascalCase(memberName);
+        if (type.GetProperty(pascalName, BindingFlags.Instance | BindingFlags.Public) is not null
+            || type.GetField(pascalName, BindingFlags.Instance | BindingFlags.Public) is not null)
+        {
+            return pascalName;
+        }
+
+        return memberName;
+    }
+
+    private static string ToPascalCase(string value)
+    {
+        return string.IsNullOrEmpty(value)
+            ? value
+            : char.ToUpperInvariant(value[0]) + value[1..];
+    }
+
+    private static bool TryGetListMethod(object target, string memberName, out MetaBuiltin builtin)
+    {
+        if (target is IList<object?> list)
+        {
+            switch (memberName)
+            {
+                case "append":
+                case "push":
+                    builtin = new MetaBuiltin(arguments =>
+                    {
+                        foreach (var argument in arguments)
+                        {
+                            list.Add(argument);
+                        }
+
+                        return list;
+                    });
+                    return true;
+                case "pop":
+                    builtin = new MetaBuiltin(_ =>
+                    {
+                        if (list.Count == 0)
+                        {
+                            throw new InvalidOperationException("Cannot pop from an empty meta list.");
+                        }
+
+                        var last = list[^1];
+                        list.RemoveAt(list.Count - 1);
+                        return last;
+                    });
+                    return true;
+            }
+        }
+
+        builtin = null!;
+        return false;
+    }
+
+    private void InitializeBuiltins()
+    {
+        symbols["isinstance"] = new MetaBuiltin(IsInstance);
+        symbols["BinOp"] = new MetaConstructor(typeof(BinOpNode), CreateBinOp);
+        symbols["CurlyBrackets"] = new MetaConstructor(typeof(CurlyBracketsNode), arguments => CreateBracket(arguments, static nodes => new CurlyBracketsNode(nodes, nodes, SourceSpan.Empty)));
+        symbols["SquareBrackets"] = new MetaConstructor(typeof(SquareBracketsNode), arguments => CreateBracket(arguments, static nodes => new SquareBracketsNode(nodes, nodes, SourceSpan.Empty)));
+        symbols["RoundBrackets"] = new MetaConstructor(typeof(RoundBracketsNode), arguments => CreateBracket(arguments, static nodes => new RoundBracketsNode(nodes, nodes, SourceSpan.Empty)));
+
+        symbols["Identifier"] = typeof(IdentifierNode);
+        symbols["String"] = typeof(StringNode);
+        symbols["Number"] = typeof(NumberNode);
+        symbols["Operator"] = typeof(OperatorNode);
+    }
+
+    private static object? IsInstance(IReadOnlyList<object?> arguments)
+    {
+        var type = arguments.Count == 2
+            ? arguments[1] switch
+            {
+                Type directType => directType,
+                MetaConstructor constructor => constructor.NodeType,
+                _ => null,
+            }
+            : null;
+
+        if (type is null)
+        {
+            throw new InvalidOperationException("isinstance expects a value and a node/type symbol.");
+        }
+
+        return arguments[0] is not null && type.IsInstanceOfType(arguments[0]);
+    }
+
+    private static object? CreateBinOp(IReadOnlyList<object?> arguments)
+    {
+        if (arguments.Count != 3)
+        {
+            throw new InvalidOperationException("BinOp expects left node, operator text, and right node.");
+        }
+
+        var op = NormalizeScalar(arguments[1]) as string
+            ?? throw new InvalidOperationException("BinOp operator must be a string.");
+        return new BinOpNode(ToAstNode(arguments[0]), op, ToAstNode(arguments[2]), SourceSpan.Empty);
+    }
+
+    private static object? CreateBracket(
+        IReadOnlyList<object?> arguments,
+        Func<IReadOnlyList<Node>, Node> factory)
+    {
+        if (arguments.Count != 1)
+        {
+            throw new InvalidOperationException("Bracket constructors expect exactly one node-sequence argument.");
+        }
+
+        return factory(CoerceNodes(arguments[0]));
+    }
+
+    private static IReadOnlyList<Node> CoerceNodes(object? value)
+    {
+        return value switch
+        {
+            Node node => [node],
+            IReadOnlyList<Node> nodes => nodes.ToArray(),
+            IEnumerable<Node> nodes => nodes.ToArray(),
+            IReadOnlyList<object?> objects => objects.Select(ToAstNode).ToArray(),
+            IEnumerable<object?> objects => objects.Select(ToAstNode).ToArray(),
+            _ => throw new InvalidOperationException("Expected a node sequence."),
         };
     }
 
@@ -400,7 +600,9 @@ internal sealed class MetaProcessor
 
     private Node SubstituteRuntimeNode(Node node)
     {
-        if (node is IdentifierNode identifier && symbols.TryGetValue(identifier.Value, out var value))
+        if (node is IdentifierNode identifier
+            && symbols.TryGetValue(identifier.Value, out var value)
+            && CanSubstituteRuntimeValue(value))
         {
             return ToAstNode(value);
         }
@@ -439,9 +641,29 @@ internal sealed class MetaProcessor
 
     private Node SubstituteRuntimeOriginalNode(Node node)
     {
-        return node is IdentifierNode identifier && symbols.TryGetValue(identifier.Value, out var value)
+        return node is IdentifierNode identifier
+            && symbols.TryGetValue(identifier.Value, out var value)
+            && CanSubstituteRuntimeValue(value)
             ? ToAstNode(value)
             : SubstituteRuntimeNode(node);
+    }
+
+    private static bool CanSubstituteRuntimeValue(object? value)
+    {
+        return value switch
+        {
+            null => true,
+            bool => true,
+            long => true,
+            int => true,
+            double => true,
+            string => true,
+            Node => true,
+            object?[] array => array.All(CanSubstituteRuntimeValue),
+            IEnumerable<Node> => true,
+            IEnumerable<object?> objects => objects.All(CanSubstituteRuntimeValue),
+            _ => false,
+        };
     }
 
     private static Node ToAstNode(object? value)
@@ -1037,6 +1259,8 @@ internal sealed class MetaProcessor
 
     private sealed record SymbolSnapshot(string Name, bool Exists, object? Value);
     private sealed record MetaFunction(IReadOnlyList<string> ParameterNames, IReadOnlyList<Node> Body);
+    private sealed record MetaBuiltin(Func<IReadOnlyList<object?>, object?> Implementation);
+    private sealed record MetaConstructor(Type NodeType, Func<IReadOnlyList<object?>, object?> Implementation);
     private sealed class MetaReturn(object? value) : Exception
     {
         public object? Value { get; } = value;

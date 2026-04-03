@@ -63,6 +63,17 @@ export class SubprocessMetaRuntimeAdapter implements MetaRuntimeAdapter {
     );
 
     if (child.status !== 0) {
+      const raw = child.stdout?.toString().trim() ?? "";
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw) as { ok?: boolean; error?: string };
+          if (parsed && parsed.ok === false && typeof parsed.error === "string") {
+            throw new Error(`Meta subprocess error: ${parsed.error}`);
+          }
+        } catch {
+          // Fall through to the generic stderr-based failure below.
+        }
+      }
       const stderr = child.stderr?.toString().trim() ?? "";
       throw new Error(`Meta subprocess failed: ${stderr || "unknown error"}`);
     }

@@ -74,7 +74,8 @@
                 "extensions": [
                     ".mr",
                     ".mrx",
-                    ".mrpy"
+                    ".mrpy",
+                    ".mrts"
                 ],
                 "configuration": "./language-configuration.json",
                 "icon": {

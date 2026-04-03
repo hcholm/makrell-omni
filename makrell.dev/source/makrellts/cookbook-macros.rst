@@ -5,6 +5,30 @@ This page collects small MakrellTS-oriented macro examples and usage notes. The
 current aim is to show how the shared family model appears in the TypeScript
 track, not to provide a complete macro reference.
 
+Showcase: ``pipe``, ``rpn``, and ``lisp``
+-----------------------------------------
+
+MakrellTS now also has a compact macro showcase in
+``impl/ts/examples/macros/showcase.mrts`` built around the same three examples
+used for the family-wide `v0.10.0` macro story:
+
+* ``pipe``
+  rewrites a sequence of forms into pipeline style
+* ``rpn``
+  turns postfix input into ordinary Makrell AST
+* ``lisp``
+  hosts a Lisp-like round-bracket notation inside Makrell
+
+In the TS track, these examples are useful not only as macro examples, but also
+as a reminder that the reference implementation can still host structural
+rewriting and language-embedding ideas rather than only focusing on typed
+output or browser tooling.
+
+The current TS ``lisp`` example is slightly more explicit than the MakrellPy
+version: it parses a Lisp-like source string and then transforms that parsed
+structure. That still shows the same family idea while staying within the
+current TS parser surface.
+
 Recipe: duplicate an expression
 -------------------------------
 

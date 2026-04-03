@@ -246,7 +246,7 @@ function updateAutoCamera() {
   syncZoomSlider();
 }
 
-const src = await fetch("./app.mrjs").then((r) => r.text());
+const src = await fetch("./app.mrts").then((r) => r.text());
 sourceCode.textContent = src;
 
 btnViewSource.addEventListener("click", () => {
