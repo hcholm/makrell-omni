@@ -54,4 +54,5 @@ html_js_files = [
     'https://cdn.jsdelivr.net/gh/orestbida/cookieconsent@3.1.0/dist/cookieconsent.umd.js',
     "cookie-init.js",  # This script initializes the banner
     "keyboard-nav.js",
+    "github-link.js",
 ]

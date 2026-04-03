@@ -3,6 +3,7 @@ using System.Text.Json;
 using MakrellSharp.Compiler;
 using MakrellSharp.Mrml;
 using MakrellSharp.Mron;
+using MakrellSharp.Mrtd;
 
 return await MakrellSharpCli.RunAsync(args, Console.Out, Console.Error);
 
@@ -38,6 +39,7 @@ public static class MakrellSharpCli
             "emit-csharp" => EmitCSharp(GetRequiredPath(args, 1), stdout),
             "parse-mron" => ParseMron(GetRequiredPath(args, 1), stdout),
             "parse-mrml" => ParseMrml(GetRequiredPath(args, 1), stdout),
+            "parse-mrtd" => ParseMrtd(GetRequiredPath(args, 1), stdout),
             _ when LooksLikeAssemblyPath(args[0]) => RunAssembly(args[0], stdout),
             _ when LooksLikeFilePath(args[0]) => RunFile(args[0], stdout),
             _ => throw new InvalidOperationException($"Unknown command '{args[0]}'.")
@@ -127,6 +129,17 @@ public static class MakrellSharpCli
         return 0;
     }
 
+    private static int ParseMrtd(string path, TextWriter stdout)
+    {
+        var source = ReadSource(path);
+        var document = MrtdParser.ParseSource(source);
+        var json = JsonSerializer.Serialize(
+            document.ToJsonObject(),
+            new JsonSerializerOptions { WriteIndented = true });
+        stdout.WriteLine(json);
+        return 0;
+    }
+
     private static string ReadSource(string path)
     {
         var fullPath = Path.GetFullPath(path);
@@ -200,6 +213,7 @@ public static class MakrellSharpCli
               makrellsharp <file.mrsh>
               makrellsharp parse-mron <file.mron>
               makrellsharp parse-mrml <file.mrml>
+              makrellsharp parse-mrtd <file.mrtd>
             """);
     }
 }

@@ -9,6 +9,8 @@ This is the entry point for the split Makrell specification set.
 - `specs/makrellsharp-spec.md`: Makrell# language semantics for the .NET track
 - `specs/mron-spec.md`: MRON object notation semantics
 - `specs/mrml-spec.md`: MRML markup semantics
+- `specs/mrtd-spec.md`: MRTD tabular data semantics (draft)
+- `specs/portability-model.md`: cross-cutting note on core, language/profile, and application-specific constructs
 - `specs/vision-notes.md`: historical vision notes and non-normative ideas
 
 ## Status

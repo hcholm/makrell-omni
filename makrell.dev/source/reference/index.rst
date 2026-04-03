@@ -58,3 +58,4 @@ new section layout without removing those older paths.
    ../base-format
    ../mron
    ../mrml
+   ../mrtd

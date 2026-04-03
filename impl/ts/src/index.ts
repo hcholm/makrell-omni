@@ -5,6 +5,13 @@ import {
   MetaRuntimeAdapter,
   SubprocessMetaRuntimeAdapter,
 } from "./meta_runtime";
+import {
+  parseMrtd,
+  readMrtdRecords,
+  readMrtdTuples,
+  writeMrtdRecords,
+  writeMrtdTuples,
+} from "./mrtd";
 import { parse } from "./parser";
 import { clearPatternHooks, matchPattern, registerPatternHook } from "./pattern";
 
@@ -19,9 +26,15 @@ export {
   clearPatternHooks,
   InProcessMetaRuntimeAdapter,
   SubprocessMetaRuntimeAdapter,
+  parseMrtd,
+  readMrtdRecords,
+  readMrtdTuples,
+  writeMrtdRecords,
+  writeMrtdTuples,
 };
 export type { CompileOptions } from "./compiler";
 export type { MetaRuntimeAdapter } from "./meta_runtime";
+export type { MrtdColumn, MrtdDocument, MrtdOptions, MrtdProfile, MrtdRow, MrtdScalarType } from "./mrtd";
 
 export interface RunOptions extends CompileOptions {
   scope?: Record<string, unknown>;

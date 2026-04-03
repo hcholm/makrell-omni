@@ -111,6 +111,35 @@ items [
 }
 ```
 
+## MRTD example
+
+```text
+name:string age:int active:bool
+Ada 32 true
+"Rena Holm" 29 false
+```
+
+API:
+
+```ts
+import { parseMrtd, readMrtdRecords, readMrtdTuples, writeMrtdRecords } from "makrellts";
+
+const doc = parseMrtd(`
+name:string age:int active:bool
+Ada 32 true
+Ben 41 false
+`);
+```
+
+Profile example:
+
+```ts
+const profileDoc = parseMrtd(`
+when bonus
+"2026-04-03"dt 3k
+`, { profiles: ["extended-scalars"] });
+```
+
 ## Layout
 
 - `src/`: compiler/runtime source

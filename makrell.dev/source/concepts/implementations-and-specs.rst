@@ -55,3 +55,30 @@ When in doubt:
 * use the spec pages in the repo for deeper normative detail
 
 See also :doc:`../reference/implementation-matrix`.
+
+Portability layers
+------------------
+
+One useful project-wide rule is that not every construct needs to have the same
+portability level.
+
+In practice, Makrell features can belong to three different layers:
+
+* **core**, for family-wide constructs intended to be portable
+* **profile specific**, for features tied to one language, format, or named profile
+* **application specific**, for controlled local extensions
+
+.. raw:: html
+
+   <div class="portability-key" aria-label="Portability legend">
+     <span class="portability-key-item portability-key-core"><span class="portability-marker"></span>Core</span>
+     <span class="portability-key-item portability-key-profile"><span class="portability-marker"></span>Profile</span>
+     <span class="portability-key-item portability-key-application"><span class="portability-marker"></span>Application</span>
+   </div>
+
+This applies to more than one feature area. Suffixes are an obvious example, but
+the same idea can also apply to operators, macros, query adapters, schema features,
+and other language constructs.
+
+That makes it possible to say that something belongs to the Makrell ecosystem
+without implying that it must already be portable everywhere.

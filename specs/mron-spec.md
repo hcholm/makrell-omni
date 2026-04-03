@@ -6,6 +6,12 @@ This document defines MRON semantics on top of MBF.
 
 Normative MBF syntax is defined in `specs/mbf-spec.md`.
 
+### Portability labels used in this document
+
+- `[Core]`: intended to be portable across the Makrell family
+- `[Profile]`: specific to one language, format, or named profile
+- `[Application]`: acceptable in controlled environments, but not portable by default
+
 ## 2. Root Rules
 
 Given root regularized nodes:
@@ -29,6 +35,13 @@ Square brackets parse to arrays/lists.
 ## 5. Scalars
 
 Scalars include identifier text values, string/number literals with suffix conversions, and null/bool equivalents where language layer provides them.
+
+### 5.1 Suffix portability
+
+- `[Core]` A small shared family subset of scalar suffixes MAY be supported in portable MRON documents once defined centrally.
+- `[Profile]` MRON MAY define additional suffixes in its own profile if they are documented explicitly.
+- `[Application]` Controlled environments MAY allow custom suffixes, but such files are not portable unless the application or profile declares them.
+- `[Core]` Unsupported suffixes MUST raise an error unless a relevant profile or application context explicitly permits them.
 
 ## 6. Executable Embeds
 

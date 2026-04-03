@@ -10,6 +10,7 @@
     <ProjectReference Include="..\MakrellSharp.Compiler\MakrellSharp.Compiler.csproj" />
     <ProjectReference Include="..\MakrellSharp.Mron\MakrellSharp.Mron.csproj" />
     <ProjectReference Include="..\MakrellSharp.Mrml\MakrellSharp.Mrml.csproj" />
+    <ProjectReference Include="..\MakrellSharp.Mrtd\MakrellSharp.Mrtd.csproj" />
   </ItemGroup>
 
 </Project>

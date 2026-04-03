@@ -14,7 +14,8 @@ If you are new to Makrell, start here:
 1. :doc:`concepts/index`
 2. :doc:`mron/index`
 3. :doc:`mrml/index`
-4. one implementation section:
+4. :doc:`mrtd/index`
+5. one implementation section:
    * :doc:`makrellpy/index`
    * :doc:`makrellts/index`
    * :doc:`makrellsharp/index`
@@ -26,6 +27,7 @@ If you already know what you want:
 * use **Makrell#** for .NET and CLR integration
 * use **MRON** for structured data
 * use **MRML** for markup and document-like trees
+* use **MRTD** for simple tabular data
 
 Suggested first hour
 --------------------
@@ -36,7 +38,8 @@ reasonable first hour:
 1. skim :doc:`concepts/overview`
 2. read :doc:`mron/quick-start`
 3. read :doc:`mrml/quick-start`
-4. choose one implementation:
+4. read :doc:`mrtd/quick-start`
+5. choose one implementation:
    * :doc:`makrellpy/quick-start`
    * :doc:`makrellts/quick-start`
    * :doc:`makrellsharp/quick-start`
@@ -115,6 +118,9 @@ Quick orientation by section
 
 **MRML**
     A lightweight markup and document notation.
+
+**MRTD**
+    A lightweight tabular notation with typed headers.
 
 **MBF**
     The shared structural format beneath the family.

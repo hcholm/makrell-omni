@@ -1,0 +1,345 @@
+# MRTD Specification (Draft)
+
+MRTD is the Makrell family tabular data format.
+
+This draft intentionally keeps MRTD close to CSV in shape while using MBF token
+rules for cells and typed headers.
+
+## Status
+
+Draft specification.
+
+This draft defines only the core tabular surface:
+
+- first row is the header
+- remaining rows are data
+- cells are whitespace-delimited
+- header cells are field names, optionally with scalar type annotations
+- multiline rows are written with round brackets
+
+This draft does not yet define:
+
+- comments or metadata lines
+- nested values
+- formulas
+- validation rules beyond header typing
+- import/export conventions
+
+### Portability labels used in this document
+
+- `[Core]`: intended to be portable across the Makrell family
+- `[Profile]`: specific to one language, format, or named profile
+- `[Application]`: acceptable in controlled environments, but not portable by default
+
+## Design goals
+
+MRTD should be:
+
+- much simpler than MRON
+- close in feel to CSV/TSV
+- easy to type by hand
+- structurally aligned with MBF tokenisation rules
+- usable across MakrellPy, MakrellTS, and Makrell#
+
+## Basic model
+
+An MRTD document is a sequence of rows.
+
+- The first row is the header row.
+- Every later row is a data row.
+- Every data row must have the same number of cells as the header row.
+
+## Cell separation
+
+Cells are delimited by whitespace.
+
+Example:
+
+```mrtd
+name age active
+Ada 32 true
+Ben 41 false
+```
+
+This means MRTD is not comma-delimited.
+Its "CSV-like" character comes from the row-and-column model, not from punctuation.
+
+## Header cells
+
+Each header cell is either:
+
+- a field name
+- a field name with a type annotation, written as `name:type`
+
+Examples:
+
+```mrtd
+name age active
+```
+
+```mrtd
+name:string age:int active:bool
+```
+
+Field names may be:
+
+- identifiers
+- double-quoted strings
+
+Examples:
+
+```mrtd
+name age:int
+```
+
+```mrtd
+"full name":string age:int
+```
+
+Identifiers are preferred for field names when possible, but quoted names are valid.
+
+### Future direction: constrained header cells
+
+Constraint syntax is not part of the first MRTD core, but it is expected to grow
+from the same MBF and Makrell pattern vocabulary rather than from a separate
+mini-language.
+
+The likely direction is:
+
+- `field:type` for simple typed columns
+- `field:[type ...constraint...]` for constrained columns
+
+Examples of the intended shape:
+
+```mrtd
+status:["new" | "paid" | "failed"]
+age:[int $ >= 0 & $ <= 150]
+```
+
+Range-like constraints should prefer predicate or pattern-style forms over `..`
+notation, because `..` already suggests other Makrell meanings such as regular or
+range-oriented syntax elsewhere in the family.
+
+This is a draft extension direction only. It is not yet part of the current core
+MRTD syntax.
+
+## Supported types
+
+The initial MRTD draft limits declared field types to MBF scalar types:
+
+- `int`
+- `float`
+- `bool`
+- `string`
+
+If no type annotation is given, the field is untyped in the source model.
+
+This draft does not yet define whether implementations should infer a type for
+untyped columns. They may preserve the absence of a declared type explicitly.
+
+## Data cells
+
+Data cells use MBF scalar syntax only.
+
+Allowed cell forms in this draft:
+
+- identifiers
+- double-quoted strings
+- numbers
+
+Examples:
+
+```mrtd
+name age active
+Ada 32 true
+"Rena Holm" 29 false
+```
+
+### Strings
+
+If a string can be expressed as an identifier, it may be written unquoted:
+
+```mrtd
+name
+```
+
+If it cannot be expressed as an identifier, it must be double-quoted:
+
+```mrtd
+"full name"
+```
+
+The same rule applies to field names in the header.
+
+### Scalar interpretation
+
+In the MRTD core, plain scalar values are:
+
+- identifiers may represent ordinary strings
+- `true` and `false` represent booleans
+- numbers follow MBF number parsing without suffix extensions
+
+Suffix portability in MRTD should be read through the general Makrell portability model:
+
+- `[Core]` Portable MRTD files should not rely on suffix extensions unless those suffixes are later promoted into a shared core subset.
+- `[Profile]` A language or format profile MAY define additional suffixes for MRTD if it documents them explicitly.
+- `[Application]` Controlled environments MAY allow custom suffixes in MRTD data files, but those files are not portable by default.
+- `[Core]` If a parser is operating in a portable/core mode, unsupported suffixes SHOULD be rejected.
+
+### Draft profile experiment: `extended-scalars`
+
+As a first concrete profile experiment, implementations may expose an
+`extended-scalars` profile for MRTD.
+
+This profile is not part of MRTD core. It is a named profile-level extension.
+
+Suggested profile surface:
+
+- string suffixes:
+  - `dt`
+  - `bin`
+  - `oct`
+  - `hex`
+- number suffixes:
+  - `k`
+  - `M`
+  - `G`
+  - `T`
+  - `P`
+  - `E`
+  - `e`
+  - `tau`
+  - `deg`
+  - `pi`
+
+Implementations that support this profile should:
+
+- reject these suffixes in core mode
+- accept them only when the profile is explicitly enabled
+- document clearly that the resulting files are profile-specific rather than core-portable
+
+### Multiple active profiles
+
+MRTD profiles are intended to compose as a set.
+
+An implementation may therefore enable more than one profile at the same time,
+for example:
+
+- `extended-scalars`
+- `gis-data`
+
+When more than one profile is active:
+
+- the enabled feature set is the additive union of the active profiles
+- profiles should not silently redefine the same construct with different meanings
+- conflicting profile definitions should be treated as an error or rejected by configuration
+
+This means profile activation is not a single compatibility mode. It is a set of
+named extensions layered on top of the MRTD core.
+
+For the current draft, implementations should prefer:
+
+- explicit profile names
+- explicit parser or runtime configuration
+- core mode as the default when no profile is enabled
+
+Examples:
+
+```mrtd
+name score bonus
+Ada 12 3k
+Ben 4.5 2M
+```
+
+```mrtd
+when
+"2026-04-03"dt
+```
+
+```text
+profiles = { "extended-scalars", "gis-data" }
+```
+
+## Multiline rows
+
+A row may be written across multiple lines by wrapping the row in round brackets.
+
+Example:
+
+```mrtd
+name:string age:int active:bool
+( "Rena Holm"
+  29
+  true )
+```
+
+This is still one logical row.
+
+The content inside the round brackets is parsed as one row and must still contain
+exactly one cell per header field.
+
+The same rule applies to the header row. A header may therefore be written as a
+multiline round-bracket row if needed.
+
+## Normalised model
+
+Implementations should normalise MRTD into:
+
+- ordered fields
+- ordered rows
+
+Equivalent conceptual model:
+
+```text
+Document
+  fields: Field[]
+  rows: Row[]
+
+Field
+  name: string
+  type?: "int" | "float" | "bool" | "string"
+
+Row
+  cells: scalar[]
+```
+
+Implementations may additionally expose a record/object projection where each row
+is represented as a mapping from field name to cell value.
+
+## Errors
+
+Implementations should report errors for:
+
+- empty input
+- missing header row
+- invalid header cell syntax
+- unsupported declared type
+- row width not matching header width
+- non-scalar values in data cells
+
+## Examples
+
+Simple table:
+
+```mrtd
+name:string age:int active:bool
+Ada 32 true
+Ben 41 false
+```
+
+Quoted field names and values:
+
+```mrtd
+"full name":string city:string
+"Rena Holm" Oslo
+"Kai Berg" "Bergen sentrum"
+```
+
+Multiline row:
+
+```mrtd
+name:string note:string score:float
+( "Rena Holm"
+  "line-wrapped row"
+  13.5 )
+```

@@ -31,6 +31,12 @@ body {
   border-right: 1px solid rgba(15, 118, 110, 0.12);
 }
 
+.sidebar-sticky {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
 @media (min-width: 67em) {
   .sidebar-drawer {
     width: 21rem;
@@ -178,6 +184,36 @@ body {
   width: auto;
 }
 
+.home-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.45rem;
+  padding: 1rem 1rem 1.15rem;
+  margin: 0.2rem 0 1rem;
+  border: 1px solid rgba(15, 118, 110, 0.14);
+  border-radius: 0.9rem;
+  background:
+    radial-gradient(circle at top, rgba(15, 118, 110, 0.09), transparent 58%),
+    linear-gradient(180deg, rgba(15, 118, 110, 0.035), rgba(180, 83, 9, 0.02));
+}
+
+.home-hero .home-hero-logo {
+  max-width: 170px;
+  width: min(170px, 42vw);
+  margin: 0 auto 0.1rem;
+}
+
+.home-hero .home-hero-slogan {
+  font-size: 1.28rem;
+  line-height: 1.25;
+  font-weight: 700;
+  color: var(--makrell-accent);
+  max-width: 34rem;
+  margin: 0 auto;
+}
+
 .highlight {
   border: 1px solid rgba(15, 118, 110, 0.12);
   border-radius: 0.35rem;
@@ -228,6 +264,104 @@ div.admonition, .docutils .admonition {
   font-weight: 650;
   line-height: 1.25;
   color: #1f2937;
+}
+
+.makrell-sidebar-link-row {
+  margin-top: auto;
+  padding-top: 0.85rem;
+  padding-bottom: 0.3rem;
+  border-top: 1px solid rgba(15, 118, 110, 0.12);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.makrell-github-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  color: #475569;
+  border: 1px solid rgba(15, 118, 110, 0.12);
+  border-radius: 0.45rem;
+  background: rgba(15, 118, 110, 0.03);
+}
+
+.makrell-github-link:hover {
+  color: var(--makrell-accent);
+  background: rgba(15, 118, 110, 0.09);
+  border-color: rgba(15, 118, 110, 0.2);
+  text-decoration: none;
+}
+
+.makrell-github-link svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.makrell-github-link-sidebar {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  justify-content: flex-start;
+  gap: 0.62rem;
+  padding: 0.58rem 0.75rem;
+  font-size: 0.96rem;
+  font-weight: 650;
+  line-height: 1.2;
+  overflow: hidden;
+}
+
+.makrell-github-link-sidebar svg {
+  width: 1.35rem;
+  height: 1.35rem;
+  flex: 0 0 auto;
+}
+
+.makrell-github-link-sidebar span:not(.visually-hidden) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portability-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0.65rem 0 0.9rem;
+}
+
+.portability-key-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.portability-marker {
+  width: 0.56rem;
+  height: 0.56rem;
+  border-radius: 999px;
+  display: inline-block;
+  background: currentColor;
+  opacity: 0.95;
+}
+
+.portability-key-core {
+  color: #0f766e;
+}
+
+.portability-key-profile {
+  color: #b45309;
+}
+
+.portability-key-application {
+  color: #475569;
 }
 
 .related-pages svg.furo-related-icon,

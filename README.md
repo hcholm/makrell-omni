@@ -1,6 +1,7 @@
 # Makrell
 
 Makrell is a family of languages and formats built on a shared structural core.
+Makrell is one structural family for programming languages, data formats, markup formats, and embedded DSLs.
 This repository contains the specifications, implementations, tooling, editor integration, and documentation for that family.
 
 At the centre is **MBF**, the Makrell Base Format: a bracket-and-operator based representation that supports code, data, and markup without treating them as entirely separate worlds. On top of MBF, Makrell currently spans:
@@ -10,6 +11,7 @@ At the centre is **MBF**, the Makrell Base Format: a bracket-and-operator based 
 - **Makrell#**: the .NET implementation track, including MBF, MRON, MRML, a Roslyn-backed compiler, runtime loading, and CLR interop
 - **MRON**: Makrell Object Notation
 - **MRML**: Makrell Markup Language
+- **MRTD**: Makrell Tabular Data (draft)
 
 Project website and docs: [makrell.dev](https://makrell.dev)
 
@@ -24,6 +26,11 @@ The main ideas are:
 - a specs-first approach so the language can outgrow any one implementation
 
 In practice, that means the repo is not only "a language implementation". It is also where the shared model across TypeScript, Python, and .NET is being worked out.
+
+One cross-cutting rule emerging in the project is that features do not all need
+the same portability level. Some constructs belong to the family core, some are
+language/profile specific, and some are application-specific extensions for
+controlled environments. See [`specs/portability-model.md`](specs/portability-model.md).
 
 ## A Quick Taste
 

@@ -286,6 +286,35 @@ public sealed class MakrellSharpCliTests
     }
 
     [Fact]
+    public async Task RunAsync_ParseMrtd_WritesNormalisedJson()
+    {
+        var path = CreateTempFile(
+            ".mrtd",
+            """
+            name:string qty:int
+            Ada 2
+            """);
+        using var stdout = new StringWriter();
+        using var stderr = new StringWriter();
+
+        try
+        {
+            var exitCode = await MakrellSharpCli.RunAsync(["parse-mrtd", path], stdout, stderr);
+            var output = stdout.ToString();
+
+            Assert.Equal(0, exitCode);
+            Assert.Contains("\"columns\": [", output, StringComparison.Ordinal);
+            Assert.Contains("\"records\": [", output, StringComparison.Ordinal);
+            Assert.Contains("\"name\": \"Ada\"", output, StringComparison.Ordinal);
+            Assert.Equal(string.Empty, stderr.ToString());
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
     public async Task RunAsync_MissingFile_WritesErrorAndReturnsFailure()
     {
         using var stdout = new StringWriter();

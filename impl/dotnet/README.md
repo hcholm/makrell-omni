@@ -10,6 +10,7 @@ Current status: early implementation, but already usable for core MBF parsing, M
 - `MakrellSharp.BaseFormat`: MBF tokenising, structure parsing, operator parsing
 - `MakrellSharp.Mron`: MRON to `System.Text.Json.JsonDocument`
 - `MakrellSharp.Mrml`: MRML to `System.Xml.Linq.XDocument`
+- `MakrellSharp.Mrtd`: MRTD to a normalised tabular model with JSON projections
 - `MakrellSharp.Compiler`: Makrell# to generated C# and compiled .NET bytecode
 
 ## Build and test
@@ -31,6 +32,7 @@ dotnet run --project src/MakrellSharp.Cli -- meta-sources examples/macros.dll
 dotnet run --project src/MakrellSharp.Cli -- emit-csharp examples/hello.mrsh
 dotnet run --project src/MakrellSharp.Cli -- parse-mron examples/sample.mron
 dotnet run --project src/MakrellSharp.Cli -- parse-mrml examples/sample.mrml
+dotnet run --project src/MakrellSharp.Cli -- parse-mrtd examples/sample.mrtd
 ```
 
 ## Current language slice
@@ -308,6 +310,52 @@ See:
 - [`examples/macros.mrsh`](examples/macros.mrsh)
 - [`examples/sample.mron`](examples/sample.mron)
 - [`examples/sample.mrml`](examples/sample.mrml)
+
+## MRTD notes
+
+`MakrellSharp.Mrtd` supports the current MRTD draft surface:
+
+- parsing to `MrtdDocument`
+- row and record projections
+- typed read/write helpers for object-like rows and tuple-like rows
+- profile-gated MRTD suffix extensions via `MrtdParseOptions.Profiles`
+
+Examples:
+
+```csharp
+var people = MrtdTyped.ReadRecords<Person>(
+    """
+    name:string age:int active:bool
+    Ada 32 true
+    Ben 41 false
+    """);
+```
+
+```csharp
+var tuples = MrtdTyped.ReadTuples<int, string, double>(
+    """
+    id:int name:string score:float
+    1 Ada 13.5
+    2 Ben 9.25
+    """);
+```
+
+Profile example:
+
+```csharp
+var doc = MrtdParser.ParseSource(
+    """
+    when bonus
+    "2026-04-03"dt 3k
+    """,
+    new MrtdParseOptions
+    {
+        Profiles = new HashSet<string>(StringComparer.Ordinal)
+        {
+            MrtdProfiles.ExtendedScalars,
+        },
+    });
+```
 
 ## Design docs
 

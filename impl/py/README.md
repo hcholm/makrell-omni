@@ -121,6 +121,43 @@ books [
 }
 ```
 
+## MRTD example
+
+```mrtd
+name:string age:int active:bool
+Ada 32 true
+"Rena Holm" 29 false
+```
+
+Python API:
+
+```python
+from makrell.mrtd import parse_src, read_records, read_tuples, write_records
+
+doc = parse_src("""
+name:string age:int active:bool
+Ada 32 true
+Ben 41 false
+""")
+
+records = read_records("""
+name:string age:int active:bool
+Ada 32 true
+Ben 41 false
+""")
+```
+
+Profile example:
+
+```python
+from makrell.mrtd import parse_src
+
+doc = parse_src("""
+when bonus
+"2026-04-03"dt 3k
+""", profiles=("extended-scalars",))
+```
+
 ## Makrell Base Format (MBF)
 
 MBF supports identifiers, strings, numbers, bracketed lists (`()`, `[]`, `{}`), operators, comments, and binary expressions.

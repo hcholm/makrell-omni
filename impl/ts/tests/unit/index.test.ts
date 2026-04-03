@@ -6,9 +6,14 @@ import {
   compileToTs,
   InProcessMetaRuntimeAdapter,
   parse,
+  parseMrtd,
   registerPatternHook,
+  readMrtdRecords,
+  readMrtdTuples,
   run,
   SubprocessMetaRuntimeAdapter,
+  writeMrtdRecords,
+  writeMrtdTuples,
 } from "../../src/index";
 
 describe("MakrellTs MVP", () => {
@@ -242,5 +247,119 @@ describe("MakrellTs MVP", () => {
     const dts = compileToDts(src);
     expect(dts).toContain("export function add(x: number, y: number): unknown;");
     expect(dts).toContain("export let out: number;");
+  });
+
+  test("parseMrtd reads simple tabular data", () => {
+    const document = parseMrtd(`
+      name:string age:int active:bool
+      Ada 32 true
+      "Rena Holm" 29 false
+    `);
+
+    expect(document.columns).toEqual([
+      { name: "name", type: "string" },
+      { name: "age", type: "int" },
+      { name: "active", type: "bool" },
+    ]);
+    expect(document.records[1]).toEqual({
+      name: "Rena Holm",
+      age: 29,
+      active: false,
+    });
+  });
+
+  test("readMrtdRecords maps rows to class instances", () => {
+    class Person {
+      name = "";
+      age = 0;
+      active = false;
+    }
+
+    const rows = readMrtdRecords(`
+      name:string age:int active:bool
+      Ada 32 true
+      Ben 41 false
+    `, Person);
+
+    expect(rows[0]).toBeInstanceOf(Person);
+    expect(rows[0].name).toBe("Ada");
+    expect(rows[1].age).toBe(41);
+  });
+
+  test("readMrtdTuples maps rows to tuple-shaped arrays", () => {
+    const rows = readMrtdTuples<[number, string, number]>(`
+      id:int name:string score:float
+      1 Ada 13.5
+      2 Ben 9.25
+    `);
+
+    expect(rows).toEqual([
+      [1, "Ada", 13.5],
+      [2, "Ben", 9.25],
+    ]);
+  });
+
+  test("parseMrtd supports multiline rows", () => {
+    const document = parseMrtd(`
+      name:string note:string score:float
+      ( "Rena Holm"
+        "line wrapped"
+        13.5 )
+    `);
+
+    expect(document.records).toEqual([
+      {
+        name: "Rena Holm",
+        note: "line wrapped",
+        score: 13.5,
+      },
+    ]);
+  });
+
+  test("writeMrtdRecords writes typed header and rows", () => {
+    const text = writeMrtdRecords([
+      { name: "Ada", age: 32, active: true },
+      { name: "Rena Holm", age: 29, active: false },
+    ]);
+
+    expect(text).toContain("name:string age:int active:bool");
+    expect(text).toContain("Ada 32 true");
+    expect(text).toContain("\"Rena Holm\" 29 false");
+  });
+
+  test("writeMrtdTuples writes tuple rows with default headers", () => {
+    const text = writeMrtdTuples([
+      [1, "Ada", 13.5],
+      [2, "Ben", 9.25],
+    ]);
+
+    expect(text).toContain("c1:int c2:string c3:float");
+    expect(text).toContain("1 Ada 13.5");
+  });
+
+  test("parseMrtd rejects profile suffixes in core mode", () => {
+    expect(() => parseMrtd(`
+      when:string
+      "2026-04-03"dt
+    `)).toThrow(/extended-scalars/);
+  });
+
+  test("parseMrtd accepts extended scalar profile suffixes", () => {
+    const document = parseMrtd(`
+      when bonus:float
+      "2026-04-03"dt 3k
+    `, { profiles: ["extended-scalars"] });
+
+    expect(document.records[0].when).toBeInstanceOf(Date);
+    expect(document.records[0].bonus).toBe(3000);
+  });
+
+  test("writeMrtdRecords writes Date values with extended scalar profile", () => {
+    const text = writeMrtdRecords([
+      { when: new Date("2026-04-03T00:00:00.000Z"), active: true },
+    ], { profiles: ["extended-scalars"] });
+
+    expect(text).toContain('when active:bool');
+    expect(text).toContain('"2026-04-03T00:00:00.000Z"dt true');
   });
 });

@@ -65,6 +65,8 @@ python -m pytest tests/test_mrml.py tests/test_tokeniser.py -q
 - If semantics change, update `specs/makrellpy-spec.md` (and related specs if needed).
 - Keep root `README.md` repo-level; implementation-specific usage belongs under `impl/py/README.md`.
 - Use UK spelling in prose where practical; keep filenames as they are (`LICENSE`).
+- If documentation work is deferred during coding, record it in `docs/documentation-todo.md`.
+- At the start of a fresh session, check `docs/documentation-todo.md` alongside this file.
 
 ## Safety
 

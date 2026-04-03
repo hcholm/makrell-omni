@@ -1,7 +1,13 @@
-.. image:: /_static/makrell.png
-    :alt: Makrell
-    :align: center
-    :width: 200
+.. container:: home-hero
+
+    .. image:: /_static/makrell.png
+        :alt: Makrell
+        :class: home-hero-logo
+
+    .. container:: home-hero-slogan
+
+        Makrell is one structural family for programming languages, data formats,
+        markup formats, and embedded DSLs.
 
 Makrell
 =======
@@ -20,6 +26,7 @@ The family currently centres on:
 * **Makrell#**, the .NET-hosted implementation for CLR interop, compile/load workflows, and tooling.
 * **MRON**, a Makrell-shaped alternative to JSON.
 * **MRML**, a Makrell-shaped alternative to XML and HTML.
+* **MRTD**, a Makrell-shaped tabular format.
 * **MBF** (Makrell Base Format), the shared structural foundation underneath the family.
 
 Makrell is useful when you want more than one thing at once:
@@ -37,7 +44,7 @@ Use this site in the way that matches your goal:
 
 * learn the shared ideas first in :doc:`concepts/index`
 * start building immediately in :doc:`makrellpy/index`, :doc:`makrellts/index`, or :doc:`makrellsharp/index`
-* explore formats directly in :doc:`mron/index` and :doc:`mrml/index`
+* explore formats directly in :doc:`mron/index`, :doc:`mrml/index`, and :doc:`mrtd/index`
 * learn by example in :doc:`tutorials/index`
 * solve concrete problems in :doc:`cookbook/index`
 
@@ -93,6 +100,7 @@ Start Here
 * :doc:`makrellsharp/index`
 * :doc:`mron/index`
 * :doc:`mrml/index`
+* :doc:`mrtd/index`
 * :doc:`mbf/index`
 * :doc:`cookbook/index`
 * :doc:`tutorials/index`
@@ -106,6 +114,7 @@ Popular Paths
 * Want CLR interop and `.NET` workflows? Go to :doc:`makrellsharp/index`.
 * Want a compact data format? Start with :doc:`mron/index`.
 * Want compact structural markup? Start with :doc:`mrml/index`.
+* Want a simple tabular format? Start with :doc:`mrtd/index`.
 
 Why Makrell?
 ------------
@@ -152,6 +161,7 @@ Each implementation section explains what is available in that host today.
    makrellsharp/index
    mron/index
    mrml/index
+   mrtd/index
    mbf/index
    cookbook/index
    tutorials/index
