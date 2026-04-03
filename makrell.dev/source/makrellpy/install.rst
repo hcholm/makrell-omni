@@ -20,8 +20,8 @@ Install from source
 
 .. code-block:: bash
 
-    git clone https://github.com/hcholm/makrell-py
-    cd makrell-py
+    git clone https://github.com/hcholm/makrell-omni
+    cd makrell-omni/src/impl/py
     pip install .
 
 Use this when you want to work directly on the implementation or follow the
@@ -40,7 +40,7 @@ Run a script:
 
 .. code-block:: bash
 
-    makrell myscript.mr
+    makrell myscript.mrpy
 
 Run tests from the Python implementation area:
 

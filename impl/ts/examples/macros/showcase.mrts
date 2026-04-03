@@ -37,7 +37,6 @@
                 {stack.push n}
             }
         }
-    }
         stack
     }
     {transform nodes}@0

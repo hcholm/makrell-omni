@@ -15,25 +15,7 @@ Experience
 
             Makrell playground
 
-    .. container:: playground-section-nav
-
-        :doc:`Overview <index>`
-        :doc:`Features <features>`
-        :doc:`Workspace <workspace>`
-        :doc:`Docs panel <docs-panel>`
-        :doc:`Onboarding <onboarding>`
-        :doc:`Views <views>`
-        :doc:`Sharing <sharing>`
-        :doc:`Responsive <responsive>`
-        :doc:`Status <status>`
-        :doc:`States <states>`
-        :doc:`Flows <flows>`
-        :doc:`Experience <experience>`
-        :doc:`Examples <examples>`
-        :doc:`Architecture <architecture>`
-        :doc:`Implementation <implementation>`
-        :doc:`Launch checklist <launch-checklist>`
-        :doc:`Roadmap <roadmap>`
+    .. include:: _section_nav.rst
 
 The playground should feel different from the documentation area even while it
 stays on the same site. It should behave more like a product workspace than a
@@ -105,3 +87,4 @@ Good permanent controls for the first version:
 
 These controls should feel calm and structural. They are not the main event,
 but they strongly shape whether the playground feels intentional.
+

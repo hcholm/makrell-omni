@@ -15,25 +15,7 @@ Views
 
             Makrell playground
 
-    .. container:: playground-section-nav
-
-        :doc:`Overview <index>`
-        :doc:`Features <features>`
-        :doc:`Workspace <workspace>`
-        :doc:`Docs panel <docs-panel>`
-        :doc:`Onboarding <onboarding>`
-        :doc:`Views <views>`
-        :doc:`Sharing <sharing>`
-        :doc:`Responsive <responsive>`
-        :doc:`Status <status>`
-        :doc:`States <states>`
-        :doc:`Flows <flows>`
-        :doc:`Experience <experience>`
-        :doc:`Examples <examples>`
-        :doc:`Architecture <architecture>`
-        :doc:`Implementation <implementation>`
-        :doc:`Launch checklist <launch-checklist>`
-        :doc:`Roadmap <roadmap>`
+    .. include:: _section_nav.rst
 
 The playground should make it easy to move between source, results, generated
 code, and short explanations without losing the sense of one coherent working
@@ -196,3 +178,4 @@ different views are all part of one learning loop:
 * try another example
 
 That loop is more important than any single advanced panel.
+

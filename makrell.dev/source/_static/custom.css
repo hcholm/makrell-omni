@@ -395,16 +395,29 @@ div.admonition, .docutils .admonition {
   margin: 0.05rem 0;
 }
 
+body.playground-page .bd-main .bd-content .bd-article-container,
+body.playground-page .bd-main .bd-content .bd-article,
+body.playground-page .bd-main .bd-content .bd-content__inner {
+  max-width: none;
+}
+
+body.playground-page .bd-main .bd-content .bd-article-container {
+  padding-left: 0;
+  padding-right: 0;
+}
+
 .playground-shell {
   margin: 0.15rem 0 1rem;
   padding: 1rem 1rem 1.1rem;
-  border-radius: 1rem;
+  border-radius: 0.7rem;
+  overflow: hidden;
+  font-family: Inter, "Segoe UI", system-ui, sans-serif;
 }
 
 .playground-shell--inner {
   padding: 0 0 0.95rem;
   margin-bottom: 0.9rem;
-  border-bottom: 1px solid rgba(15, 118, 110, 0.12);
+  border-bottom: 0;
 }
 
 .playground-topbar {
@@ -433,7 +446,7 @@ div.admonition, .docutils .admonition {
   display: inline-flex;
   align-items: center;
   padding: 0.28rem 0.62rem;
-  border-radius: 999px;
+  border-radius: 0.375rem;
   font-size: 0.74rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -454,7 +467,7 @@ div.admonition, .docutils .admonition {
   min-height: 1.95rem;
   padding: 0.28rem 0.68rem;
   border: 0;
-  border-radius: 999px;
+  border-radius: 0.375rem;
   font-size: 0.74rem;
   font-weight: 750;
   letter-spacing: 0.08em;
@@ -474,7 +487,7 @@ div.admonition, .docutils .admonition {
   align-items: center;
   min-height: 2rem;
   padding: 0.35rem 0.75rem;
-  border-radius: 999px;
+  border-radius: 0.375rem;
   font-size: 0.85rem;
   font-weight: 650;
   text-decoration: none;
@@ -489,7 +502,7 @@ div.admonition, .docutils .admonition {
 
 .playground-hero-copy {
   padding: 1.1rem 1.1rem 1rem;
-  border-radius: 0.95rem;
+  border-radius: 0.5rem;
 }
 
 .playground-hero-copy .rubric {
@@ -511,7 +524,7 @@ div.admonition, .docutils .admonition {
 
 .playground-panel {
   padding: 0.9rem 0.95rem;
-  border-radius: 0.85rem;
+  border-radius: 0.5rem;
 }
 
 .playground-panel p:first-child {
@@ -534,7 +547,7 @@ div.admonition, .docutils .admonition {
   align-items: center;
   min-height: 2.1rem;
   padding: 0.42rem 0.85rem;
-  border-radius: 999px;
+  border-radius: 0.375rem;
   font-size: 0.85rem;
   font-weight: 700;
   text-decoration: none;
@@ -787,8 +800,8 @@ div.admonition, .docutils .admonition {
 
 .playground-live {
   display: grid;
-  gap: 0.9rem;
-  margin: 0.95rem 0 1rem;
+  gap: 1rem;
+  margin: 0 0 1.15rem;
 }
 
 .playground-live-controls {
@@ -796,6 +809,8 @@ div.admonition, .docutils .admonition {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.55rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 0.5rem;
 }
 
 .playground-live-label {
@@ -809,8 +824,9 @@ div.admonition, .docutils .admonition {
   min-width: 15rem;
   min-height: 2.1rem;
   padding: 0.35rem 0.75rem;
-  border-radius: 0.78rem;
+  border-radius: 0.375rem;
   font-size: 0.88rem;
+  font-family: Inter, "Segoe UI", system-ui, sans-serif;
 }
 
 .playground-live-button {
@@ -820,7 +836,7 @@ div.admonition, .docutils .admonition {
   min-height: 2.05rem;
   padding: 0.35rem 0.8rem;
   border: 0;
-  border-radius: 999px;
+  border-radius: 0.375rem;
   font-size: 0.78rem;
   font-weight: 750;
   letter-spacing: 0.05em;
@@ -835,14 +851,14 @@ div.admonition, .docutils .admonition {
 
 .playground-live-layout {
   display: grid;
-  grid-template-columns: minmax(13rem, 15rem) minmax(0, 1.3fr) minmax(18rem, 0.95fr);
-  gap: 0.9rem;
+  grid-template-columns: minmax(13rem, 15rem) minmax(0, 1.45fr) minmax(18rem, 0.92fr);
+  gap: 1rem;
 }
 
 .playground-live-rail,
 .playground-live-editorpane,
 .playground-live-card {
-  border-radius: 0.95rem;
+  border-radius: 0.45rem;
   overflow: hidden;
 }
 
@@ -867,7 +883,7 @@ div.admonition, .docutils .admonition {
   text-align: left;
   padding: 0.75rem 0.8rem;
   border: 0;
-  border-radius: 0.8rem;
+  border-radius: 0.3rem;
   font-size: 0.84rem;
   cursor: pointer;
 }
@@ -885,10 +901,10 @@ div.admonition, .docutils .admonition {
 .playground-live-editor {
   width: 100%;
   min-height: 36rem;
-  padding: 1rem 1.05rem;
+  padding: 1.05rem 1.1rem;
   border: 0;
   resize: vertical;
-  font: 0.84rem/1.5 ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+  font: 0.84rem/1.6 "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
 }
 
 .playground-live-sidepane {
@@ -909,7 +925,7 @@ div.admonition, .docutils .admonition {
   min-height: 1.95rem;
   padding: 0.3rem 0.72rem;
   border: 0;
-  border-radius: 999px;
+  border-radius: 0.25rem 0.25rem 0 0;
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -945,7 +961,7 @@ div.admonition, .docutils .admonition {
   align-items: center;
   min-height: 1.7rem;
   padding: 0.22rem 0.62rem;
-  border-radius: 999px;
+  border-radius: 0.25rem;
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -956,11 +972,12 @@ div.admonition, .docutils .admonition {
   margin: 0.55rem 0 0;
   min-height: 7rem;
   padding: 0.85rem 0.92rem;
-  border-radius: 0.82rem;
+  border-radius: 0.3rem;
   font-size: 0.81rem;
-  line-height: 1.45;
+  line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
+  font-family: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
 }
 
 .playground-live-meta {
@@ -985,7 +1002,7 @@ div.admonition, .docutils .admonition {
   align-items: center;
   min-height: 1.9rem;
   padding: 0.28rem 0.72rem;
-  border-radius: 999px;
+  border-radius: 0.3rem;
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.03em;
@@ -1165,10 +1182,11 @@ div.admonition, .docutils .admonition {
 
 html[data-theme="light"] .playground-shell {
   background:
-    radial-gradient(circle at top right, rgba(129, 236, 255, 0.22), transparent 38%),
-    linear-gradient(180deg, rgba(15, 118, 110, 0.07), rgba(15, 23, 42, 0.015) 72%);
-  border: 1px solid rgba(15, 118, 110, 0.14);
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.05);
+    radial-gradient(circle at top right, rgba(129, 236, 255, 0.18), transparent 34%),
+    linear-gradient(180deg, rgba(241, 246, 255, 0.98), rgba(231, 241, 249, 0.98));
+  box-shadow:
+    0 18px 38px rgba(15, 23, 42, 0.06),
+    inset 0 0 0 1px rgba(15, 118, 110, 0.08);
 }
 
 html[data-theme="light"] .playground-topbar {
@@ -1186,31 +1204,31 @@ html[data-theme="light"] .playground-backlinks a:hover {
 html[data-theme="light"] .playground-badge {
   color: #083344;
   background: rgba(129, 236, 255, 0.45);
-  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.12);
 }
 
 html[data-theme="light"] .playground-theme-button {
   color: #334155;
-  background: rgba(255, 255, 255, 0.86);
-  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.12);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.08);
 }
 
 html[data-theme="light"] .playground-theme-button--active {
   color: #0f766e;
   background: rgba(129, 236, 255, 0.38);
-  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.18);
+  box-shadow: inset 3px 0 0 rgba(15, 118, 110, 0.85);
 }
 
 html[data-theme="light"] .playground-section-nav a {
   color: #0f172a;
   background: rgba(255, 255, 255, 0.55);
-  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.12);
+  box-shadow: none;
 }
 
 html[data-theme="light"] .playground-cta-row a {
   color: #083344;
-  background: rgba(255, 255, 255, 0.82);
-  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.14);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.08);
 }
 
 html[data-theme="light"] .playground-cta-row a:hover {
@@ -1221,19 +1239,19 @@ html[data-theme="light"] .playground-cta-row a:hover {
 html[data-theme="light"] .playground-section-nav a:hover {
   color: #0f766e;
   background: rgba(255, 255, 255, 0.85);
-  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.24);
+  box-shadow: none;
 }
 
 html[data-theme="light"] .playground-section-nav a.playground-section-link--active {
   color: #0f766e;
   background: rgba(129, 236, 255, 0.36);
-  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.2);
+  box-shadow: inset 3px 0 0 rgba(15, 118, 110, 0.85);
 }
 
 html[data-theme="light"] .playground-hero-copy,
 html[data-theme="light"] .playground-panel {
   background: rgba(255, 255, 255, 0.64);
-  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.07);
 }
 
 html[data-theme="light"] .playground-rail,
@@ -1323,12 +1341,17 @@ html[data-theme="light"] .playground-live-card,
 html[data-theme="light"] .playground-live-pre {
   color: #0f172a;
   background: rgba(247, 250, 249, 0.94);
-  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.08);
+  box-shadow: none;
 }
 
 html[data-theme="light"] .playground-live-editorpane {
   background: rgba(255, 255, 255, 0.72);
-  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.08);
+}
+
+html[data-theme="light"] .playground-live-controls {
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.08);
 }
 
 html[data-theme="light"] .playground-live-rail-header {
@@ -1339,36 +1362,37 @@ html[data-theme="light"] .playground-live-rail-header {
 html[data-theme="light"] .playground-live-example {
   color: #0f172a;
   background: rgba(255, 255, 255, 0.84);
-  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.08);
+  box-shadow: none;
 }
 
 html[data-theme="light"] .playground-live-example--active {
   color: #0f766e;
   background: rgba(129, 236, 255, 0.36);
-  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.16);
+  box-shadow: inset 3px 0 0 rgba(15, 118, 110, 0.85);
 }
 
 html[data-theme="light"] .playground-live-button {
   color: #083344;
   background: linear-gradient(135deg, rgba(129, 236, 255, 0.9), rgba(0, 212, 236, 0.78));
+  box-shadow: 0 10px 24px rgba(0, 96, 120, 0.14);
 }
 
 html[data-theme="light"] .playground-live-button--quiet {
   color: #0f172a;
   background: rgba(255, 255, 255, 0.86);
-  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.08);
 }
 
 html[data-theme="light"] .playground-live-tab {
   color: #334155;
-  background: rgba(255, 255, 255, 0.86);
-  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.1);
+  background: rgba(238, 244, 247, 0.92);
+  box-shadow: none;
 }
 
 html[data-theme="light"] .playground-live-tab--active {
   color: #0f766e;
-  background: rgba(129, 236, 255, 0.36);
-  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.16);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: inset 0 2px 0 rgba(15, 118, 110, 0.9);
 }
 
 html[data-theme="light"] .playground-live-tag {
@@ -1380,7 +1404,7 @@ html[data-theme="light"] .playground-live-tag {
 html[data-theme="light"] .playground-live-doc-link {
   color: #0f766e;
   background: rgba(255, 255, 255, 0.88);
-  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.08);
 }
 
 html[data-theme="light"] .playground-live-status[data-tone="ok"] {
@@ -1454,7 +1478,7 @@ html[data-theme="dark"] .playground-shell {
 }
 
 html[data-theme="dark"] .playground-shell--inner {
-  border-bottom-color: rgba(129, 236, 255, 0.1);
+  border-bottom-color: transparent;
 }
 
 html[data-theme="dark"] .playground-topbar {
@@ -1472,31 +1496,31 @@ html[data-theme="dark"] .playground-backlinks a:hover {
 html[data-theme="dark"] .playground-badge {
   color: #d5fbff;
   background: rgba(25, 37, 64, 0.86);
-  box-shadow: inset 0 0 0 1px rgba(129, 236, 255, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(129, 236, 255, 0.08);
 }
 
 html[data-theme="dark"] .playground-theme-button {
   color: #d4dcf4;
   background: rgba(15, 25, 48, 0.94);
-  box-shadow: inset 0 0 0 1px rgba(109, 117, 140, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(109, 117, 140, 0.08);
 }
 
 html[data-theme="dark"] .playground-theme-button--active {
   color: #81ecff;
   background: rgba(25, 37, 64, 0.98);
-  box-shadow: inset 0 0 0 1px rgba(129, 236, 255, 0.18);
+  box-shadow: inset 3px 0 0 rgba(129, 236, 255, 0.92);
 }
 
 html[data-theme="dark"] .playground-section-nav a {
   color: #dee5ff;
   background: rgba(15, 25, 48, 0.92);
-  box-shadow: inset 0 0 0 1px rgba(109, 117, 140, 0.12);
+  box-shadow: none;
 }
 
 html[data-theme="dark"] .playground-cta-row a {
   color: #d5fbff;
   background: rgba(15, 25, 48, 0.94);
-  box-shadow: inset 0 0 0 1px rgba(129, 236, 255, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(129, 236, 255, 0.08);
 }
 
 html[data-theme="dark"] .playground-cta-row a:hover {
@@ -1507,25 +1531,25 @@ html[data-theme="dark"] .playground-cta-row a:hover {
 html[data-theme="dark"] .playground-section-nav a:hover {
   color: #81ecff;
   background: rgba(25, 37, 64, 0.92);
-  box-shadow: inset 0 0 0 1px rgba(129, 236, 255, 0.18);
+  box-shadow: none;
 }
 
 html[data-theme="dark"] .playground-section-nav a.playground-section-link--active {
   color: #81ecff;
   background: rgba(25, 37, 64, 0.98);
-  box-shadow: inset 0 0 0 1px rgba(129, 236, 255, 0.2);
+  box-shadow: inset 3px 0 0 rgba(129, 236, 255, 0.92);
 }
 
 html[data-theme="dark"] .playground-hero-copy,
 html[data-theme="dark"] .playground-panel {
   background: rgba(15, 25, 48, 0.9);
-  box-shadow: inset 0 0 0 1px rgba(109, 117, 140, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(109, 117, 140, 0.08);
 }
 
 html[data-theme="dark"] .playground-rail,
 html[data-theme="dark"] .playground-main {
   background: rgba(9, 19, 40, 0.96);
-  box-shadow: inset 0 0 0 1px rgba(109, 117, 140, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(109, 117, 140, 0.08);
 }
 
 html[data-theme="dark"] .playground-rail-header,
@@ -1542,7 +1566,7 @@ html[data-theme="dark"] .playground-state-card,
 html[data-theme="dark"] .playground-hub-card,
 html[data-theme="dark"] .playground-doc-card {
   background: rgba(15, 25, 48, 0.92);
-  box-shadow: inset 0 0 0 1px rgba(109, 117, 140, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(109, 117, 140, 0.08);
 }
 
 html[data-theme="dark"] .playground-doc-chip {
@@ -1609,12 +1633,20 @@ html[data-theme="dark"] .playground-live-card,
 html[data-theme="dark"] .playground-live-pre {
   color: #dee5ff;
   background: rgba(15, 25, 48, 0.92);
-  box-shadow: inset 0 0 0 1px rgba(109, 117, 140, 0.12);
+  box-shadow: none;
 }
 
 html[data-theme="dark"] .playground-live-editorpane {
-  background: rgba(9, 19, 40, 0.96);
-  box-shadow: inset 0 0 0 1px rgba(109, 117, 140, 0.12);
+  background: #060e20;
+  box-shadow: inset 0 0 0 1px rgba(109, 117, 140, 0.08);
+}
+
+html[data-theme="dark"] .playground-live-controls {
+  background: rgba(15, 25, 48, 0.78);
+  backdrop-filter: blur(18px);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px rgba(109, 117, 140, 0.08);
 }
 
 html[data-theme="dark"] .playground-live-rail-header {
@@ -1625,48 +1657,49 @@ html[data-theme="dark"] .playground-live-rail-header {
 html[data-theme="dark"] .playground-live-example {
   color: #dee5ff;
   background: rgba(15, 25, 48, 0.94);
-  box-shadow: inset 0 0 0 1px rgba(109, 117, 140, 0.12);
+  box-shadow: none;
 }
 
 html[data-theme="dark"] .playground-live-example--active {
   color: #81ecff;
   background: rgba(25, 37, 64, 0.96);
-  box-shadow: inset 0 0 0 1px rgba(129, 236, 255, 0.16);
+  box-shadow: inset 3px 0 0 rgba(129, 236, 255, 0.92);
 }
 
 html[data-theme="dark"] .playground-live-button {
   color: #031923;
   background: linear-gradient(135deg, rgba(129, 236, 255, 0.96), rgba(0, 212, 236, 0.84));
+  box-shadow: 0 12px 32px rgba(0, 120, 160, 0.2);
 }
 
 html[data-theme="dark"] .playground-live-button--quiet {
   color: #d4dcf4;
-  background: rgba(25, 37, 64, 0.92);
-  box-shadow: inset 0 0 0 1px rgba(129, 236, 255, 0.12);
+  background: rgba(15, 25, 48, 0.94);
+  box-shadow: inset 0 0 0 1px rgba(129, 236, 255, 0.08);
 }
 
 html[data-theme="dark"] .playground-live-tab {
   color: #d4dcf4;
   background: rgba(15, 25, 48, 0.94);
-  box-shadow: inset 0 0 0 1px rgba(109, 117, 140, 0.12);
+  box-shadow: none;
 }
 
 html[data-theme="dark"] .playground-live-tab--active {
   color: #81ecff;
-  background: rgba(25, 37, 64, 0.96);
-  box-shadow: inset 0 0 0 1px rgba(129, 236, 255, 0.16);
+  background: rgba(25, 37, 64, 0.98);
+  box-shadow: inset 0 2px 0 rgba(129, 236, 255, 0.9);
 }
 
 html[data-theme="dark"] .playground-live-tag {
   color: #81ecff;
   background: rgba(25, 37, 64, 0.96);
-  box-shadow: inset 0 0 0 1px rgba(129, 236, 255, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(129, 236, 255, 0.08);
 }
 
 html[data-theme="dark"] .playground-live-doc-link {
   color: #81ecff;
   background: rgba(25, 37, 64, 0.96);
-  box-shadow: inset 0 0 0 1px rgba(129, 236, 255, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(129, 236, 255, 0.08);
 }
 
 html[data-theme="dark"] .playground-live-status[data-tone="ok"] {

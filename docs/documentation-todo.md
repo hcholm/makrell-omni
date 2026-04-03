@@ -27,27 +27,9 @@ Suggested item format:
 - [ ] Keep this file updated whenever documentation work is deferred during coding.
   - Source: ongoing repo workflow
   - Target docs: `docs/documentation-todo.md`
-- [ ] Surface signature showcase examples for MakrellPy, MakrellTS, and Makrell# as part of `v0.10.0`.
-  - Source: existing interesting examples, tests, and implementation capabilities
-  - Target docs: release notes, implementation READMEs, `makrell.dev/`, possible examples/showcase directories
-- [ ] Surface the MakrellPy `pipe`, `rpn`, and `lisp` macros as the MakrellPy showcase set for `v0.10.0`.
-  - Source: `impl/py/tests/makrellpy/test_meta.mr`
-  - Target docs: release notes, `impl/py/README.md`, `makrell.dev/` MakrellPy docs, possible examples directory
-- [ ] Add public `pipe`, `rpn`, and `lisp` showcase examples for MakrellTS.
-  - Source: `v0.10.0` shared macro showcase goal
-  - Target docs: `impl/ts/README.md`, `makrell.dev/`, examples/showcase directory, release notes
-- [ ] Add public `pipe`, `rpn`, and `lisp` showcase examples for Makrell#.
-  - Source: `v0.10.0` shared macro showcase goal
-  - Target docs: `impl/dotnet/README.md`, `makrell.dev/`, examples/showcase directory, release notes
 - [ ] Document the expanded Makrell# meta helper surface used by the macro showcase.
   - Source: `MetaProcessor` now supports member access, list `append`/`push`/`pop`, AST constructors, and `isinstance`-style node checks in compile-time code
   - Target docs: `impl/dotnet/README.md`, `specs/makrellsharp-spec.md`, `makrell.dev/` Makrell# macro/meta docs
-- [ ] Write down the `v0.10.0` compile-time parity goal across MakrellPy, MakrellTS, and Makrell#.
-  - Source: release direction that compile-time Makrell should use substantially more of the normal language/runtime surface
-  - Target docs: release notes, `docs/v0.10.0-release-plan.md`, implementation docs, `makrell.dev/`
-- [ ] Audit MakrellTS compile-time capability against the shared macro showcase and broader language surface.
-  - Source: MakrellTS should not lag obviously behind MakrellPy in public macro examples
-  - Target docs: `impl/ts/README.md`, `makrell.dev/`, release notes, possible implementation status note
 - [ ] Plan the Makrell# transition away from a narrow bespoke meta evaluator toward broader compile-time language reuse.
   - Source: current `MetaProcessor` is good bootstrap infrastructure but not the desired long-term `v0.10.0+` model
   - Target docs: `docs/`, `specs/makrellsharp-spec.md`, possible architecture note
@@ -79,6 +61,13 @@ Suggested item format:
   - Source: `v0.10.0` should state clearly what exists today (PDBs, host sourcemaps, traceback filenames) and what is still missing (Makrell-aware source maps)
   - Target docs: `docs/v0.10.0-release-plan.md`, release notes, implementation docs, possible tooling/debug note
 ## Completed
+
+- [x] Write down the current format-conformance and release-smoke picture for `v0.10.0`.
+  - Source: release checklist still needed an honest MRON/MRML/MRTD review plus a compact smoke suite
+  - Target docs: `docs/conformance-review.md`, `docs/release-smoke-suite.md`, `docs/v0.10.0-release-plan.md`
+- [x] Review `makrell.dev` for current install and use paths.
+  - Source: site install/tooling pages still had stale repo/tool assumptions after the packaging/editor consolidation work
+  - Target docs: `makrell.dev/source/makrellpy/install.rst`, `makrell.dev/source/makrellts/install.rst`, `makrell.dev/source/makrellsharp/install.rst`, `makrell.dev/source/makrellsharp/tooling.rst`
 
 - [x] Implement and document baseline MakrellTS `async fun` / `await` support.
   - Source: `v0.10.0` requirement that async/await be a real family feature using Makrell-shaped forms
@@ -140,3 +129,21 @@ Suggested item format:
 - [x] Surface `vscode-makrell` earlier in `makrell.dev` with a real editor screenshot.
   - Source: `v0.10.0` should treat editor support as part of the front-door experience rather than only reference material
   - Target docs: `makrell.dev/source/index.rst`, `makrell.dev/source/getting-started.rst`, `makrell.dev/source/reference/vscode-makrell.rst`, related CSS/assets
+- [x] Surface signature showcase examples for MakrellPy, MakrellTS, and Makrell# as part of `v0.10.0`.
+  - Source: existing interesting examples, tests, and implementation capabilities
+  - Target docs: release notes, implementation READMEs, `makrell.dev/`, possible examples/showcase directories
+- [x] Surface the MakrellPy `pipe`, `rpn`, and `lisp` macros as the MakrellPy showcase set for `v0.10.0`.
+  - Source: `impl/py/tests/makrellpy/test_meta.mr`
+  - Target docs: release notes, `impl/py/README.md`, `makrell.dev/` MakrellPy docs, possible examples directory
+- [x] Add public `pipe`, `rpn`, and `lisp` showcase examples for MakrellTS.
+  - Source: `v0.10.0` shared macro showcase goal
+  - Target docs: `impl/ts/README.md`, `makrell.dev/`, examples/showcase directory, release notes
+- [x] Add public `pipe`, `rpn`, and `lisp` showcase examples for Makrell#.
+  - Source: `v0.10.0` shared macro showcase goal
+  - Target docs: `impl/dotnet/README.md`, `makrell.dev/`, examples/showcase directory, release notes
+- [x] Write down the `v0.10.0` compile-time parity goal across MakrellPy, MakrellTS, and Makrell#.
+  - Source: release direction that compile-time Makrell should use substantially more of the normal language/runtime surface
+  - Target docs: release notes, `docs/v0.10.0-release-plan.md`, implementation docs, `makrell.dev/`
+- [x] Audit MakrellTS compile-time capability against the shared macro showcase and broader language surface.
+  - Source: MakrellTS should not lag obviously behind MakrellPy in public macro examples
+  - Target docs: `impl/ts/README.md`, `makrell.dev/`, release notes, possible implementation status note

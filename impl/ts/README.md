@@ -142,6 +142,9 @@ Macro showcase:
 - includes `pipe`, `rpn`, and `lisp`
 - intended as the compact shared macro trio for `v0.10.0`
 - in the current TS version, `lisp` parses a Lisp-like source string before transforming it
+- the current `rpn` example is intentionally kept public even though it does
+  not yet match the MakrellPy / Makrell# result exactly; that difference is now
+  part of the explicit compile-time parity review rather than a hidden mismatch
 
 ### Async/await
 

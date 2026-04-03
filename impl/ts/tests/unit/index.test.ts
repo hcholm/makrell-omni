@@ -289,6 +289,21 @@ describe("MakrellTs MVP", () => {
     }
   });
 
+  test("public macros showcase example runs successfully", () => {
+    const result = Bun.spawnSync({
+      cwd: process.cwd(),
+      stdout: "pipe",
+      stderr: "pipe",
+      cmd: [process.execPath, "run", "src/cli.ts", "examples/macros/showcase.mrts"],
+    });
+
+    const stdout = new TextDecoder().decode(result.stdout);
+    expect(result.exitCode).toBe(0);
+    expect(stdout).toContain("pipeResult =");
+    expect(stdout).toContain("rpnResult =");
+    expect(stdout).toContain("lispResult =");
+  });
+
   test("makrell macro execution can be routed through runtime adapter", () => {
     const src = `
       {def macro inc [ns]

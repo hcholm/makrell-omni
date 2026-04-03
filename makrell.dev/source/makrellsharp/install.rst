@@ -1,9 +1,12 @@
 Installation
 ============
 
-Makrell# currently lives in the ``impl/dotnet`` area of the monorepo. The
-current setup is source-oriented: you build and run the implementation from the
-repository rather than installing a separate published package.
+Makrell# currently lives in the ``impl/dotnet`` area of the monorepo.
+
+For ``v0.10.0`` there are now two real workflows:
+
+* run the CLI directly from source with ``dotnet run --project ...``
+* install the packaged ``MakrellSharp.Cli`` tool from a built package or feed
 
 Prerequisites
 -------------
@@ -14,8 +17,24 @@ Before working with Makrell#, make sure you have:
 * the Makrell repository checked out locally
 * a shell where ``dotnet`` is available on ``PATH``
 
-If you are only exploring the language, the quickest way to start is to build
-the solution and run one of the example ``.mrsh`` files.
+If you are only exploring the language from the repo, the quickest way to
+start is still to build the solution and run one of the example ``.mrsh``
+files.
+
+Use the packaged tool
+---------------------
+
+From ``impl/dotnet/``:
+
+.. code-block:: bash
+
+    dotnet pack MakrellSharp.sln -c Release
+    dotnet tool install MakrellSharp.Cli --tool-path .tmp-tools --add-source src/MakrellSharp.Cli/bin/Release
+    .tmp-tools/makrellsharp examples/hello.mrsh
+    .tmp-tools/makrellsharp check examples/hello.mrsh --json
+
+This is the current packaged CLI workflow that belongs to the ``v0.10.0``
+release shape.
 
 Build and test
 --------------
@@ -36,7 +55,7 @@ This gives you:
 Run the CLI
 -----------
 
-The most direct way to use Makrell# is through the CLI project:
+The most direct source-oriented way to use Makrell# is through the CLI project:
 
 .. code-block:: bash
 
@@ -67,6 +86,8 @@ A typical local workflow looks like this:
 #. run an example ``.mrsh`` file
 #. inspect emitted C# when you want to understand how a Makrell# form lowers
 #. build a ``.dll`` when you want to try the compile-and-load path
+#. optionally switch to the packaged ``makrellsharp`` tool flow once you want a
+   cleaner command-line experience
 
 For example:
 
@@ -85,8 +106,8 @@ The current `.NET` implementation includes:
 * MRON and MRML parsers
 * a Makrell# compiler that emits and loads `.NET` assemblies
 * macro and meta support for the current implemented subset
-* a CLI for running source files, building assemblies, and inspecting embedded
-  compile-time metadata
+* a CLI/tool workflow for running source files, checking diagnostics, building
+  assemblies, and inspecting embedded compile-time metadata
 
 For the current feature slice and examples, continue with :doc:`quick-start`,
 :doc:`guide`, :doc:`tooling`, and :doc:`cookbook`.

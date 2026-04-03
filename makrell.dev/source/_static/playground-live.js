@@ -7,6 +7,7 @@
   const runButton = root.querySelector("[data-playground-live-run]");
   const compileButton = root.querySelector("[data-playground-live-compile]");
   const resetButton = root.querySelector("[data-playground-live-reset]");
+  const shareButton = root.querySelector("[data-playground-live-share]");
   const status = root.querySelector("[data-playground-live-status]");
   const output = root.querySelector("[data-playground-live-output]");
   const generated = root.querySelector("[data-playground-live-generated]");
@@ -73,6 +74,100 @@
   let currentExample = null;
   let activeView = "source";
   let railButtons = [];
+  let saveTimer = null;
+
+  const DRAFTS_KEY = "makrell.playground.drafts.v1";
+  const STATE_KEY = "makrell.playground.state.v1";
+
+  function loadDrafts() {
+    try {
+      return JSON.parse(localStorage.getItem(DRAFTS_KEY) || "{}");
+    } catch (_error) {
+      return {};
+    }
+  }
+
+  function saveDrafts(drafts) {
+    localStorage.setItem(DRAFTS_KEY, JSON.stringify(drafts));
+  }
+
+  function loadStoredState() {
+    try {
+      return JSON.parse(localStorage.getItem(STATE_KEY) || "{}");
+    } catch (_error) {
+      return {};
+    }
+  }
+
+  function saveStoredState(state) {
+    localStorage.setItem(STATE_KEY, JSON.stringify(state));
+  }
+
+  function encodeText(value) {
+    const bytes = new TextEncoder().encode(value);
+    let binary = "";
+    for (const byte of bytes) {
+      binary += String.fromCharCode(byte);
+    }
+    return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  }
+
+  function decodeText(value) {
+    const padded = value.replace(/-/g, "+").replace(/_/g, "/");
+    const remainder = padded.length % 4;
+    const normalised = remainder === 0 ? padded : padded + "=".repeat(4 - remainder);
+    const binary = atob(normalised);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return new TextDecoder().decode(bytes);
+  }
+
+  function getDrafts() {
+    return loadDrafts();
+  }
+
+  function setDraft(exampleId, source) {
+    const drafts = getDrafts();
+    if (!source || (currentExample && source === currentExample.source)) {
+      delete drafts[exampleId];
+    } else {
+      drafts[exampleId] = source;
+    }
+    saveDrafts(drafts);
+  }
+
+  function updateStoredState() {
+    saveStoredState({
+      example: currentExample?.id || null,
+      view: activeView,
+    });
+  }
+
+  function updateLocationState() {
+    const params = new URLSearchParams();
+    if (currentExample?.id) params.set("example", currentExample.id);
+    if (activeView && activeView !== "source") params.set("view", activeView);
+    if (editor && currentExample && editor.value !== currentExample.source) {
+      params.set("code", encodeText(editor.value));
+    }
+
+    const nextHash = params.toString();
+    const nextUrl = `${window.location.pathname}${window.location.search}${nextHash ? `#${nextHash}` : ""}`;
+    history.replaceState(null, "", nextUrl);
+    updateStoredState();
+  }
+
+  function readInitialState() {
+    const fromHash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const stored = loadStoredState();
+    return {
+      example: fromHash.get("example") || stored.example || null,
+      view: fromHash.get("view") || stored.view || "source",
+      code: fromHash.get("code") ? decodeText(fromHash.get("code")) : null,
+    };
+  }
 
   function setStatus(text, tone) {
     if (!status) return;
@@ -132,6 +227,7 @@
     for (const panel of panels) {
       panel.classList.toggle("playground-live-panel--active", panel.dataset.playgroundLivePanel === viewName);
     }
+    updateLocationState();
   }
 
   function renderRail() {
@@ -158,9 +254,13 @@
     }
   }
 
-  function setExample(example) {
+  function setExample(example, options) {
+    const config = options || {};
+    const drafts = getDrafts();
     currentExample = example;
-    if (editor) editor.value = example.source;
+    if (editor) {
+      editor.value = config.sourceOverride ?? drafts[example.id] ?? example.source;
+    }
     if (select) select.value = example.id;
     if (title) title.textContent = example.title;
     if (summary) summary.textContent = example.summary;
@@ -171,7 +271,7 @@
     }
     if (generated) generated.textContent = "";
     if (output) output.textContent = "";
-    activateView("source");
+    activateView(config.view || "source");
     setStatus(`Loaded ${example.id}`, "normal");
   }
 
@@ -242,6 +342,26 @@
     }
   }
 
+  function resetCurrent() {
+    if (!currentExample || !editor) return;
+    editor.value = currentExample.source;
+    setDraft(currentExample.id, currentExample.source);
+    if (generated) generated.textContent = "";
+    if (output) output.textContent = "";
+    activateView("source");
+    setStatus(`Reset ${currentExample.id}`, "normal");
+  }
+
+  async function copyCurrentLink() {
+    updateLocationState();
+    if (!navigator.clipboard?.writeText) {
+      setStatus("Copy link is not available in this browser", "error");
+      return;
+    }
+    await navigator.clipboard.writeText(window.location.href);
+    setStatus("Copied shareable link", "ok");
+  }
+
   async function init() {
     setStatus("Loading runtime…", "normal");
     try {
@@ -266,8 +386,14 @@
 
       renderRail();
 
-      if (examples.length > 0) {
-        setExample(examples[0]);
+      const initialState = readInitialState();
+      const initialExample = examples.find((example) => example.id === initialState.example) || examples[0];
+
+      if (initialExample) {
+        setExample(initialExample, {
+          sourceOverride: initialState.code,
+          view: initialState.view,
+        });
       }
 
       renderMetaInfo();
@@ -300,8 +426,24 @@
         });
       }
       if (resetButton) {
-        resetButton.addEventListener("click", () => {
-          if (currentExample) setExample(currentExample);
+        resetButton.addEventListener("click", resetCurrent);
+      }
+      if (shareButton) {
+        shareButton.addEventListener("click", () => {
+          copyCurrentLink().catch((error) => {
+            if (output) output.textContent = String(error);
+            setStatus("Copy link failed", "error");
+          });
+        });
+      }
+      if (editor) {
+        editor.addEventListener("input", () => {
+          if (!currentExample) return;
+          if (saveTimer) window.clearTimeout(saveTimer);
+          saveTimer = window.setTimeout(() => {
+            setDraft(currentExample.id, editor.value);
+            updateLocationState();
+          }, 120);
         });
       }
     } catch (error) {

@@ -28,7 +28,10 @@ extensions = [
 ]
 
 templates_path = ['_templates']
-exclude_patterns = []
+exclude_patterns = [
+    'playground/_live_host.rst',
+    'playground/_section_nav.rst',
+]
 
 # if os.getenv("GITHUB_ACTIONS") or os.getenv("TRAVIS") or os.getenv("CIRCLECI") or os.getenv("GITLAB_CI"):
 #     extensions.append("sphinxcontrib.googleanalytics")

@@ -15,25 +15,7 @@ Architecture
 
             Makrell playground
 
-    .. container:: playground-section-nav
-
-        :doc:`Overview <index>`
-        :doc:`Features <features>`
-        :doc:`Workspace <workspace>`
-        :doc:`Docs panel <docs-panel>`
-        :doc:`Onboarding <onboarding>`
-        :doc:`Views <views>`
-        :doc:`Sharing <sharing>`
-        :doc:`Responsive <responsive>`
-        :doc:`Status <status>`
-        :doc:`States <states>`
-        :doc:`Flows <flows>`
-        :doc:`Experience <experience>`
-        :doc:`Examples <examples>`
-        :doc:`Architecture <architecture>`
-        :doc:`Implementation <implementation>`
-        :doc:`Launch checklist <launch-checklist>`
-        :doc:`Roadmap <roadmap>`
+    .. include:: _section_nav.rst
 
 The playground should use real implementation code rather than a separate demo
 runtime.
@@ -142,3 +124,4 @@ Why this matters
 If the playground diverges from MakrellTS proper, it becomes a demo that
 teaches the wrong thing. If it shares the actual language/tooling path, it
 becomes a trustworthy way to learn and test the real system.
+

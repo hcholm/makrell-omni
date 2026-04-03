@@ -15,29 +15,11 @@ Workspace
 
             Makrell playground
 
-    .. container:: playground-section-nav
+    .. include:: _section_nav.rst
 
-        :doc:`Overview <index>`
-        :doc:`Features <features>`
-        :doc:`Workspace <workspace>`
-        :doc:`Docs panel <docs-panel>`
-        :doc:`Onboarding <onboarding>`
-        :doc:`Views <views>`
-        :doc:`Sharing <sharing>`
-        :doc:`Responsive <responsive>`
-        :doc:`Status <status>`
-        :doc:`States <states>`
-        :doc:`Flows <flows>`
-        :doc:`Experience <experience>`
-        :doc:`Examples <examples>`
-        :doc:`Architecture <architecture>`
-        :doc:`Implementation <implementation>`
-        :doc:`Launch checklist <launch-checklist>`
-        :doc:`Roadmap <roadmap>`
-
-This page is a static product sketch for the browser workspace itself. It is
-not the real app yet, but it shows the shape the playground should be moving
-towards.
+This page shows the intended workspace shape in a more annotated way than the
+landing page. It is useful when you want to look at the product shell, layout,
+and supporting surfaces more closely.
 
 .. container:: playground-workspace playground-workspace--large
 
@@ -242,68 +224,11 @@ browser playground is still being built.
 Live browser host
 -----------------
 
-This is a small real browser host wired to the current MakrellTS browser
-runtime and launch-example manifest. It is still intentionally simple, but it
-already runs real MakrellTS code inside the docs site.
+This is the current browser host wired to the MakrellTS browser runtime and
+launch-example manifest. It already runs real MakrellTS code inside the docs
+site while keeping the surrounding workspace layout easy to inspect.
 
-.. raw:: html
-
-    <div class="playground-live" data-playground-live>
-      <div class="playground-live-controls">
-        <label class="playground-live-label" for="playground-live-example">Example</label>
-        <select id="playground-live-example" class="playground-live-select" data-playground-live-example></select>
-        <button class="playground-live-button" type="button" data-playground-live-run>Run</button>
-        <button class="playground-live-button playground-live-button--quiet" type="button" data-playground-live-compile>Compile</button>
-        <button class="playground-live-button playground-live-button--quiet" type="button" data-playground-live-reset>Reset</button>
-        <span class="playground-live-status" data-playground-live-status>Loading runtime…</span>
-      </div>
-      <div class="playground-live-layout">
-        <div class="playground-live-rail">
-          <div class="playground-live-rail-header">Launch examples</div>
-          <div class="playground-live-rail-list" data-playground-live-rail></div>
-        </div>
-        <div class="playground-live-editorpane">
-          <textarea class="playground-live-editor" spellcheck="false" data-playground-live-editor></textarea>
-        </div>
-        <div class="playground-live-sidepane">
-          <div class="playground-live-tabbar">
-            <button class="playground-live-tab playground-live-tab--active" type="button" data-playground-live-view="source">Source</button>
-            <button class="playground-live-tab" type="button" data-playground-live-view="output">Output</button>
-            <button class="playground-live-tab" type="button" data-playground-live-view="generated">Generated JS</button>
-            <button class="playground-live-tab" type="button" data-playground-live-view="docs">Docs</button>
-          </div>
-          <div class="playground-live-panel playground-live-panel--active" data-playground-live-panel="source">
-            <div class="playground-live-card">
-              <strong data-playground-live-title>Example</strong>
-              <p data-playground-live-summary></p>
-              <div class="playground-live-tags" data-playground-live-tags></div>
-              <p class="playground-live-meta" data-playground-live-meta></p>
-              <strong>Try this next</strong>
-              <ul class="playground-live-list" data-playground-live-prompts></ul>
-            </div>
-          </div>
-          <div class="playground-live-panel" data-playground-live-panel="output">
-            <div class="playground-live-card">
-              <strong>Output</strong>
-              <pre class="playground-live-pre" data-playground-live-output></pre>
-            </div>
-          </div>
-          <div class="playground-live-panel" data-playground-live-panel="generated">
-            <div class="playground-live-card">
-              <strong>Generated JS</strong>
-              <pre class="playground-live-pre" data-playground-live-generated></pre>
-            </div>
-          </div>
-          <div class="playground-live-panel" data-playground-live-panel="docs">
-            <div class="playground-live-card">
-              <strong data-playground-live-docs-title>Related docs</strong>
-              <p data-playground-live-docs-summary></p>
-              <div class="playground-live-doc-links" data-playground-live-doc-links></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+.. include:: _live_host.rst
 
 The current live block is deliberately small:
 
@@ -312,9 +237,10 @@ The current live block is deliberately small:
 * browser-side compile and run
 * generated JS output
 * example metadata and docs pairings from the MakrellTS package surface
+* local draft persistence plus shareable links for the current example state
 
-It is not yet the final playground shell, but it proves the main browser path
-inside ``makrell.dev``.
+It proves the main browser path inside ``makrell.dev`` and gives the workspace
+page a concrete implementation anchor.
 
 Workspace chrome
 ----------------
@@ -338,5 +264,6 @@ This workspace sketch is useful for:
 * design iteration
 * layout decisions
 * agreeing on product scope for ``v0.10.0``
-* checking that the playground feels like its own Makrell surface before the
-  real browser app exists
+* keeping the browser surface recognisably Makrell rather than letting it
+  collapse into a generic sandbox
+

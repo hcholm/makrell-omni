@@ -5,6 +5,28 @@ This page collects small Makrell# compile-time examples. The aim is to show the
 current ``meta`` and macro workflow in the `.NET` implementation rather than to
 serve as a complete language reference.
 
+Showcase: ``pipe``, ``rpn``, and ``lisp``
+-----------------------------------------
+
+Makrell# now also has a compact public macro showcase in
+``impl/dotnet/examples/showcase.mrsh`` built around the same three examples
+used in the family-wide ``v0.10.0`` macro story:
+
+* ``pipe``
+  rewrites a sequence of forms into pipeline style
+* ``rpn``
+  turns postfix input into ordinary Makrell syntax
+* ``lisp``
+  hosts a Lisp-like round-bracket notation inside Makrell
+
+In the `.NET` track, these examples are useful not only because they show macro
+power, but because they also show where Makrell# is heading architecturally:
+compile-time code should feel like real Makrell#, not like a separate toy
+language bolted onto the compiler.
+
+The checked-in Makrell# showcase also includes short comments in the source, so
+it works as both a runnable example and a learning aid.
+
 Recipe: use a ``meta`` block
 ----------------------------
 
@@ -57,6 +79,7 @@ For cross-family context, also see:
 
 * :doc:`../makrellpy/cookbook-macros`
 * :doc:`../makrellts/cookbook-macros`
+* ``impl/dotnet/examples/showcase.mrsh``
 
 The three implementation tracks share a family model, but their tooling and
 host-language integration differ enough that side-by-side reading is often

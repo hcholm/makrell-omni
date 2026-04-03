@@ -15,25 +15,7 @@ Status
 
             Makrell playground
 
-    .. container:: playground-section-nav
-
-        :doc:`Overview <index>`
-        :doc:`Features <features>`
-        :doc:`Workspace <workspace>`
-        :doc:`Docs panel <docs-panel>`
-        :doc:`Onboarding <onboarding>`
-        :doc:`Views <views>`
-        :doc:`Sharing <sharing>`
-        :doc:`Responsive <responsive>`
-        :doc:`Status <status>`
-        :doc:`States <states>`
-        :doc:`Flows <flows>`
-        :doc:`Experience <experience>`
-        :doc:`Examples <examples>`
-        :doc:`Architecture <architecture>`
-        :doc:`Implementation <implementation>`
-        :doc:`Launch checklist <launch-checklist>`
-        :doc:`Roadmap <roadmap>`
+    .. include:: _section_nav.rst
 
 This page keeps the playground section honest. Some parts already exist in the
 repo today, while other parts are still planned for ``v0.10.0``.
@@ -126,3 +108,4 @@ Why this matters
 The playground should eventually feel like a real browser product, not only a
 well-documented intention. A status page makes that distinction visible and
 helps keep the section from overpromising.
+

@@ -15,25 +15,7 @@ Flows
 
             Makrell playground
 
-    .. container:: playground-section-nav
-
-        :doc:`Overview <index>`
-        :doc:`Features <features>`
-        :doc:`Workspace <workspace>`
-        :doc:`Docs panel <docs-panel>`
-        :doc:`Onboarding <onboarding>`
-        :doc:`Views <views>`
-        :doc:`Sharing <sharing>`
-        :doc:`Responsive <responsive>`
-        :doc:`Status <status>`
-        :doc:`States <states>`
-        :doc:`Flows <flows>`
-        :doc:`Experience <experience>`
-        :doc:`Examples <examples>`
-        :doc:`Architecture <architecture>`
-        :doc:`Implementation <implementation>`
-        :doc:`Launch checklist <launch-checklist>`
-        :doc:`Roadmap <roadmap>`
+    .. include:: _section_nav.rst
 
 The playground should support a small number of clear flows well. That matters
 more than trying to support every kind of browser interaction at once.
@@ -118,3 +100,4 @@ The playground should avoid these traps:
 
 The first release should feel like a compact, well-guided circuit rather than a
 big but vague browser IDE.
+

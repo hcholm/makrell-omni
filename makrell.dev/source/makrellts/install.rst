@@ -2,7 +2,9 @@ Installation
 ============
 
 MakrellTS currently lives under ``impl/ts`` in the monorepo. Like the other
-implementations in this repository, it is currently used directly from source.
+implementations in this repository, the current ``v0.10.0`` workflow is still
+primarily source-oriented even though the package surface is now being shaped
+for publication.
 
 Prerequisites
 -------------
@@ -24,6 +26,17 @@ From ``impl/ts/``:
 
 This installs the dependencies used for the library, browser build, tests, and
 tooling around the TypeScript implementation.
+
+Run a first source file
+-----------------------
+
+From ``impl/ts/``:
+
+.. code-block:: bash
+
+    bun run src/cli.ts examples/hello.mrts
+
+This is the quickest current way to confirm that the CLI path is working.
 
 Common commands
 ---------------
@@ -60,6 +73,7 @@ Typical workflow
 A common local workflow is:
 
 #. install dependencies with ``bun install``
+#. run a small ``.mrts`` example
 #. run the build and test commands
 #. use the examples and docs pages to try MakrellTS in either Node.js or the
    browser-oriented build
@@ -69,6 +83,7 @@ For example:
 .. code-block:: bash
 
     bun install
+    bun run src/cli.ts examples/hello.mrts
     bun run build
     bun run test
     bun run build:browser

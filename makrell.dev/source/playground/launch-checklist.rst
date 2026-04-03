@@ -15,25 +15,7 @@ Launch Checklist
 
             Makrell playground
 
-    .. container:: playground-section-nav
-
-        :doc:`Overview <index>`
-        :doc:`Features <features>`
-        :doc:`Workspace <workspace>`
-        :doc:`Docs panel <docs-panel>`
-        :doc:`Onboarding <onboarding>`
-        :doc:`Views <views>`
-        :doc:`Sharing <sharing>`
-        :doc:`Responsive <responsive>`
-        :doc:`Status <status>`
-        :doc:`States <states>`
-        :doc:`Flows <flows>`
-        :doc:`Experience <experience>`
-        :doc:`Examples <examples>`
-        :doc:`Architecture <architecture>`
-        :doc:`Implementation <implementation>`
-        :doc:`Launch checklist <launch-checklist>`
-        :doc:`Roadmap <roadmap>`
+    .. include:: _section_nav.rst
 
 This page turns the playground work into a more concrete `v0.10.0` delivery
 checklist. It is intentionally practical rather than aspirational.
@@ -154,3 +136,4 @@ A good final check for ``v0.10.0`` is:
 something from it, and know where to go next without leaving confused?"
 
 If the answer is yes, the first version is doing its job.
+

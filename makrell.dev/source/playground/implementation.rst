@@ -15,25 +15,7 @@ Implementation
 
             Makrell playground
 
-    .. container:: playground-section-nav
-
-        :doc:`Overview <index>`
-        :doc:`Features <features>`
-        :doc:`Workspace <workspace>`
-        :doc:`Docs panel <docs-panel>`
-        :doc:`Onboarding <onboarding>`
-        :doc:`Views <views>`
-        :doc:`Sharing <sharing>`
-        :doc:`Responsive <responsive>`
-        :doc:`Status <status>`
-        :doc:`States <states>`
-        :doc:`Flows <flows>`
-        :doc:`Experience <experience>`
-        :doc:`Examples <examples>`
-        :doc:`Architecture <architecture>`
-        :doc:`Implementation <implementation>`
-        :doc:`Launch checklist <launch-checklist>`
-        :doc:`Roadmap <roadmap>`
+    .. include:: _section_nav.rst
 
 This page connects the playground idea to the current codebase. The point is to
 keep the playground grounded in the real MakrellTS and ``vscode-makrell`` work
@@ -228,3 +210,4 @@ What this page is for
 This is not meant to be a final technical design document. It is here to keep
 the playground tied to the real repo structure while the product shape is still
 being worked out.
+

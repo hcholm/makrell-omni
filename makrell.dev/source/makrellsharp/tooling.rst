@@ -19,12 +19,17 @@ Current CLI shape
 The current CLI supports commands such as:
 
 * ``makrellsharp run <file.mrsh>``
+* ``makrellsharp check <file.mrsh>``
 * ``makrellsharp build <file.mrsh>``
 * ``makrellsharp emit-csharp <file.mrsh>``
 * ``makrellsharp run-assembly <file.dll>``
 * ``makrellsharp meta-sources <file.dll>``
+* ``makrellsharp check-mron <file.mron>``
+* ``makrellsharp check-mrml <file.mrml>``
+* ``makrellsharp check-mrtd <file.mrtd>``
 * ``makrellsharp parse-mron <file.mron>``
 * ``makrellsharp parse-mrml <file.mrml>``
+* ``makrellsharp parse-mrtd <file.mrtd>``
 
 These are useful because they map directly onto the major moving parts of the
 implementation rather than hiding everything behind one generic command.
@@ -45,6 +50,12 @@ Run a source file:
 
     dotnet run --project src/MakrellSharp.Cli -- examples/hello.mrsh
 
+Check a source file for editor-friendly diagnostics:
+
+.. code-block:: bash
+
+    dotnet run --project src/MakrellSharp.Cli -- check examples/hello.mrsh --json
+
 Run the checked-in async example:
 
 .. code-block:: bash
@@ -64,6 +75,30 @@ Use MRON and MRML from the CLI:
 
     dotnet run --project src/MakrellSharp.Cli -- parse-mron examples/sample.mron
     dotnet run --project src/MakrellSharp.Cli -- parse-mrml examples/sample.mrml
+
+Use MRTD and format checks from the CLI:
+
+.. code-block:: bash
+
+    dotnet run --project src/MakrellSharp.Cli -- parse-mrtd examples/sample.mrtd
+    dotnet run --project src/MakrellSharp.Cli -- check-mron examples/sample.mron --json
+    dotnet run --project src/MakrellSharp.Cli -- check-mrml examples/sample.mrml --json
+    dotnet run --project src/MakrellSharp.Cli -- check-mrtd examples/sample.mrtd --json
+
+Packaged tool workflow
+----------------------
+
+The source-oriented ``dotnet run --project ...`` path is still useful during
+development, but ``v0.10.0`` also now has a real packaged CLI-tool path.
+
+From ``impl/dotnet/``:
+
+.. code-block:: bash
+
+    dotnet pack MakrellSharp.sln -c Release
+    dotnet tool install MakrellSharp.Cli --tool-path .tmp-tools --add-source src/MakrellSharp.Cli/bin/Release
+    .tmp-tools/makrellsharp examples/hello.mrsh
+    .tmp-tools/makrellsharp check examples/hello.mrsh --json
 
 Inspect compile-time metadata:
 
