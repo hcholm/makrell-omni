@@ -4,6 +4,10 @@ Makrell# is the .NET implementation track for the Makrell language family.
 
 Current status: early implementation, but already usable for core MBF parsing, MRON/MRML parsing, Makrell# compilation to .NET assemblies, compile-time macro/meta execution, and a first .NET interop layer.
 
+Website and documentation: **[makrell.dev](https://makrell.dev)**
+
+Current editor workflow: [`../../vscode-makrell/README.md`](../../vscode-makrell/README.md)
+
 ## Projects
 
 - `MakrellSharp.Ast`: shared AST model
@@ -53,6 +57,9 @@ dotnet tool install MakrellSharp.Cli --tool-path .tmp-tools --add-source src/Mak
 .tmp-tools/makrellsharp examples/hello.mrsh
 .tmp-tools/makrellsharp check examples/hello.mrsh --json
 ```
+
+This packaged-tool path is part of the current `v0.10.0` Makrell# workflow,
+alongside direct `dotnet run --project ...` use from the repo.
 
 ## Current language slice
 
@@ -440,3 +447,4 @@ var doc = MrtdParser.ParseSource(
 ## Design docs
 
 - implementation plan: [`MAKRELLSHARP_PLAN.md`](MAKRELLSHARP_PLAN.md)
+- editor workflow: [`../../vscode-makrell/README.md`](../../vscode-makrell/README.md)

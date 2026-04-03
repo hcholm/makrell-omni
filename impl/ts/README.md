@@ -6,6 +6,10 @@ Targets:
 - Bun (preferred) and Node.js
 - Browser runtime (including isolated meta execution support)
 
+Website and documentation: **[makrell.dev](https://makrell.dev)**
+
+Current editor workflow: [`../../vscode-makrell/README.md`](../../vscode-makrell/README.md)
+
 ## Install
 
 From `impl/ts/`:
@@ -30,6 +34,9 @@ Planned package shape:
 - shared editor assets: `makrellts/editor-assets`
 - playground launch examples: `makrellts/playground`
 - CLI entry: `makrellts`
+
+For the current browser-facing product direction, see
+[`https://makrell.dev/playground/`](https://makrell.dev/playground/).
 
 ## Commands
 
@@ -248,6 +255,8 @@ when bonus
 - Shared editor assets are synced from `../../shared/makrell-editor-assets/` into `src/editor-assets/` via `bun run sync:assets`.
 - Playground launch examples are synced from real `.mrts` source files into `src/generated/playground_examples.ts` via `bun run sync:playground`.
 - N-body simulator example is at `examples/nbody-browser/index.html` and uses MakrellTS source (`app.mrts`).
+- For the current editor workflow across the family, see
+  [`../../vscode-makrell/README.md`](../../vscode-makrell/README.md).
 
 ## Licence
 

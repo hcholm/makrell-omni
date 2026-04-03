@@ -8,6 +8,8 @@ Status:
 
 Website and documentation: **[makrell.dev](https://makrell.dev)**
 
+Current editor workflow: [`../../vscode-makrell/README.md`](../../vscode-makrell/README.md)
+
 ## Quick start
 
 ### Installation
@@ -21,7 +23,7 @@ Package smoke check from a built artefact:
 ```bash
 python -m build
 python -m venv .pack-smoke
-.pack-smoke\Scripts\python.exe -m pip install .\dist\makrell-0.9.1-py3-none-any.whl
+.pack-smoke\Scripts\python.exe -m pip install <wheel-file-from-dist>
 .pack-smoke\Scripts\makrell.exe --help
 .pack-smoke\Scripts\makrell-langserver.exe --help
 ```
@@ -45,7 +47,7 @@ makrell
 ### Run a MakrellPy script
 
 ```bash
-makrell myscript.mr
+makrell myscript.mrpy
 ```
 
 ## MakrellPy by example
@@ -95,7 +97,7 @@ See `examples/` and `tests/` for:
 - Functional programming utilities
 - Metaprogramming and macros
 - Python interoperability
-- LSP support
+- editor/LSP support
 
 ### Async/await
 
@@ -232,6 +234,8 @@ MBF supports identifiers, strings, numbers, bracketed lists (`()`, `[]`, `{}`), 
 
 MakrellTS (`impl/ts`) is the reference implementation for ongoing language evolution.
 MakrellPy remains important for parity testing, interoperability checks, and existing Python-based workflows.
+For the current editor workflow across MakrellPy, MakrellTS, Makrell#, MRON,
+MRML, and MRTD, see [`../../vscode-makrell/README.md`](../../vscode-makrell/README.md).
 
 ## Licence
 

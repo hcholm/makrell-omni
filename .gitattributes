@@ -1,0 +1,9 @@
+# GitHub Linguist cleanup for generated/runtime artefacts.
+# Keep real source files visible, but stop intentional checked-in bundles from
+# dominating the language breakdown.
+
+*.map linguist-generated=true
+vscode-makrell/out/** linguist-generated=true
+impl/ts/dist/** linguist-generated=true
+impl/ts/src/browser-runtime/*.js linguist-generated=true
+makrell.dev/source/_static/playground-runtime/*.js linguist-generated=true
