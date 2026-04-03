@@ -1,14 +1,13 @@
-MRON (Makrell Object Notation)
-==============================
+MRON
+====
 
-MRON is a lightweight alternative to JSON.
+This page is kept as a compatibility entry point.
 
-Here is a basic MRON object:
+The main MRON documentation now lives under :doc:`mron/index`.
 
-.. code-block:: makrell
+Recommended pages:
 
-    {
-        name "Alice"
-        age  42
-    }
-
+* :doc:`mron/index`
+* :doc:`mron/quick-start`
+* :doc:`mron/syntax`
+* :doc:`mron/cookbook`

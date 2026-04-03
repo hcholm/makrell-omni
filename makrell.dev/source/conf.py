@@ -45,11 +45,13 @@ html_static_path = ['_static']
 
 html_css_files = [
     # "https://cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css"
-    'https://cdn.jsdelivr.net/gh/orestbida/cookieconsent@3.0.1/dist/cookieconsent.css'
+    'https://cdn.jsdelivr.net/gh/orestbida/cookieconsent@3.0.1/dist/cookieconsent.css',
+    'custom.css',
 ]
 
 html_js_files = [
     # "https://cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js",
     'https://cdn.jsdelivr.net/gh/orestbida/cookieconsent@3.1.0/dist/cookieconsent.umd.js',
-    "cookie-init.js"  # This script initializes the banner
+    "cookie-init.js",  # This script initializes the banner
+    "keyboard-nav.js",
 ]

@@ -1,0 +1,41 @@
+:root {
+  --makrell-accent: #0f766e;
+  --makrell-accent-2: #b45309;
+  --makrell-surface: #f7faf9;
+}
+
+.sidebar-brand-text {
+  letter-spacing: 0.02em;
+  font-weight: 700;
+}
+
+.content h1 {
+  color: var(--makrell-accent);
+}
+
+.content h2 {
+  color: #1f2937;
+  border-bottom: 1px solid rgba(15, 118, 110, 0.18);
+  padding-bottom: 0.2rem;
+}
+
+.content img[alt="Makrell"] {
+  filter: drop-shadow(0 10px 24px rgba(15, 118, 110, 0.18));
+}
+
+.highlight {
+  border: 1px solid rgba(15, 118, 110, 0.12);
+}
+
+.toctree-wrapper.compound > p.caption {
+  color: var(--makrell-accent);
+  font-weight: 700;
+}
+
+div.admonition, .docutils .admonition {
+  border-left: 4px solid var(--makrell-accent);
+}
+
+.content .section:first-of-type > p:first-of-type {
+  font-size: 1.08rem;
+}

@@ -1,14 +1,13 @@
-MRML (Makrell Markup Language)
-==============================
+MRML
+====
 
-MRON is a lightweight alternative to JSON.
+This page is kept as a compatibility entry point.
 
-Here is a basic MRON object:
+The main MRML documentation now lives under :doc:`mrml/index`.
 
-.. code-block:: makrell
+Recommended pages:
 
-    {
-        name "Alice"
-        age  42
-    }
-
+* :doc:`mrml/index`
+* :doc:`mrml/quick-start`
+* :doc:`mrml/syntax`
+* :doc:`mrml/cookbook`

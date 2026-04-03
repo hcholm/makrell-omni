@@ -1,57 +1,95 @@
 Getting Started
 ===============
 
+This site is organised for two kinds of readers:
 
-Installation
-------------
+* people who want to understand the **Makrell family**
+* people who want to jump straight to **one implementation or format**
 
-Current release is **0.9.1**.
+Recommended paths
+-----------------
 
-From PyPI
+If you are new to Makrell, start here:
+
+1. :doc:`concepts/index`
+2. :doc:`mron/index`
+3. :doc:`mrml/index`
+4. one implementation section:
+   * :doc:`makrellpy/index`
+   * :doc:`makrellts/index`
+   * :doc:`makrellsharp/index`
+
+If you already know what you want:
+
+* use **MakrellPy** for the most mature language experience today
+* use **MakrellTS** for the TypeScript reference track, browser work, and JavaScript interop
+* use **Makrell#** for .NET and CLR integration
+* use **MRON** for structured data
+* use **MRML** for markup and document-like trees
+
+Fast entry points
+-----------------
+
+MakrellPy
 ^^^^^^^^^
 
 .. code-block:: bash
 
-    $ pip install makrell
+    pip install makrell
+    makrell
 
-Install latest version from GitHub
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The code is hosted on GitHub at https://github.com/hcholm/makrell-py .
-
-Direct installation:
+MakrellTS
+^^^^^^^^^
 
 .. code-block:: bash
 
-    $ pip install git+https://github.com/hcholm/makrell-py
+    cd impl/ts
+    bun install
+    bun run src/cli.ts examples/hello.mrjs
 
-From a local clone:
-
-.. code-block:: bash
-
-    $ git clone https://github.com/hcholm/makrell-py
-    $ cd makrell-py
-    $ pip install .
-
-
-Running Code
-------------
-
-MakrellPy REPL usage
-^^^^^^^^^^^^^^^^^^^^ 
+Makrell#
+^^^^^^^^
 
 .. code-block:: bash
 
-    $ makrell
-    > 2 + 3
-    5
-    > [2 3 5] | sum
-    10
+    cd impl/dotnet
+    dotnet run --project src/MakrellSharp.Cli -- examples/hello.mrsh
 
-Run a MakrellPy script
-^^^^^^^^^^^^^^^^^^^^^^
+What is shared across the family?
+---------------------------------
 
-.. code-block:: bash
+The common thread is **MBF**, the Makrell Base Format:
 
-    $ makrell myscript.mr
+* bracketed forms
+* operator-oriented structure
+* syntax that stays compact but highly structured
+* support for code, data, markup, and embedded sublanguages
 
+That is why Makrell can support languages like MakrellPy and Makrell#, while also
+supporting formats like MRON and MRML.
+
+Quick orientation by section
+----------------------------
+
+**Shared Concepts**
+    The common model: MBF, operators, calls, pattern matching, quoting, macros,
+    implementations, and feature differences.
+
+**MakrellPy**
+    The Python-hosted implementation. Deep, practical, and still one of the best places
+    to learn the language in action.
+
+**MakrellTS**
+    The TypeScript reference track for ongoing language evolution, with browser and Node.js relevance.
+
+**Makrell#**
+    The .NET-hosted implementation with CLR interop, MRON/MRML support, and compile/load workflows.
+
+**MRON**
+    A lightweight structured data notation.
+
+**MRML**
+    A lightweight markup and document notation.
+
+**MBF**
+    The shared structural format beneath the family.
