@@ -70,6 +70,8 @@ Implementation anchors
         * ``impl/ts/examples/macros/showcase.mrts``
         * ``impl/ts/examples/browser-compile/``
         * ``impl/ts/examples/nbody-browser/``
+        * ``impl/ts/scripts/sync-playground-examples.mjs``
+        * ``makrellts/playground`` as the packaged launch-example surface
 
     .. container:: playground-feature-card
 
@@ -81,8 +83,9 @@ Implementation anchors
         Important areas:
 
         * ``shared/makrell-editor-assets/``
+        * ``impl/ts/scripts/sync-editor-assets.mjs``
         * ``vscode-makrell/scripts/sync-shared-assets.mjs``
-        * ``vscode-makrell/`` as a consumer rather than the only source of truth
+        * ``vscode-makrell/`` and ``makrellts/editor-assets`` as consumers rather than the only source of truth
 
     .. container:: playground-feature-card
 
@@ -136,6 +139,7 @@ work packages rather than only product areas.
 
         * ``shared/makrell-editor-assets/``
         * ``shared/makrell-editor-assets/languages.json``
+        * ``impl/ts/scripts/sync-editor-assets.mjs``
         * ``vscode-makrell/scripts/sync-shared-assets.mjs``
 
     .. container:: playground-feature-card
@@ -150,6 +154,8 @@ work packages rather than only product areas.
         * ``impl/ts/src/browser.ts``
         * ``impl/ts/examples/browser-compile/``
         * ``makrell.dev/source/playground/``
+        * ``makrell.dev/scripts/sync-playground-runtime.mjs``
+        * ``makrell.dev/source/_static/playground-live.js``
 
     .. container:: playground-feature-card
 
@@ -161,6 +167,8 @@ work packages rather than only product areas.
         Main source areas:
 
         * ``impl/ts/examples/``
+        * ``impl/ts/scripts/sync-playground-examples.mjs``
+        * ``impl/ts/src/generated/playground_examples.ts``
         * playground example metadata
         * surrounding MakrellTS docs pages
 
@@ -198,6 +206,7 @@ knowledge, that knowledge should live in a shared TS-side location.
 
 The VS Code extension should remain a consumer of shared assets.
 The browser playground should also remain a consumer of shared assets.
+MakrellTS should provide a browser-friendly consumer surface of those same assets.
 Neither should become the only source of truth for syntax or language metadata.
 
 Implementation rule for `v0.10.0`

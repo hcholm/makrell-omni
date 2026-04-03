@@ -29,19 +29,24 @@
   ],
   "exports": {
     ".": "./dist/index.js",
-    "./browser": "./dist/browser/browser.js"
+    "./browser": "./dist/browser/browser.js",
+    "./editor-assets": "./dist/editor_assets.js",
+    "./playground": "./dist/playground.js"
   },
   "bin": {
     "makrellts": "./dist/cli.js"
   },
   "scripts": {
-    "build": "bun build ./src/index.ts ./src/cli.ts --outdir dist --target bun --sourcemap",
-    "build:browser": "bun build ./src/browser.ts ./src/meta_worker.ts --outdir dist/browser --target browser --format esm --sourcemap",
+    "sync:assets": "node ./scripts/sync-editor-assets.mjs",
+    "sync:playground": "node ./scripts/sync-playground-examples.mjs",
+    "sync": "bun run sync:assets && bun run sync:playground",
+    "build": "bun run sync && bun build ./src/index.ts ./src/cli.ts ./src/editor_assets.ts ./src/playground.ts --outdir dist --target bun --sourcemap",
+    "build:browser": "bun run sync && bun build ./src/browser.ts ./src/meta_worker.ts --outdir dist/browser --target browser --format esm --sourcemap",
     "dev": "bun run src/cli.ts",
     "lint": "bunx tsc --noEmit -p tsconfig.typecheck.json --pretty false",
-    "typecheck": "bunx tsc --noEmit -p tsconfig.typecheck.json",
+    "typecheck": "bun run sync && bunx tsc --noEmit -p tsconfig.typecheck.json",
     "test": "bun test",
-    "test:browser": "bun run build:browser && bun run scripts/test-browser-smoke.ts",
+    "test:browser": "bun run build && bun run build:browser && bun run scripts/test-browser-smoke.ts",
     "ci": "bun run build && bun run test && bun run typecheck && bun run test:browser"
   },
   "devDependencies": {

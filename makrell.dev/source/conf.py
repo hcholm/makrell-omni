@@ -58,4 +58,5 @@ html_js_files = [
     "playground-nav.js",
     "playground-theme.js",
     "playground-workspace-demo.js",
+    "playground-live.js",
 ]

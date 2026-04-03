@@ -3,5 +3,5 @@
   "compilerOptions": {
     "strict": true
   },
-  "include": ["src/ast.ts"]
+  "include": ["src/ast.ts", "src/editor_assets.ts", "src/playground.ts", "src/generated/playground_examples.ts"]
 }

@@ -14,6 +14,17 @@ import {
 } from "./mrtd";
 import { parse } from "./parser";
 import { clearPatternHooks, matchPattern, registerPatternHook } from "./pattern";
+import {
+  getMakrellPlaygroundExample,
+  makrellPlaygroundExamples,
+} from "./playground";
+import {
+  getMakrellEditorAssets,
+  makrellEditorLanguages,
+  makrellLanguageConfiguration,
+  makrellTextMateGrammar,
+  makrellEditorSnippets,
+} from "./editor_assets";
 
 export {
   parse,
@@ -31,6 +42,13 @@ export {
   readMrtdTuples,
   writeMrtdRecords,
   writeMrtdTuples,
+  makrellEditorLanguages,
+  makrellLanguageConfiguration,
+  makrellEditorSnippets,
+  makrellTextMateGrammar,
+  getMakrellEditorAssets,
+  makrellPlaygroundExamples,
+  getMakrellPlaygroundExample,
 };
 export type { CompileOptions } from "./compiler";
 export type { MetaRuntimeAdapter } from "./meta_runtime";

@@ -11,6 +11,7 @@ This is the entry point for the split Makrell specification set.
 - `specs/mrml-spec.md`: MRML markup semantics
 - `specs/mrtd-spec.md`: MRTD tabular data semantics (draft)
 - `specs/portability-model.md`: cross-cutting note on core, language/profile, and application-specific constructs
+- `specs/async-model.md`: cross-language async/await direction and `v0.10.0` requirement
 - `specs/vision-notes.md`: historical vision notes and non-normative ideas
 
 ## Status

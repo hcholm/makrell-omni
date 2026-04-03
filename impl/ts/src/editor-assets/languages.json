@@ -1,0 +1,43 @@
+{
+  "languages": [
+    {
+      "id": "makrell",
+      "aliases": ["Makrell", "makrell"],
+      "extensions": [".mr", ".mrx", ".mrpy", ".mrts", ".mrsh"],
+      "family": "makrell"
+    },
+    {
+      "id": "makrell-on",
+      "aliases": [
+        "Makrell Object Notation",
+        "MRON",
+        "makrell object notation",
+        "mron"
+      ],
+      "extensions": [".mron"],
+      "family": "mron"
+    },
+    {
+      "id": "makrell-ml",
+      "aliases": [
+        "Makrell Markup Language",
+        "MRML",
+        "makrell markup language",
+        "mrml"
+      ],
+      "extensions": [".mrml"],
+      "family": "mrml"
+    },
+    {
+      "id": "makrell-td",
+      "aliases": [
+        "Makrell Tabular Data",
+        "MRTD",
+        "makrell tabular data",
+        "mrtd"
+      ],
+      "extensions": [".mrtd"],
+      "family": "mrtd"
+    }
+  ]
+}

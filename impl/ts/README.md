@@ -21,6 +21,8 @@ Planned package shape:
 
 - library entry: `makrellts`
 - browser entry: `makrellts/browser`
+- shared editor assets: `makrellts/editor-assets`
+- playground launch examples: `makrellts/playground`
 - CLI entry: `makrellts`
 
 ## Commands
@@ -51,6 +53,18 @@ Typed outputs (API):
 
 ```ts
 import { compileToTs, compileToDts } from "makrellts";
+```
+
+Shared editor assets (for browser tooling, playground work, or editor reuse):
+
+```ts
+import { getMakrellEditorAssets, makrellEditorLanguages } from "makrellts/editor-assets";
+```
+
+Playground launch examples (generated from real checked-in `.mrts` sources):
+
+```ts
+import { getMakrellPlaygroundExample, makrellPlaygroundExamples } from "makrellts/playground";
 ```
 
 ## MakrellTS by example
@@ -160,7 +174,9 @@ when bonus
 
 - `src/`: compiler/runtime source
 - `src/browser.ts`: browser compile/execute entrypoint
+- `src/editor_assets.ts`: exported synced editor-language metadata for playground/editor reuse
 - `src/meta_worker.ts`: browser meta worker entrypoint
+- `src/playground.ts`: exported launch-example manifest for browser/playground reuse
 - `src/browser-runtime/`: checked-in browser runtime JS for no-build static hosting
 - `tests/unit/`: unit tests
 - `tests/parity/`: parity tests against MakrellPy behaviour where applicable
@@ -179,6 +195,8 @@ when bonus
 - Node/browser support is tracked in `COMPATIBILITY.md`.
 - `import`/`importm` behaviour and browser module loading strategy are defined in `IMPORT_MODEL.md`.
 - Browser runtime bundle outputs are built to `dist/browser/` and mirrored in `src/browser-runtime/` for static hosting without build steps.
+- Shared editor assets are synced from `../../shared/makrell-editor-assets/` into `src/editor-assets/` via `bun run sync:assets`.
+- Playground launch examples are synced from real `.mrts` source files into `src/generated/playground_examples.ts` via `bun run sync:playground`.
 - N-body simulator example is at `examples/nbody-browser/index.html` and uses MakrellTS source (`app.mrts`).
 
 ## Licence

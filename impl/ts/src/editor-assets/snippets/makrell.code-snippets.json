@@ -1,0 +1,109 @@
+{
+    "if": {
+        "prefix": "if",
+        "body": "{if ${1:predicate} ${2:consequent} ${3:alternative}}",
+        "description": "Makrell if expression",
+        "scope": "source.makrell"
+    },
+    "fun": {
+        "prefix": "fun",
+        "body": [
+            "{fun ${1:name} [${2:parameters}]",
+            "    $TM_SELECTED_TEXT$0",
+            "}"
+        ],
+        "description": "Makrell function definition",
+        "scope": "source.makrell"
+    },
+    "macro": {
+        "prefix": "macro",
+        "body": [
+            "{def macro ${1:name} [${2:nodes}]",
+            "    ${2:nodes} = {regular ${2:nodes}}",
+            "    $TM_SELECTED_TEXT$0",
+            "}"
+        ],
+        "description": "Makrell macro definition",
+        "scope": "source.makrell"
+    },
+    "match": {
+        "prefix": "match",
+        "body": [
+            "{match ${1:value}",
+            "    ${2:pattern}",
+            "        ${3:result}",
+            "    _",
+            "        ${4:fallback}}"
+        ],
+        "description": "Makrell match expression",
+        "scope": "source.makrell"
+    },
+    "meta": {
+        "prefix": "meta",
+        "body": [
+            "{meta",
+            "    $TM_SELECTED_TEXT$0",
+            "}"
+        ],
+        "description": "Makrell compile-time meta block",
+        "scope": "source.makrell"
+    },
+    "quote": {
+        "prefix": "quote",
+        "body": "{quote $TM_SELECTED_TEXT$0}",
+        "description": "Makrell quote form",
+        "scope": "source.makrell"
+    },
+    "mron-object": {
+        "prefix": "mronobj",
+        "body": [
+            "{",
+            "    ${1:key} ${2:value}",
+            "}"
+        ],
+        "description": "MRON object block",
+        "scope": "source.makrell"
+    },
+    "mron-list": {
+        "prefix": "mronlist",
+        "body": [
+            "[",
+            "    ${1:value}",
+            "]"
+        ],
+        "description": "MRON list block",
+        "scope": "source.makrell"
+    },
+    "mrml-element": {
+        "prefix": "mrml",
+        "body": [
+            "{${1:div}",
+            "    ${2:child}",
+            "}"
+        ],
+        "description": "MRML element block",
+        "scope": "source.makrell"
+    },
+    "mrtd": {
+        "prefix": "mrtd",
+        "body": [
+            "${1:name}:${2:string} ${3:age}:${4:int}",
+            "${5:Ada} ${6:32}",
+            "${7:Ben} ${8:41}"
+        ],
+        "description": "MRTD header and sample rows",
+        "scope": "source.makrell"
+    },
+    "mrtd-multiline-header": {
+        "prefix": "mrtdmulti",
+        "body": [
+            "(",
+            "    ${1:name}:${2:string}",
+            "    ${3:age}:${4:int}",
+            ")",
+            "${5:Ada} ${6:32}"
+        ],
+        "description": "MRTD multiline header",
+        "scope": "source.makrell"
+    }
+}

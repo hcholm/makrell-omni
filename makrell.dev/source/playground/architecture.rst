@@ -87,7 +87,14 @@ by hand:
 * family file-extension and language metadata
 
 The VS Code extension now syncs its packaged copies from that shared asset
-base, which is the right direction for the browser playground too.
+base. MakrellTS now also syncs packaged copies from the same base and exports
+them from ``makrellts/editor-assets``, which is the right direction for the
+browser playground too.
+
+MakrellTS now also syncs a launch-example manifest from real checked-in
+``.mrts`` sources and exports that from ``makrellts/playground``. That means
+the future browser playground can load curated examples from a real package
+surface instead of hardcoding them in the site layer.
 
 There is also useful material in the MakrellTS track itself:
 
@@ -124,6 +131,10 @@ The playground should remain compatible with static-site hosting on
 * browser execution should not require a custom backend to be useful
 * the first version should prefer browser-local evaluation, examples, and docs
   integration over server-dependent features
+
+The current direction inside ``makrell.dev`` is to sync a small set of built
+MakrellTS browser bundles into ``_static/playground-runtime/`` and let the
+workspace page import those directly.
 
 Why this matters
 ----------------

@@ -54,6 +54,12 @@ Suggested item format:
 - [ ] Write down the stronger `v0.10.0` rule that meta should use the same parser and compiler path where practical.
   - Source: release direction for near-full language experience in compile-time code
   - Target docs: `docs/v0.10.0-release-plan.md`, `docs/consolidation-plan.md`, possible architecture note
+- [ ] Implement and document the shared async/await surface for MakrellTS and Makrell#.
+  - Source: `v0.10.0` requirement that async/await be a real family feature using Makrell-shaped forms
+  - Target docs: `specs/async-model.md`, implementation specs, implementation READMEs, `makrell.dev/`
+- [ ] Add public async/await examples for MakrellPy, MakrellTS, and Makrell#.
+  - Source: async/await is now a release requirement rather than an implementation-specific extra
+  - Target docs: implementation READMEs, release notes, `makrell.dev/`, examples directories
 - [ ] Plan the MakrellTS web playground for `v0.10.0` once the design profile exists.
   - Source: desired browser-based playground with examples, docs, REPL, and editor
   - Target docs: `docs/`, release notes, `makrell.dev/`, possible dedicated plan note
@@ -66,6 +72,15 @@ Suggested item format:
 
 ## Completed
 
+- [x] Write down the cross-language async/await direction for the Makrell family.
+  - Source: `v0.10.0` now requires a shared async/await surface that follows Makrell syntactic conventions
+  - Target docs: `specs/async-model.md`, `specs/main-spec.md`, release/consolidation plans
+- [x] Expose a MakrellTS playground launch-example manifest generated from real checked-in sources.
+  - Source: `impl/ts` now syncs curated `.mrts` examples into `src/generated/playground_examples.ts` and exports them from `makrellts/playground`
+  - Target docs: `impl/ts/README.md`, `makrell.dev/` playground architecture/implementation notes
+- [x] Expose synced shared editor assets from MakrellTS for browser/playground reuse.
+  - Source: `impl/ts` now syncs `shared/makrell-editor-assets/` into local package files and exports them from `makrellts/editor-assets`
+  - Target docs: `impl/ts/README.md`, `makrell.dev/` playground architecture/implementation notes
 - [x] Document the MRTD `extended-scalars` profile in implementation READMEs and `makrell.dev`.
   - Source: profile-gated MRTD suffix support in `.NET`, MakrellTS, and MakrellPy
   - Target docs: `impl/dotnet/README.md`, `impl/py/README.md`, `impl/ts/README.md`, `makrell.dev/`

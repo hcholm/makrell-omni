@@ -15,9 +15,14 @@ This means prioritising:
 - API and CLI consistency
 - documentation and discoverability
 - a stronger VS Code extension
+- one shared async/await surface across the main language tracks
 
 The focus is not to add a lot of new language surface.
 The focus is to make the current family feel real and usable.
+
+Async/await is the main explicit exception: it is now a `v0.10.0` requirement
+because it materially affects real host interop and day-to-day developer
+experience.
 
 ## Guiding principle
 
@@ -66,7 +71,15 @@ In practice:
 - in the long run, meta should reuse the same parser and compiler path as
   ordinary code, rather than relying on a separate permanent evaluator model
 
-### 5. The editor experience does not reflect the actual project
+### 5. Shared async/await support is uneven
+
+- MakrellPy already has real async/await support
+- MakrellTS parity notes still say async is not implemented
+- Makrell# planning mentions async, but the language surface is not yet treated
+  as a current shared feature
+- this should become a single family feature, not three separate future ideas
+
+### 6. The editor experience does not reflect the actual project
 
 - `vscode-makrell` needs a larger update
 - it should support the family as it exists now, not just one older language
@@ -276,6 +289,32 @@ it can do at runtime.
 - a stronger path toward "meta can use the whole shebang"
 - an explicit direction that compile-time execution should share the normal
   parser/compiler pipeline wherever practical
+
+## 3c. Shared async/await surface
+
+### Objective
+
+Make async/await a real family feature across MakrellPy, MakrellTS, and
+Makrell#.
+
+### Direction
+
+Use Makrell-shaped forms rather than raw host syntax:
+
+- `{async fun ...}`
+- `{await expr}`
+
+Treat those as the shared core async surface.
+
+Host-shaped extended forms such as `{async for ...}` and `{async with ...}` may
+remain profile-specific until their cross-language story is clearer.
+
+### Deliverables
+
+- one cross-language async note in specs
+- MakrellTS async/await implementation work
+- Makrell# async/await implementation work
+- tests/examples for the shared core forms
 
 ## 4. API and CLI consistency
 
@@ -503,6 +542,8 @@ Tasks:
 4. Create/expand shared MRON/MRML/MRTD fixtures for parity and conformance
 
 5. Update docs to reflect current install/use paths
+
+6. Align the async/await story across MakrellPy, MakrellTS, and Makrell#
 
 ## Definition of success
 

@@ -4,7 +4,11 @@ import {
   compile,
   compileToDts,
   compileToTs,
+  getMakrellEditorAssets,
+  getMakrellPlaygroundExample,
   InProcessMetaRuntimeAdapter,
+  makrellEditorLanguages,
+  makrellPlaygroundExamples,
   parse,
   parseMrtd,
   registerPatternHook,
@@ -359,6 +363,32 @@ describe("MakrellTs MVP", () => {
     const dts = compileToDts(src);
     expect(dts).toContain("export function add(x: number, y: number): unknown;");
     expect(dts).toContain("export let out: number;");
+  });
+
+  test("editor assets are exported from the shared synced source", () => {
+    expect(makrellEditorLanguages.map((language) => language.id)).toEqual([
+      "makrell",
+      "makrell-on",
+      "makrell-ml",
+      "makrell-td",
+    ]);
+
+    const assets = getMakrellEditorAssets();
+    expect(assets.languages).toHaveLength(4);
+    expect(Object.keys(assets.snippets)).toContain("fun");
+    expect((assets.languageConfiguration as { comments?: unknown }).comments).toBeDefined();
+  });
+
+  test("playground examples are exported from real MakrellTS sources", () => {
+    expect(makrellPlaygroundExamples.map((example) => example.id)).toEqual([
+      "hello",
+      "macros-showcase",
+      "nbody-browser",
+    ]);
+
+    expect(getMakrellPlaygroundExample("hello")?.source).toContain("{def macro inc [ns]");
+    expect(getMakrellPlaygroundExample("macros-showcase")?.source).toContain("pipeResult");
+    expect(getMakrellPlaygroundExample("nbody-browser")?.source).toContain("{fun resetSim []");
   });
 
   test("parseMrtd reads simple tabular data", () => {
