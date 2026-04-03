@@ -92,9 +92,6 @@ Family formats and tooling
    * - Shared editor assets
      - active
      - shared grammar, snippets, and language config exist
-   * - MakrellTS playground
-     - evolving
-     - browser-host groundwork exists on ``makrell.dev``
 
 Reading the table
 -----------------

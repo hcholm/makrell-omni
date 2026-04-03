@@ -15,8 +15,6 @@ Playground
 
             MakrellTS playground
 
-    .. include:: _section_nav.rst
-
     .. include:: _live_host.rst
 
     .. container:: playground-hero
@@ -49,16 +47,6 @@ Playground
                 * :doc:`architecture`
                 * :doc:`roadmap`
 
-Quick route
------------
-
-If you are here to try Makrell rather than read about it:
-
-1. load ``Hello and basics``
-2. press ``Run``
-3. open ``Generated JS``
-4. switch to ``Shared macro showcase``
-
 Main pages
 ----------
 
@@ -90,25 +78,6 @@ Main pages
         The short path from the current browser host to a stronger
         ``v0.10.0`` release.
 
-Supporting pages
-----------------
-
-The rest of the playground section is supporting material for the product
-surface above:
-
-* :doc:`features`
-* :doc:`docs-panel`
-* :doc:`onboarding`
-* :doc:`views`
-* :doc:`sharing`
-* :doc:`responsive`
-* :doc:`status`
-* :doc:`states`
-* :doc:`flows`
-* :doc:`experience`
-* :doc:`implementation`
-* :doc:`launch-checklist`
-
 .. toctree::
    :maxdepth: 2
 
@@ -116,4 +85,3 @@ surface above:
    examples
    architecture
    roadmap
-   _planning_pages

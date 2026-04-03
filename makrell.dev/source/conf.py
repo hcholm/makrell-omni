@@ -28,10 +28,7 @@ extensions = [
 ]
 
 templates_path = ['_templates']
-exclude_patterns = [
-    'playground/_live_host.rst',
-    'playground/_section_nav.rst',
-]
+exclude_patterns = []
 
 # if os.getenv("GITHUB_ACTIONS") or os.getenv("TRAVIS") or os.getenv("CIRCLECI") or os.getenv("GITLAB_CI"):
 #     extensions.append("sphinxcontrib.googleanalytics")
@@ -58,8 +55,4 @@ html_js_files = [
     "cookie-init.js",  # This script initializes the banner
     "keyboard-nav.js",
     "github-link.js",
-    "playground-nav.js",
-    "playground-theme.js",
-    "playground-workspace-demo.js",
-    "playground-live.js",
 ]

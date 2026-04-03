@@ -30,7 +30,7 @@
       links: [
         { href: "../makrellts/quick-start.html", label: "MakrellTS quick start" },
         { href: "../tutorials/first-program-makrellts.html", label: "First MakrellTS program" },
-        { href: "./onboarding.html", label: "Playground onboarding" },
+        { href: "./workspace.html", label: "Playground workspace" },
       ],
       prompts: [
         "Change the debug labels and rerun the file.",
@@ -44,7 +44,7 @@
       links: [
         { href: "../makrellts/cookbook-macros.html", label: "MakrellTS macro cookbook" },
         { href: "../playground/examples.html", label: "Playground launch examples" },
-        { href: "../playground/views.html", label: "Playground views" },
+        { href: "../playground/workspace.html", label: "Playground workspace" },
       ],
       prompts: [
         "Change the pipe chain and see how the generated JS reacts.",
@@ -58,7 +58,7 @@
       links: [
         { href: "../makrellts/cookbook-browser.html", label: "MakrellTS browser cookbook" },
         { href: "../playground/architecture.html", label: "Playground architecture" },
-        { href: "../playground/responsive.html", label: "Responsive behaviour" },
+        { href: "../playground/roadmap.html", label: "Playground roadmap" },
       ],
       prompts: [
         "Adjust a simulation constant and recompile to inspect the changed JS.",

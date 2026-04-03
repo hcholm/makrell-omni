@@ -146,5 +146,5 @@ See also
 --------
 
 * :doc:`implementation-matrix`
-* :doc:`/playground/implementation`
-* :doc:`/playground/architecture`
+* :doc:`/makrellts/index`
+* :doc:`/makrellts/tooling`
