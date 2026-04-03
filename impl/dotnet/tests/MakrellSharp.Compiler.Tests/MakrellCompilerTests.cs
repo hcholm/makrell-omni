@@ -680,6 +680,54 @@ public sealed class MakrellCompilerTests
     }
 
     [Fact]
+    public void Run_EvaluatesComparisonOperatorAsFunction()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            gt = {>}
+            {gt 5 3}
+            """);
+
+        Assert.True(Convert.ToBoolean(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesModuloOperatorAsFunction()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            mod = {%}
+            {mod 17 5}
+            """);
+
+        Assert.Equal(2, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesIndexOperatorAsFunction()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            idx = {@}
+            {idx [10 20 30] 1}
+            """);
+
+        Assert.Equal(20, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesIndexOperatorPartialApplication()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            secondOf = {@ [10 20 30]}
+            {secondOf 1}
+            """);
+
+        Assert.Equal(20, Convert.ToInt32(result));
+    }
+
+    [Fact]
     public void Run_EvaluatesIndexOperator_OnArrayLiteral()
     {
         var result = MakrellCompiler.Run("[10 20 30] @ 1");

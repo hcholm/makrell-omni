@@ -52,6 +52,8 @@ Operators may also be used as first-class function values and partially applied 
 Examples:
 - `{*}`
 - `{+ 2}`
+- `{>}`
+- `{@}`
 - `{{*} 5 7}`
 
 Functions and `do` blocks return the value of their final expression unless an explicit `{return ...}` is used.
@@ -98,6 +100,7 @@ Operator semantics:
 - `f *\\ values` maps `f` across `values`
 - `{*}` produces an operator function value
 - `{+ 2}` partially applies the operator with its left operand fixed
+- arithmetic, comparison, logical, and indexing operators can be used through operator-function values
 - `x @ i` indexes sequences, strings, dictionaries, CLR indexers, and arrays
 - `x.y` is CLR member/property access
 - `x = y` assigns to identifiers

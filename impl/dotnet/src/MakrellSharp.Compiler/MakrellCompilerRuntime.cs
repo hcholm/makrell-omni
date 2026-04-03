@@ -406,6 +406,8 @@ public static class MakrellCompilerRuntime
             "-" => SubtractValues(left, right),
             "*" => MultiplyValues(left, right),
             "/" => DivideValues(left, right),
+            "%" => ApplyNumericBinary(left, right, (l, r) => l % r, (l, r) => l % r),
+            "@" => Index(left, right),
             "&&" => IsTruthy(left) && IsTruthy(right),
             "||" => IsTruthy(left) || IsTruthy(right),
             _ => throw new InvalidOperationException($"Unsupported operator-as-function '{op}'."),

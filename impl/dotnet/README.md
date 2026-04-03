@@ -100,6 +100,12 @@ mul = {*}
 
 add2 = {+ 2}
 {add2 3}
+
+gt = {>}
+{gt 5 3}
+
+idx = {@}
+{idx [10 20 30] 1}
 ```
 
 Pipe operators are also supported:
