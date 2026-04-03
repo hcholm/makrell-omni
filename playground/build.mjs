@@ -1,10 +1,11 @@
 import { mkdir, readdir, rm, copyFile, stat } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import path from "node:path";
 
-const root = new URL(".", import.meta.url);
-const srcDir = path.join(root.pathname, "src");
-const distDir = path.join(root.pathname, "dist");
-const siteDir = path.join(root.pathname, "..", "makrell.dev", "build", "html", "playground");
+const rootDir = fileURLToPath(new URL(".", import.meta.url));
+const srcDir = path.join(rootDir, "src");
+const distDir = path.join(rootDir, "dist");
+const siteDir = path.join(rootDir, "..", "makrell.dev", "build", "html", "playground");
 
 async function copyDir(fromDir, toDir) {
   await mkdir(toDir, { recursive: true });
@@ -26,9 +27,6 @@ await mkdir(distDir, { recursive: true });
 const result = await Bun.build({
   entrypoints: [path.join(srcDir, "main.ts")],
   outdir: distDir,
-  naming: {
-    entry: "app.js",
-  },
   target: "browser",
   format: "esm",
   sourcemap: "linked",

@@ -42,6 +42,16 @@ googleanalytics_id = "G-FERPT02DWQ"
 # html_theme = 'alabaster'
 html_theme = 'furo'
 html_static_path = ['_static']
+html_theme_options = {
+    "footer_icons": [
+        {
+            "name": "hch.no",
+            "url": "https://hch.no/",
+            "html": "<span>hch.no</span>",
+            "class": "",
+        },
+    ],
+}
 
 html_css_files = [
     # "https://cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css"

@@ -49,6 +49,23 @@ Use this site in the way that matches your goal:
 * learn by example in :doc:`tutorials/index`
 * solve concrete problems in :doc:`cookbook/index`
 
+Playground
+----------
+
+.. raw:: html
+
+    <div class="playground-callout">
+      <div class="playground-callout__copy">
+        <div class="playground-callout__eyebrow">MakrellTS Playground</div>
+        <div class="playground-callout__title">Try MakrellTS in a dedicated browser workspace.</div>
+        <p>The playground is a separate TypeScript app with a real MakrellTS compile/run path, shared editor assets, diagnostics, examples, and integrated docs.</p>
+      </div>
+      <div class="playground-callout__actions">
+        <a class="playground-callout__primary" href="/playground/" target="_blank" rel="noopener">Open Playground</a>
+        <a class="playground-callout__secondary" href="/makrellts/index.html">MakrellTS docs</a>
+      </div>
+    </div>
+
 Editor Workflow
 ---------------
 
