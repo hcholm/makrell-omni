@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Runtime.Loader;
+using System.Threading.Tasks;
 
 namespace MakrellSharp.Compiler;
 
@@ -27,7 +28,22 @@ public sealed class MakrellModule : IDisposable
     {
         try
         {
-            return runMethod.Invoke(null, null);
+            return MakrellCompilerRuntime.AwaitResult(runMethod.Invoke(null, null));
+        }
+        catch (TargetInvocationException ex) when (ex.InnerException is not null)
+        {
+            throw new MakrellRuntimeException(
+                BuildRuntimeErrorMessage(ex.InnerException),
+                cSharpSource,
+                ex.InnerException);
+        }
+    }
+
+    public async Task<object?> RunAsync()
+    {
+        try
+        {
+            return await Task.FromResult(MakrellCompilerRuntime.AwaitResult(runMethod.Invoke(null, null)));
         }
         catch (TargetInvocationException ex) when (ex.InnerException is not null)
         {

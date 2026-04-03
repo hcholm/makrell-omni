@@ -13,6 +13,7 @@ first:
 * ordinary function and pipeline syntax
 * `.NET` interop
 * pattern matching
+* the baseline async/await surface
 
 For setup details, see :doc:`install`. For broader usage patterns, continue to
 :doc:`guide` and :doc:`cookbook`.
@@ -58,6 +59,24 @@ Pattern-matching example
 
 This shows that Makrell# is not only about CLR interop. It also carries shared
 family language features such as structural matching.
+
+Async example
+-------------
+
+.. code-block:: makrell
+
+    {async fun fetchValue [value]
+        value}
+
+    {async fun addLater [x y]
+        left = {await {fetchValue x}}
+        right = {await {fetchValue y}}
+        left + right}
+
+    {await {addLater 20 22}}
+
+Makrell# now supports the shared family baseline of ``{async fun ...}`` and
+``{await ...}`` in addition to the more established sync/core surface.
 
 Practical next steps
 --------------------

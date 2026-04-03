@@ -4,6 +4,7 @@ import {
   InProcessMetaRuntimeAdapter,
   MetaRuntimeAdapter,
   run,
+  runAsync,
   SubprocessMetaRuntimeAdapter,
 } from "../../src/index";
 
@@ -26,6 +27,26 @@ export function runMbfParityFile(relPath: string, metaRuntime?: MetaRuntimeAdapt
       Math,
       JSON,
       Date,
+      Promise,
+    },
+  });
+}
+
+export async function runMbfParityFileAsync(relPath: string, metaRuntime?: MetaRuntimeAdapter): Promise<unknown> {
+  const full = join(import.meta.dir, "mbf", relPath);
+  const src = readFileSync(full, "utf8");
+  return await runAsync(src, {
+    metaRuntime,
+    scope: {
+      assert: assertFn,
+      print: (...args: unknown[]) => {
+        console.log(...args);
+        return args.length > 0 ? args[args.length - 1] : null;
+      },
+      Math,
+      JSON,
+      Date,
+      Promise,
     },
   });
 }

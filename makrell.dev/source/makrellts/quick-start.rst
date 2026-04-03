@@ -47,6 +47,24 @@ This example shows a few shared family ideas in one place:
 * pipeline usage
 * pattern matching
 
+Async example
+-------------
+
+.. code-block:: makrell
+
+    {async fun fetchValue [value]
+      {await {Promise.resolve value}}}
+
+    {async fun addLater [x y]
+      left = {await {fetchValue x}}
+      right = {await {fetchValue y}}
+      left + right}
+
+    {await {addLater 20 22}}
+
+MakrellTS now supports the shared family async baseline as part of the
+``v0.10.0`` consolidation work.
+
 MRON example
 ------------
 

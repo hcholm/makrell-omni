@@ -18,3 +18,7 @@ export function runInBrowser(src: string, options: BrowserRunOptions = {}): unkn
   ) as (scopeObj: Record<string, unknown>, matcher: typeof matchPattern) => unknown;
   return fn(scope, matchPattern);
 }
+
+export async function runInBrowserAsync(src: string, options: BrowserRunOptions = {}): Promise<unknown> {
+  return await Promise.resolve(runInBrowser(src, options));
+}

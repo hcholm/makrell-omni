@@ -67,6 +67,12 @@ Playground launch examples (generated from real checked-in `.mrts` sources):
 import { getMakrellPlaygroundExample, makrellPlaygroundExamples } from "makrellts/playground";
 ```
 
+Async execution:
+
+```ts
+import { runAsync } from "makrellts";
+```
+
 ## MakrellTS by example
 
 ### Core syntax
@@ -117,6 +123,38 @@ Macro showcase:
 - includes `pipe`, `rpn`, and `lisp`
 - intended as the compact shared macro trio for `v0.10.0`
 - in the current TS version, `lisp` parses a Lisp-like source string before transforming it
+
+### Async/await
+
+```mbf
+{async fun addLater [x y]
+  left = {await {Promise.resolve x}}
+  right = {await {Promise.resolve y}}
+  left + right
+}
+
+{await {addLater 20 22}}
+```
+
+API:
+
+```ts
+import { runAsync } from "makrellts";
+
+const result = await runAsync(`
+{async fun addLater [x y]
+  left = {await {Promise.resolve x}}
+  right = {await {Promise.resolve y}}
+  left + right
+}
+
+{await {addLater 20 22}}
+`);
+```
+
+Checked-in example:
+
+- `examples/async/await.mrts`
 
 ## MRON example
 

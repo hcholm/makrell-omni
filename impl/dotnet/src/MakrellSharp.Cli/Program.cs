@@ -9,55 +9,55 @@ return await MakrellSharpCli.RunAsync(args, Console.Out, Console.Error);
 
 public static class MakrellSharpCli
 {
-    public static Task<int> RunAsync(string[] args, TextWriter stdout, TextWriter stderr)
+    public static async Task<int> RunAsync(string[] args, TextWriter stdout, TextWriter stderr)
     {
         try
         {
-            return Task.FromResult(Run(args, stdout));
+            return await Run(args, stdout);
         }
         catch (Exception ex)
         {
-            stderr.WriteLine(ex.Message);
-            return Task.FromResult(1);
+            await stderr.WriteLineAsync(ex.Message);
+            return 1;
         }
     }
 
-    private static int Run(string[] args, TextWriter stdout)
+    private static Task<int> Run(string[] args, TextWriter stdout)
     {
         if (args.Length == 0 || IsHelp(args[0]))
         {
             PrintUsage(stdout);
-            return 0;
+            return Task.FromResult(0);
         }
 
         return args[0] switch
-        {
-            "run" => RunFile(GetRequiredPath(args, 1), stdout),
-            "run-assembly" => RunAssembly(GetRequiredPath(args, 1), stdout),
-            "meta-sources" => PrintMetaSources(GetRequiredPath(args, 1), stdout),
-            "build" => BuildFile(args, stdout),
-            "emit-csharp" => EmitCSharp(GetRequiredPath(args, 1), stdout),
-            "parse-mron" => ParseMron(GetRequiredPath(args, 1), stdout),
-            "parse-mrml" => ParseMrml(GetRequiredPath(args, 1), stdout),
-            "parse-mrtd" => ParseMrtd(GetRequiredPath(args, 1), stdout),
-            _ when LooksLikeAssemblyPath(args[0]) => RunAssembly(args[0], stdout),
-            _ when LooksLikeFilePath(args[0]) => RunFile(args[0], stdout),
+            {
+            "run" => RunFileAsync(GetRequiredPath(args, 1), stdout),
+            "run-assembly" => RunAssemblyAsync(GetRequiredPath(args, 1), stdout),
+            "meta-sources" => Task.FromResult(PrintMetaSources(GetRequiredPath(args, 1), stdout)),
+            "build" => Task.FromResult(BuildFile(args, stdout)),
+            "emit-csharp" => Task.FromResult(EmitCSharp(GetRequiredPath(args, 1), stdout)),
+            "parse-mron" => Task.FromResult(ParseMron(GetRequiredPath(args, 1), stdout)),
+            "parse-mrml" => Task.FromResult(ParseMrml(GetRequiredPath(args, 1), stdout)),
+            "parse-mrtd" => Task.FromResult(ParseMrtd(GetRequiredPath(args, 1), stdout)),
+            _ when LooksLikeAssemblyPath(args[0]) => RunAssemblyAsync(args[0], stdout),
+            _ when LooksLikeFilePath(args[0]) => RunFileAsync(args[0], stdout),
             _ => throw new InvalidOperationException($"Unknown command '{args[0]}'.")
         };
     }
 
-    private static int RunFile(string path, TextWriter stdout)
+    private static async Task<int> RunFileAsync(string path, TextWriter stdout)
     {
         var source = ReadSource(path);
-        var result = MakrellCompiler.Run(source);
-        stdout.WriteLine(FormatValue(result));
+        var result = await MakrellCompiler.RunAsync(source);
+        await stdout.WriteLineAsync(FormatValue(result));
         return 0;
     }
 
-    private static int RunAssembly(string path, TextWriter stdout)
+    private static async Task<int> RunAssemblyAsync(string path, TextWriter stdout)
     {
-        var result = MakrellCompiler.RunAssembly(path);
-        stdout.WriteLine(FormatValue(result));
+        var result = await MakrellCompiler.RunAssemblyAsync(path);
+        await stdout.WriteLineAsync(FormatValue(result));
         return 0;
     }
 

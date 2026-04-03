@@ -87,6 +87,33 @@ See `examples/` and `tests/` for:
 - Python interoperability
 - LSP support
 
+### Async/await
+
+MakrellPy is still the strongest current reference for the broader Makrell
+async surface.
+
+Shared family baseline:
+
+- `{async fun ...}`
+- `{await expr}`
+
+MakrellPy also has Python-shaped extensions such as:
+
+- `{async for ...}`
+- `{async with ...}`
+
+Checked-in examples:
+
+- `examples/makrellpy/coroutines.mr`
+- `examples/makrellpy/async_for.mr`
+- `examples/makrellpy/async_with.mr`
+
+Run the coroutine example from `impl/py/`:
+
+```bash
+python -m makrell examples/makrellpy/coroutines.mr
+```
+
 ### Macro showcase
 
 One of the nicest current MakrellPy showcase examples is:

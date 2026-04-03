@@ -11,6 +11,7 @@ The implementation already covers substantial ground, including:
 * CLR interop
 * macros and meta
 * a growing pattern-matching system
+* baseline async/await support
 
 It is not yet full parity with MakrellPy or MakrellTS, but it is already
 clearly beyond the stage of being a placeholder or speculative port.
@@ -25,6 +26,7 @@ The `.NET` track already has a recognisable practical surface:
 * generated C# inspection
 * MRON and MRML parsing
 * CLR interop through imports, construction, and member calls
+* shared-family ``async fun`` / ``await`` support
 
 That makes Makrell# relevant both as a language track and as a tooling/runtime
 track.

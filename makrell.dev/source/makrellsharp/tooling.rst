@@ -11,6 +11,7 @@ Current direction includes:
 * MRON and MRML parsing from the CLI
 * compile/load workflows for `.NET` assemblies
 * a testable source-oriented development loop inside ``impl/dotnet``
+* source execution that now handles baseline async Makrell# programs as well as sync ones
 
 Current CLI shape
 -----------------
@@ -43,6 +44,12 @@ Run a source file:
 .. code-block:: bash
 
     dotnet run --project src/MakrellSharp.Cli -- examples/hello.mrsh
+
+Run the checked-in async example:
+
+.. code-block:: bash
+
+    dotnet run --project src/MakrellSharp.Cli -- examples/async.mrsh
 
 Build and inspect:
 

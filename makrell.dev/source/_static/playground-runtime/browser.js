@@ -1001,9 +1001,41 @@ function compileIfExpr(nodes, ctx) {
   };
   return walk(0);
 }
+function wrapIife(body, needsAsync) {
+  if (needsAsync)
+    return `(async () => {${body}})()`;
+  return `(() => {${body}})()`;
+}
+function nodeNeedsAsyncContext(n) {
+  switch (n.kind) {
+    case "curly":
+      if (n.nodes.length === 0)
+        return false;
+      if (isIdent(n.nodes[0], "await"))
+        return true;
+      if (isIdent(n.nodes[0], "fun"))
+        return false;
+      if (isIdent(n.nodes[0], "async") && isIdent(n.nodes[1], "fun"))
+        return false;
+      if (isIdent(n.nodes[0], "class"))
+        return false;
+      return n.nodes.some((child) => nodeNeedsAsyncContext(child));
+    case "round":
+    case "square":
+    case "sequence":
+      return n.nodes.some((child) => nodeNeedsAsyncContext(child));
+    case "binop":
+      return nodeNeedsAsyncContext(n.left) || nodeNeedsAsyncContext(n.right);
+    default:
+      return false;
+  }
+}
+function listNeedsAsyncContext(nodes) {
+  return nodes.some((node) => nodeNeedsAsyncContext(node));
+}
 function compileDoExpr(nodes, ctx) {
   const body = compileBlock(nodes, ctx, true);
-  return `(() => {${body}})()`;
+  return wrapIife(body, listNeedsAsyncContext(nodes));
 }
 function compileMatchExpr(nodes, ctx) {
   if (nodes.length === 0)
@@ -1022,25 +1054,39 @@ function compileMatchExpr(nodes, ctx) {
     chunks.push(`if (__mr_matchPattern(${tmp}, ${patt})) return ${retval};`);
   }
   chunks.push("return null;");
-  return `(() => {${chunks.join(`
-`)}})()`;
+  return wrapIife(chunks.join(`
+`), listNeedsAsyncContext(nodes));
 }
-function compileFunExpr(nodes, ctx) {
-  const rest = nodes.slice(1);
+function parseFunExpr(nodes) {
+  const asyncOffset = isIdent(nodes[0], "async") ? 1 : 0;
+  const funNode = nodes[asyncOffset];
+  if (!isIdent(funNode, "fun")) {
+    fail("Invalid fun syntax. Expected {fun ...} or {async fun ...}", nodes[0]);
+  }
+  const rest = nodes.slice(asyncOffset + 1);
   let name = "";
   let argsNode = null;
-  let bodyStart = 0;
+  let bodyStart = asyncOffset + 1;
   if (rest[0]?.kind === "identifier" && rest[1]?.kind === "square") {
     name = rest[0].value;
     argsNode = rest[1];
-    bodyStart = 2;
+    bodyStart = asyncOffset + 3;
   } else if (rest[0]?.kind === "square") {
     argsNode = rest[0];
-    bodyStart = 1;
+    bodyStart = asyncOffset + 2;
   } else {
-    fail("Invalid fun syntax. Expected {fun name [args] ...} or {fun [args] ...}", nodes[0]);
+    fail("Invalid fun syntax. Expected {fun name [args] ...} or {fun [args] ...}", funNode);
   }
-  const args = argsNode.nodes.map((n) => {
+  return {
+    isAsync: asyncOffset === 1,
+    name,
+    argsNode,
+    bodyStart
+  };
+}
+function compileFunExpr(nodes, ctx) {
+  const parsed = parseFunExpr(nodes);
+  const args = parsed.argsNode.nodes.map((n) => {
     if (n.kind === "identifier")
       return n.value;
     if (n.kind === "binop" && n.op === ":" && n.left.kind === "identifier") {
@@ -1050,26 +1096,33 @@ function compileFunExpr(nodes, ctx) {
     }
     fail("Function args must be identifiers or typed identifiers", n);
   }).join(", ");
-  const innerCtx = { ...ctx, fnDepth: ctx.fnDepth + 1 };
-  const body = compileBlock(rest.slice(bodyStart), innerCtx, true);
-  if (name) {
-    return `(function ${name}(${args}) {${body}})`;
+  const innerCtx = {
+    ...ctx,
+    fnDepth: ctx.fnDepth + 1,
+    asyncDepth: ctx.asyncDepth + (parsed.isAsync ? 1 : 0)
+  };
+  const body = compileBlock(nodes.slice(parsed.bodyStart), innerCtx, true);
+  const prefix = parsed.isAsync ? "async " : "";
+  if (parsed.name) {
+    return `(${prefix}function ${parsed.name}(${args}) {${body}})`;
   }
-  return `((${args}) => {${body}})`;
+  return `(${prefix}(${args}) => {${body}})`;
 }
 function compileWhenExpr(nodes, ctx) {
   if (nodes.length === 0)
     return "null";
   const cond = compileExpr(nodes[0], ctx);
   const thenBody = compileBlock(nodes.slice(1), ctx, true);
-  return `(() => { if (${cond}) { ${thenBody} } return null; })()`;
+  return wrapIife(`if (${cond}) { ${thenBody} }
+return null;`, listNeedsAsyncContext(nodes));
 }
 function compileWhileExpr(nodes, ctx) {
   if (nodes.length === 0)
     return "null";
   const cond = compileExpr(nodes[0], ctx);
   const body = compileBlock(nodes.slice(1), ctx, false);
-  return `(() => { while (${cond}) { ${body} } return null; })()`;
+  return wrapIife(`while (${cond}) { ${body} }
+return null;`, listNeedsAsyncContext(nodes));
 }
 function compileForExpr(nodes, ctx) {
   if (nodes.length < 2)
@@ -1079,15 +1132,34 @@ function compileForExpr(nodes, ctx) {
     fail("for target must be identifier", target);
   const iterable = compileExpr(nodes[1], ctx);
   const body = compileBlock(nodes.slice(2), ctx, false);
-  return `(() => { for (const ${target.value} of ${iterable}) { ${body} } return null; })()`;
+  return wrapIife(`for (const ${target.value} of ${iterable}) { ${body} }
+return null;`, listNeedsAsyncContext(nodes));
+}
+function compileAsyncExpr(nodes, ctx) {
+  if (nodes.length < 2)
+    fail("Invalid async syntax", nodes[0]);
+  if (isIdent(nodes[1], "fun"))
+    return compileFunExpr(nodes, ctx);
+  fail("MakrellTS currently supports {async fun ...} as the shared async form", nodes[1]);
+}
+function compileAwaitExpr(nodes, ctx) {
+  if (nodes.length !== 1)
+    fail("await expects exactly one expression", nodes[0]);
+  if (ctx.asyncDepth <= 0) {
+    fail("await must be used inside {async fun ...} or async top-level code", nodes[0]);
+  }
+  return `(await ${compileExpr(nodes[0], ctx)})`;
 }
 function compileMethod(n, ctx) {
-  if (n.nodes.length < 4 || !isIdent(n.nodes[0], "fun") || n.nodes[1].kind !== "identifier" || n.nodes[2].kind !== "square") {
+  const parsed = parseFunExpr(n.nodes);
+  if (!parsed.name)
     fail("Class methods must use {fun name [args] ...}", n);
-  }
-  const rawName = n.nodes[1].value;
+  const rawName = parsed.name;
   const methodName = rawName === "__init__" ? "constructor" : rawName;
-  const argNodes = n.nodes[2].nodes;
+  if (parsed.isAsync && methodName === "constructor") {
+    fail("Class constructors cannot be async in MakrellTS", n);
+  }
+  const argNodes = parsed.argsNode.nodes;
   const params = [];
   for (let i = 0;i < argNodes.length; i += 1) {
     const arg = argNodes[i];
@@ -1102,9 +1174,15 @@ function compileMethod(n, ctx) {
       continue;
     params.push(name);
   }
-  const methodCtx = { ...ctx, fnDepth: ctx.fnDepth + 1, thisAlias: "self" };
-  const body = compileBlock(n.nodes.slice(3), methodCtx, methodName !== "constructor");
-  return `${methodName}(${params.join(", ")}) {${body}}`;
+  const methodCtx = {
+    ...ctx,
+    fnDepth: ctx.fnDepth + 1,
+    asyncDepth: ctx.asyncDepth + (parsed.isAsync ? 1 : 0),
+    thisAlias: "self"
+  };
+  const body = compileBlock(n.nodes.slice(parsed.bodyStart), methodCtx, methodName !== "constructor");
+  const asyncPrefix = parsed.isAsync ? "async " : "";
+  return `${asyncPrefix}${methodName}(${params.join(", ")}) {${body}}`;
 }
 function compileClassExpr(nodes, ctx) {
   if (nodes.length < 2 || nodes[1].kind !== "identifier") {
@@ -1116,7 +1194,7 @@ function compileClassExpr(nodes, ctx) {
     bodyStart = 3;
   const parts = [];
   for (const n of nodes.slice(bodyStart)) {
-    if (n.kind === "curly" && isIdent(n.nodes[0], "fun")) {
+    if (n.kind === "curly" && (isIdent(n.nodes[0], "fun") || isIdent(n.nodes[0], "async") && isIdent(n.nodes[1], "fun"))) {
       parts.push(compileMethod(n, ctx));
     }
   }
@@ -1221,6 +1299,10 @@ function compileCurly(n, ctx) {
   }
   if (isIdent(head, "match"))
     return compileMatchExpr(n.nodes.slice(1), ctx);
+  if (isIdent(head, "async"))
+    return compileAsyncExpr(n.nodes, ctx);
+  if (isIdent(head, "await"))
+    return compileAwaitExpr(n.nodes.slice(1), ctx);
   if (isIdent(head, "fun"))
     return compileFunExpr(n.nodes, ctx);
   if (isIdent(head, "class"))
@@ -1310,7 +1392,7 @@ function compileExpr(n, ctx) {
   }
 }
 function isFunDecl(n) {
-  return n.kind === "curly" && n.nodes.length >= 3 && isIdent(n.nodes[0], "fun") && n.nodes[1].kind === "identifier";
+  return n.kind === "curly" && (n.nodes.length >= 3 && isIdent(n.nodes[0], "fun") && n.nodes[1].kind === "identifier" || n.nodes.length >= 4 && isIdent(n.nodes[0], "async") && isIdent(n.nodes[1], "fun") && n.nodes[2].kind === "identifier");
 }
 function isMacroDecl(n) {
   return n.kind === "curly" && n.nodes.length >= 5 && isIdent(n.nodes[0], "def") && isIdent(n.nodes[1], "macro");
@@ -1339,7 +1421,7 @@ function compileStmt(n, ctx, isLast) {
     }
   }
   if (isFunDecl(n)) {
-    const fnName = n.nodes[1].value;
+    const fnName = parseFunExpr(n.nodes).name;
     const fnExpr = compileFunExpr(n.nodes, ctx);
     return `const ${fnName} = ${fnExpr};`;
   }
@@ -1351,7 +1433,8 @@ return ${n.nodes[1].value};`;
     return `${classExpr};`;
   }
   if (n.kind === "binop" && n.op === "=" && n.left.kind === "identifier") {
-    const rhs = compileExpr(n.right, ctx);
+    const rhsExpr = compileExpr(n.right, ctx);
+    const rhs = ctx.asyncDepth > 0 && nodeNeedsAsyncContext(n.right) ? `await ${rhsExpr}` : rhsExpr;
     const assign = `var ${n.left.value} = ${rhs};`;
     if (isLast)
       return `${assign}
@@ -1359,7 +1442,8 @@ return ${n.left.value};`;
     return assign;
   }
   if (n.kind === "binop" && n.op === "=" && n.left.kind === "binop" && n.left.op === ":" && n.left.left.kind === "identifier") {
-    const rhs = compileExpr(n.right, ctx);
+    const rhsExpr = compileExpr(n.right, ctx);
+    const rhs = ctx.asyncDepth > 0 && nodeNeedsAsyncContext(n.right) ? `await ${rhsExpr}` : rhsExpr;
     const t = emitTypeNode(n.left.right);
     const decl = ctx.emitTarget === "ts" ? `var ${n.left.left.value}: ${t} = ${rhs};` : `var ${n.left.left.value} = ${rhs};`;
     if (isLast)
@@ -1368,10 +1452,12 @@ return ${n.left.left.value};`;
     return decl;
   }
   if (n.kind === "curly" && n.nodes.length > 0 && isIdent(n.nodes[0], "return")) {
-    const val = n.nodes[1] ? compileExpr(n.nodes[1], ctx) : "null";
+    const valExpr = n.nodes[1] ? compileExpr(n.nodes[1], ctx) : "null";
+    const val = n.nodes[1] && ctx.asyncDepth > 0 && nodeNeedsAsyncContext(n.nodes[1]) ? `await ${valExpr}` : valExpr;
     return `return ${val};`;
   }
-  const expr = compileExpr(n, ctx);
+  const exprBase = compileExpr(n, ctx);
+  const expr = ctx.asyncDepth > 0 && nodeNeedsAsyncContext(n) ? `await ${exprBase}` : exprBase;
   if (isLast)
     return `return ${expr};`;
   return `${expr};`;
@@ -1390,6 +1476,8 @@ function compileBlock(nodes, ctx, autoReturn) {
 `);
 }
 function compileToJs(src, options = {}) {
+  const nodes = parse(src);
+  const topLevelAsync = listNeedsAsyncContext(nodes);
   const ctx = {
     macros: options.macros ?? new MacroRegistry,
     macroCtx: defaultMacroContext(),
@@ -1397,12 +1485,14 @@ function compileToJs(src, options = {}) {
     moduleResolver: options.moduleResolver,
     metaModuleResolver: options.metaModuleResolver,
     fnDepth: 0,
+    asyncDepth: topLevelAsync ? 1 : 0,
     tempId: 0,
     emitTarget: "js"
   };
-  const nodes = parse(src);
   const body = compileBlock(nodes, ctx, true);
-  return `(() => {
+  return topLevelAsync ? `(async () => {
+${body}
+})()` : `(() => {
 ${body}
 })()`;
 }
@@ -1705,10 +1795,14 @@ function runInBrowser(src, options = {}) {
   const fn = new Function("__scope", "__makrell_matchPattern", `const __mr_matchPattern = __makrell_matchPattern; with (__scope) { return ${compileToJs(src)}; }`);
   return fn(scope, matchPattern);
 }
+async function runInBrowserAsync(src, options = {}) {
+  return await Promise.resolve(runInBrowser(src, options));
+}
 export {
+  runInBrowserAsync,
   runInBrowser,
   compileForBrowser
 };
 
-//# debugId=17263956B960F77864756E2164756E21
+//# debugId=683712F9BD67679764756E2164756E21
 //# sourceMappingURL=browser.js.map

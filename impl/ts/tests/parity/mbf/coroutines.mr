@@ -1,0 +1,9 @@
+{async fun addLater [x y]
+  left = {await {Promise.resolve x}}
+  right = {await {Promise.resolve y}}
+  total = left + right
+  {assert total == 42 "async sum should be 42"}
+  true
+}
+
+{await {addLater 20 22}}

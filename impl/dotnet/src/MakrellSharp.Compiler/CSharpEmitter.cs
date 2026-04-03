@@ -13,7 +13,7 @@ internal static class CSharpEmitter
         var body = EmitBlock(module.BodyNodes, state, autoReturn: true, indentLevel: 2);
         var usingDirectives = string.Join(
             Environment.NewLine,
-            new[] { "using System;" }.Concat(module.UsingDirectives).Distinct(StringComparer.Ordinal));
+            new[] { "using System;", "using System.Threading.Tasks;" }.Concat(module.UsingDirectives).Distinct(StringComparer.Ordinal));
 
         return usingDirectives +
             Environment.NewLine +
@@ -123,10 +123,7 @@ internal static class CSharpEmitter
         result = string.Empty;
 
         if (node is not CurlyBracketsNode curly
-            || curly.Nodes.Count < 4
-            || curly.Nodes[0] is not IdentifierNode { Value: "fun" }
-            || curly.Nodes[1] is not IdentifierNode name
-            || curly.Nodes[2] is not SquareBracketsNode argsNode)
+            || !TryParseNamedFunction(curly, out var isAsync, out var name, out var argsNode, out var bodyNodes))
         {
             return false;
         }
@@ -136,18 +133,20 @@ internal static class CSharpEmitter
             .ToArray();
 
         var innerState = new EmitterState();
+        innerState.AsyncContext = isAsync;
         foreach (var parameter in parameters)
         {
             innerState.Declare(parameter.Value);
         }
 
-        var funcType = GetFuncType(parameters.Length);
+        var funcType = isAsync ? GetAsyncFuncType(parameters.Length) : GetFuncType(parameters.Length);
         var lambdaParameters = string.Join(", ", parameters.Select(static parameter => $"dynamic {parameter.Value}"));
-        var lambdaBody = EmitLambdaBody(curly.Nodes.Skip(3).ToArray(), innerState, indentLevel + 2);
+        var lambdaBody = EmitLambdaBody(bodyNodes, innerState, indentLevel + 2);
         state.Declare(name.Value);
+        var asyncKeyword = isAsync ? "async " : string.Empty;
 
         var builder = new StringBuilder();
-        builder.Append($"{Indent(indentLevel)}dynamic {name.Value} = ({funcType})(({lambdaParameters}) =>");
+        builder.Append($"{Indent(indentLevel)}dynamic {name.Value} = ({funcType})({asyncKeyword}({lambdaParameters}) =>");
         builder.AppendLine();
         builder.Append($"{Indent(indentLevel)}{{");
         builder.AppendLine();
@@ -232,8 +231,10 @@ internal static class CSharpEmitter
             return identifier.Value switch
             {
                 "if" => EmitIf(nodes.Skip(1).ToArray(), state),
+                "await" => EmitAwait(nodes.Skip(1).ToArray(), state),
                 "do" => EmitDo(nodes.Skip(1).ToArray(), state),
                 "fun" => EmitAnonymousFunction(curly, state),
+                "async" => EmitAsync(curly, state),
                 "match" => EmitMatch(curly, state),
                 "new" => EmitNew(curly, state),
                 "quote" => EmitQuote(nodes.Skip(1).ToArray(), state),
@@ -392,9 +393,18 @@ internal static class CSharpEmitter
 
     private static string EmitAnonymousFunction(CurlyBracketsNode curly, EmitterState state)
     {
-        if (curly.Nodes.Count < 3 || curly.Nodes[1] is not SquareBracketsNode argsNode)
+        return EmitAnonymousFunction(curly, state, isAsync: false);
+    }
+
+    private static string EmitAnonymousFunction(CurlyBracketsNode curly, EmitterState state, bool isAsync)
+    {
+        var argsIndex = isAsync ? 2 : 1;
+        var bodyIndex = isAsync ? 3 : 2;
+        if (curly.Nodes.Count < bodyIndex + 1 || curly.Nodes[argsIndex] is not SquareBracketsNode argsNode)
         {
-            throw new InvalidOperationException("Anonymous function form must be {fun [args] ...}.");
+            throw new InvalidOperationException(isAsync
+                ? "Anonymous async function form must be {async fun [args] ...}."
+                : "Anonymous function form must be {fun [args] ...}.");
         }
 
         var parameters = argsNode.Nodes
@@ -402,18 +412,48 @@ internal static class CSharpEmitter
             .ToArray();
 
         var innerState = new EmitterState();
+        innerState.AsyncContext = isAsync;
         foreach (var parameter in parameters)
         {
             innerState.Declare(parameter.Value);
         }
 
-        var funcType = GetFuncType(parameters.Length);
+        var funcType = isAsync ? GetAsyncFuncType(parameters.Length) : GetFuncType(parameters.Length);
         var lambdaParameters = string.Join(", ", parameters.Select(static parameter => $"dynamic {parameter.Value}"));
-        var lambdaBody = EmitLambdaBody(curly.Nodes.Skip(2).ToArray(), innerState, 4);
-        return $"({funcType})(({lambdaParameters}) =>" + Environment.NewLine +
+        var lambdaBody = EmitLambdaBody(curly.Nodes.Skip(bodyIndex).ToArray(), innerState, 4);
+        var asyncKeyword = isAsync ? "async " : string.Empty;
+        return $"({funcType})({asyncKeyword}({lambdaParameters}) =>" + Environment.NewLine +
                Indent(3) + "{" + Environment.NewLine +
                lambdaBody +
                Indent(3) + "})";
+    }
+
+    private static string EmitAsync(CurlyBracketsNode curly, EmitterState state)
+    {
+        if (curly.Nodes.Count < 2 || curly.Nodes[1] is not IdentifierNode { Value: "fun" })
+        {
+            throw new InvalidOperationException("Makrell# currently supports {async fun ...} as the shared async form.");
+        }
+
+        if (curly.Nodes.Count >= 4 && curly.Nodes[2] is IdentifierNode)
+        {
+            throw new InvalidOperationException("Named async functions must be emitted as statements, not expressions.");
+        }
+
+        return EmitAnonymousFunction(curly, state, isAsync: true);
+    }
+
+    private static string EmitAwait(IReadOnlyList<Node> nodes, EmitterState state)
+    {
+        if (nodes.Count != 1)
+        {
+            throw new InvalidOperationException("Await form must be {await expr}.");
+        }
+
+        var expr = EmitExpression(nodes[0], state);
+        return state.AsyncContext
+            ? $"(await MakrellSharp.Compiler.MakrellCompilerRuntime.AwaitAsync({expr}))"
+            : $"MakrellSharp.Compiler.MakrellCompilerRuntime.AwaitResult({expr})";
     }
 
     private static string EmitNew(CurlyBracketsNode curly, EmitterState state)
@@ -1018,6 +1058,57 @@ internal static class CSharpEmitter
         return $"Func<{string.Join(", ", genericArgs)}>";
     }
 
+    private static string GetAsyncFuncType(int parameterCount)
+    {
+        if (parameterCount > 16)
+        {
+            throw new InvalidOperationException("Only up to 16 function parameters are supported in the initial compiler slice.");
+        }
+
+        var genericArgs = Enumerable.Repeat("dynamic", parameterCount)
+            .Concat(["Task<dynamic>"]);
+        return $"Func<{string.Join(", ", genericArgs)}>";
+    }
+
+    private static bool TryParseNamedFunction(
+        CurlyBracketsNode curly,
+        out bool isAsync,
+        out IdentifierNode name,
+        out SquareBracketsNode argsNode,
+        out IReadOnlyList<Node> bodyNodes)
+    {
+        isAsync = false;
+        name = null!;
+        argsNode = null!;
+        bodyNodes = Array.Empty<Node>();
+
+        if (curly.Nodes.Count >= 4
+            && curly.Nodes[0] is IdentifierNode { Value: "fun" }
+            && curly.Nodes[1] is IdentifierNode parsedName
+            && curly.Nodes[2] is SquareBracketsNode parsedArgs)
+        {
+            name = parsedName;
+            argsNode = parsedArgs;
+            bodyNodes = curly.Nodes.Skip(3).ToArray();
+            return true;
+        }
+
+        if (curly.Nodes.Count >= 5
+            && curly.Nodes[0] is IdentifierNode { Value: "async" }
+            && curly.Nodes[1] is IdentifierNode { Value: "fun" }
+            && curly.Nodes[2] is IdentifierNode asyncName
+            && curly.Nodes[3] is SquareBracketsNode asyncArgs)
+        {
+            isAsync = true;
+            name = asyncName;
+            argsNode = asyncArgs;
+            bodyNodes = curly.Nodes.Skip(4).ToArray();
+            return true;
+        }
+
+        return false;
+    }
+
     private static string EmitTypeReference(IReadOnlyList<Node> nodes)
     {
         if (nodes.Count == 0)
@@ -1470,6 +1561,8 @@ internal static class CSharpEmitter
     {
         private readonly HashSet<string> declared = new(StringComparer.Ordinal);
 
+        public bool AsyncContext { get; set; }
+
         public bool Declare(string name) => declared.Add(name);
 
         public bool IsDeclared(string name) => declared.Contains(name);
@@ -1481,6 +1574,8 @@ internal static class CSharpEmitter
             {
                 fork.declared.Add(item);
             }
+
+            fork.AsyncContext = AsyncContext;
 
             return fork;
         }

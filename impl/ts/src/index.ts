@@ -111,3 +111,7 @@ export function run(src: string, options: RunOptions = {}): unknown {
 
   return fn(scope, matchPattern);
 }
+
+export async function runAsync(src: string, options: RunOptions = {}): Promise<unknown> {
+  return await Promise.resolve(run(src, options));
+}

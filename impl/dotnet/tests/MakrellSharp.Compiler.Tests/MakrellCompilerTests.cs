@@ -534,6 +534,66 @@ public sealed class MakrellCompilerTests
     }
 
     [Fact]
+    public void Run_EvaluatesAsyncFunctionAndAwait()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {async fun fetchValue [value]
+                value}
+
+            {async fun addLater [x y]
+                left = {await {fetchValue x}}
+                right = {await {fetchValue y}}
+                left + right}
+
+            {await {addLater 20 22}}
+            """);
+
+        Assert.Equal(42, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesAsyncAnonymousFunction()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {async fun fetchValue [value]
+                value}
+
+            addLater = {async fun [x y]
+                left = {await {fetchValue x}}
+                right = {await {fetchValue y}}
+                left + right}
+
+            {await {addLater 20 22}}
+            """);
+
+        Assert.Equal(42, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void CompileToCSharp_EmitsAsyncFunctionAndAwaitSupport()
+    {
+        var compilation = MakrellCompiler.CompileToCSharp(
+            """
+            {async fun fetchValue [value]
+                value}
+
+            {async fun addLater [x y]
+                left = {await {fetchValue x}}
+                right = {await {fetchValue y}}
+                left + right}
+
+            {await {addLater 20 22}}
+            """);
+
+        Assert.Contains("Func<dynamic, dynamic, Task<dynamic>>", compilation.CSharpSource, StringComparison.Ordinal);
+        Assert.Contains("async (dynamic x, dynamic y)", compilation.CSharpSource, StringComparison.Ordinal);
+        Assert.Contains("await MakrellSharp.Compiler.MakrellCompilerRuntime.AwaitAsync(", compilation.CSharpSource, StringComparison.Ordinal);
+        Assert.Contains("MakrellSharp.Compiler.MakrellCompilerRuntime.AwaitResult(MakrellSharp.Compiler.MakrellCompilerRuntime.Call(addLater", compilation.CSharpSource, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Run_EvaluatesPlaceholderLambda_FromSingleUnderscoreCall()
     {
         var result = MakrellCompiler.Run(

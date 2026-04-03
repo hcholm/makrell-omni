@@ -17,7 +17,7 @@ Status labels:
 - `test_core.mr`: `adapt` (runtime/library surface differs)
 - `test_embed.mr`: `exclude` (embedding flows not implemented in TS yet)
 - `test_estrings.mr`: `exclude` (TS implementation status pending)
-- `test_coroutines.mr`: `exclude` (async parity not implemented in TS yet)
+- `test_coroutines.mr`: `adapt` (baseline `async fun`/`await` now implemented; broader coroutine parity still pending)
 - `test_interop.py`: `adapt` (Python interop -> JS module interop model)
 - `test_missing_features.py`: `adapt` (maps to TS equivalents, not 1:1)
 
@@ -41,6 +41,9 @@ Status labels:
 - M3 pattern parity subset:
   - `impl/ts/tests/parity/patmatch.parity.test.ts`
   - MBF source: `impl/ts/tests/parity/mbf/patmatch.mr`
+- Async/coroutines baseline:
+  - `impl/ts/tests/parity/coroutines.parity.test.ts`
+  - MBF source: `impl/ts/tests/parity/mbf/coroutines.mr`
 
 Parity test authoring preference:
 - Prefer MBF test sources (`tests/parity/mbf/*.mr`) when possible.

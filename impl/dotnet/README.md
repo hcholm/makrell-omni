@@ -119,6 +119,36 @@ add3 \ 2
 add3 *\ [2 5 8]
 ```
 
+## Async and await
+
+Makrell# now has the shared family baseline:
+
+- `{async fun ...}`
+- `{await expr}`
+
+Example:
+
+```makrell
+{async fun fetchValue [value]
+    value}
+
+{async fun addLater [x y]
+    left = {await {fetchValue x}}
+    right = {await {fetchValue y}}
+    left + right}
+
+{await {addLater 20 22}}
+```
+
+Current scope:
+
+- async named functions
+- async anonymous functions
+- await inside async functions
+- top-level `{await ...}` through the normal Makrell# run path
+
+Broader async parity such as additional host-shaped async forms is still future work.
+
 ## Pattern matching
 
 Makrell# now has a first pattern-matching slice with:
@@ -306,6 +336,7 @@ Compile-time definitions can be replayed from compiled assemblies with `importm`
 See:
 
 - [`examples/hello.mrsh`](examples/hello.mrsh)
+- [`examples/async.mrsh`](examples/async.mrsh)
 - [`examples/interop.mrsh`](examples/interop.mrsh)
 - [`examples/macros.mrsh`](examples/macros.mrsh)
 - [`examples/showcase.mrsh`](examples/showcase.mrsh)

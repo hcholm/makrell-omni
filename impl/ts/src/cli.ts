@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import { readFileSync } from "node:fs";
-import { compile, run } from "./index";
+import { compile, runAsync } from "./index";
 
 function printHelp(): void {
   console.log("Usage: bun run src/cli.ts <file.mrts> [--emit-js]");
@@ -21,12 +21,13 @@ if (emit) {
   process.exit(0);
 }
 
-const result = run(src, {
+const result = await runAsync(src, {
   scope: {
     console,
     Math,
     JSON,
     Date,
+    Promise,
     print: (...args: unknown[]) => {
       console.log(...args);
       return args.length > 0 ? args[args.length - 1] : null;

@@ -54,12 +54,6 @@ Suggested item format:
 - [ ] Write down the stronger `v0.10.0` rule that meta should use the same parser and compiler path where practical.
   - Source: release direction for near-full language experience in compile-time code
   - Target docs: `docs/v0.10.0-release-plan.md`, `docs/consolidation-plan.md`, possible architecture note
-- [ ] Implement and document the shared async/await surface for MakrellTS and Makrell#.
-  - Source: `v0.10.0` requirement that async/await be a real family feature using Makrell-shaped forms
-  - Target docs: `specs/async-model.md`, implementation specs, implementation READMEs, `makrell.dev/`
-- [ ] Add public async/await examples for MakrellPy, MakrellTS, and Makrell#.
-  - Source: async/await is now a release requirement rather than an implementation-specific extra
-  - Target docs: implementation READMEs, release notes, `makrell.dev/`, examples directories
 - [ ] Plan the MakrellTS web playground for `v0.10.0` once the design profile exists.
   - Source: desired browser-based playground with examples, docs, REPL, and editor
   - Target docs: `docs/`, release notes, `makrell.dev/`, possible dedicated plan note
@@ -72,6 +66,18 @@ Suggested item format:
 
 ## Completed
 
+- [x] Implement and document baseline MakrellTS `async fun` / `await` support.
+  - Source: `v0.10.0` requirement that async/await be a real family feature using Makrell-shaped forms
+  - Target docs: `impl/ts/README.md`, `specs/async-model.md`, parity notes, checked-in async example
+- [x] Implement and document baseline Makrell# `async fun` / `await` support.
+  - Source: `v0.10.0` requirement that async/await be a real family feature using Makrell-shaped forms
+  - Target docs: `impl/dotnet/README.md`, `specs/async-model.md`, compiler/CLI tests, checked-in async example
+- [x] Add public async/await examples for MakrellPy, MakrellTS, and Makrell#.
+  - Source: async/await is now a release requirement rather than an implementation-specific extra
+  - Target docs: implementation READMEs, release notes, `makrell.dev/`, examples directories
+- [x] Surface Makrell# async/await on `makrell.dev`.
+  - Source: Makrell# now has baseline `{async fun ...}` and `{await ...}` support with a checked-in example
+  - Target docs: `makrell.dev/` Makrell# pages, release notes
 - [x] Write down the cross-language async/await direction for the Makrell family.
   - Source: `v0.10.0` now requires a shared async/await surface that follows Makrell syntactic conventions
   - Target docs: `specs/async-model.md`, `specs/main-spec.md`, release/consolidation plans

@@ -197,23 +197,38 @@
     return js;
   }
 
-  function runCurrent() {
+  async function runCurrent() {
     if (!runtime || !editor || !output) return;
     const logs = [];
     try {
       const js = compileCurrent();
-      const result = runtime.runInBrowser(editor.value, {
-        scope: {
-          console: captureConsole(logs),
-          Math,
-          Date,
-          Number,
-          String,
-          Boolean,
-          Array,
-          Object,
-        },
-      });
+      const result = await (runtime.runInBrowserAsync
+        ? runtime.runInBrowserAsync(editor.value, {
+          scope: {
+            console: captureConsole(logs),
+            Math,
+            Date,
+            Number,
+            String,
+            Boolean,
+            Array,
+            Object,
+            Promise,
+          },
+        })
+        : Promise.resolve(runtime.runInBrowser(editor.value, {
+          scope: {
+            console: captureConsole(logs),
+            Math,
+            Date,
+            Number,
+            String,
+            Boolean,
+            Array,
+            Object,
+            Promise,
+          },
+        })));
       const lines = [];
       if (logs.length > 0) lines.push(...logs);
       lines.push(`=> ${String(result)}`);

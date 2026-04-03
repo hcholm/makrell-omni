@@ -60,6 +60,39 @@ public sealed class MakrellSharpCliTests
     }
 
     [Fact]
+    public async Task RunAsync_RunCommand_ExecutesAsyncMakrellSharpFile()
+    {
+        var path = CreateTempFile(
+            ".mrsh",
+            """
+            {async fun fetchValue [value]
+                value}
+
+            {async fun addLater [x y]
+                left = {await {fetchValue x}}
+                right = {await {fetchValue y}}
+                left + right}
+
+            {await {addLater 20 22}}
+            """);
+        using var stdout = new StringWriter();
+        using var stderr = new StringWriter();
+
+        try
+        {
+            var exitCode = await MakrellSharpCli.RunAsync(["run", path], stdout, stderr);
+
+            Assert.Equal(0, exitCode);
+            Assert.Equal("42", stdout.ToString().Trim());
+            Assert.Equal(string.Empty, stderr.ToString());
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
     public async Task RunAsync_EmitCSharp_WritesGeneratedModule()
     {
         var path = CreateTempFile(".mrsh", "2 + 3");

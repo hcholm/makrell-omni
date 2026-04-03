@@ -15,6 +15,7 @@ import {
   readMrtdRecords,
   readMrtdTuples,
   run,
+  runAsync,
   SubprocessMetaRuntimeAdapter,
   writeMrtdRecords,
   writeMrtdTuples,
@@ -353,6 +354,45 @@ describe("MakrellTs MVP", () => {
     expect(tsOut).toContain("var out: number =");
   });
 
+  test("async fun and await run through the shared Makrell surface", async () => {
+    const src = `
+      {async fun addLater [x y]
+        a = {await {Promise.resolve x}}
+        b = {await {Promise.resolve y}}
+        a + b
+      }
+
+      {await {addLater 20 22}}
+    `;
+
+    await expect(runAsync(src)).resolves.toBe(42);
+  });
+
+  test("async methods work in MakrellTS classes", async () => {
+    const src = `
+      {class Loader []
+        {async fun fetchValue [self value]
+          {await {Promise.resolve value}}
+        }
+      }
+
+      loader = {new Loader []}
+      {await {loader.fetchValue 9}}
+    `;
+
+    await expect(runAsync(src)).resolves.toBe(9);
+  });
+
+  test("await in a sync fun is rejected", () => {
+    const src = `
+      {fun broken []
+        {await {Promise.resolve 1}}
+      }
+    `;
+
+    expect(() => compile(src)).toThrow(/await must be used inside/);
+  });
+
   test("typed output: d.ts emit creates declarations", () => {
     const src = `
       {fun add [x:int y:int]
@@ -363,6 +403,22 @@ describe("MakrellTs MVP", () => {
     const dts = compileToDts(src);
     expect(dts).toContain("export function add(x: number, y: number): unknown;");
     expect(dts).toContain("export let out: number;");
+  });
+
+  test("typed output: async emit keeps async forms", () => {
+    const src = `
+      {async fun addLater [x:int y:int]
+        a = {await {Promise.resolve x}}
+        b = {await {Promise.resolve y}}
+        a + b
+      }
+    `;
+
+    const tsOut = compileToTs(src);
+    const dts = compileToDts(src);
+
+    expect(tsOut).toContain("async function addLater");
+    expect(dts).toContain("export function addLater(x: number, y: number): Promise<unknown>;");
   });
 
   test("editor assets are exported from the shared synced source", () => {

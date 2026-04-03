@@ -1,5 +1,6 @@
 using MakrellSharp.Ast;
 using MakrellSharp.BaseFormat;
+using System.Threading.Tasks;
 
 namespace MakrellSharp.Compiler;
 
@@ -47,9 +48,21 @@ public static class MakrellCompiler
         return module.Run();
     }
 
+    public static async Task<object?> RunAsync(string source, MakrellCompilerOptions? options = null)
+    {
+        using var module = LoadModule(source, options);
+        return await module.RunAsync();
+    }
+
     public static object? RunAssembly(string assemblyPath)
     {
         using var module = LoadAssembly(assemblyPath);
         return module.Run();
+    }
+
+    public static async Task<object?> RunAssemblyAsync(string assemblyPath)
+    {
+        using var module = LoadAssembly(assemblyPath);
+        return await module.RunAsync();
     }
 }

@@ -2,13 +2,109 @@ using System.Globalization;
 using System.Reflection;
 using System.Collections;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 using MakrellSharp.Ast;
 
 namespace MakrellSharp.Compiler;
 
 public static class MakrellCompilerRuntime
 {
+    public static async Task<dynamic?> AwaitAsync(object? value)
+    {
+        if (value is null)
+        {
+            return null;
+        }
+
+        return value switch
+        {
+            Task task => await AwaitTaskAsync(task),
+            ValueTask valueTask => await AwaitTaskAsync(valueTask.AsTask()),
+            _ when TryValueTaskGenericAsTask(value, out var valueTaskTask) => await AwaitTaskAsync(valueTaskTask),
+            _ => value,
+        };
+    }
+
+    public static object? AwaitResult(object? value)
+    {
+        if (value is null)
+        {
+            return null;
+        }
+
+        return value switch
+        {
+            Task task => AwaitTaskResult(task),
+            ValueTask valueTask => AwaitTaskResult(valueTask.AsTask()),
+            _ when TryAwaitValueTaskGeneric(value, out var awaited) => awaited,
+            _ => value,
+        };
+    }
+
     public sealed record PatternMatchResult(bool IsMatch, IReadOnlyDictionary<string, object?> Bindings);
+
+    private static object? AwaitTaskResult(Task task)
+    {
+        task.GetAwaiter().GetResult();
+        return TryGetTaskResult(task, out var result) ? result : null;
+    }
+
+    private static async Task<object?> AwaitTaskAsync(Task task)
+    {
+        await task.ConfigureAwait(false);
+        return TryGetTaskResult(task, out var result) ? result : null;
+    }
+
+    private static bool TryAwaitValueTaskGeneric(object value, out object? awaited)
+    {
+        awaited = null;
+        var valueType = value.GetType();
+        if (!valueType.IsGenericType || valueType.GetGenericTypeDefinition() != typeof(ValueTask<>))
+        {
+            return false;
+        }
+
+        if (!TryValueTaskGenericAsTask(value, out var task))
+        {
+            return false;
+        }
+
+        awaited = AwaitTaskResult(task);
+        return true;
+    }
+
+    private static bool TryValueTaskGenericAsTask(object value, out Task task)
+    {
+        task = null!;
+        var valueType = value.GetType();
+        if (!valueType.IsGenericType || valueType.GetGenericTypeDefinition() != typeof(ValueTask<>))
+        {
+            return false;
+        }
+
+        var asTaskMethod = valueType.GetMethod("AsTask", BindingFlags.Public | BindingFlags.Instance);
+        if (asTaskMethod is null)
+        {
+            return false;
+        }
+
+        task = asTaskMethod.Invoke(value, null) as Task
+            ?? throw new InvalidOperationException("ValueTask<T>.AsTask() did not produce a Task.");
+        return true;
+    }
+
+    private static bool TryGetTaskResult(Task task, out object? result)
+    {
+        result = null;
+        var taskType = task.GetType();
+        if (!taskType.IsGenericType || taskType.GetGenericTypeDefinition() != typeof(Task<>))
+        {
+            return false;
+        }
+
+        result = taskType.GetProperty("Result", BindingFlags.Public | BindingFlags.Instance)?.GetValue(task);
+        return true;
+    }
 
     public static PatternMatchResult MatchWithBindings(object? value, Node pattern)
     {
