@@ -11,6 +11,7 @@ This means prioritising:
 - packaging and release basics
 - feature/status clarity
 - conformance tests
+- compile-time/runtime capability parity
 - API and CLI consistency
 - documentation and discoverability
 - a stronger VS Code extension
@@ -54,7 +55,18 @@ In practice:
 - but shared family behaviour is not yet expressed enough through common
   fixtures and parity suites
 
-### 4. The editor experience does not reflect the actual project
+### 4. Compile-time capability still drifts too much across implementations
+
+- MakrellPy currently feels closest to "real Makrell at compile time"
+- MakrellTS and Makrell# still have more visible limits in compile-time code
+- this becomes obvious as soon as interesting macro examples are moved out of
+  tests and into public examples
+- users should not have to discover by accident that runtime features and
+  compile-time features are sharply different in one track and not another
+- in the long run, meta should reuse the same parser and compiler path as
+  ordinary code, rather than relying on a separate permanent evaluator model
+
+### 5. The editor experience does not reflect the actual project
 
 - `vscode-makrell` needs a larger update
 - it should support the family as it exists now, not just one older language
@@ -238,6 +250,32 @@ Use them in:
 - common examples with expected results
 - test coverage that makes drift visible
 - a clearer path toward future conformance suites
+
+## 3b. Compile-time/runtime parity
+
+### Objective
+
+Reduce the gap between what each implementation can do at compile time and what
+it can do at runtime.
+
+### Work
+
+- review compile-time execution model in MakrellPy, MakrellTS, and Makrell#
+- identify features that should work in compile-time code for `v0.10.0`
+- prioritise existing language features that are important for macros:
+  - pattern matching
+  - normal function/lambda use
+  - host/runtime helpers
+  - AST construction and traversal
+- document any intentional remaining limits
+
+### Deliverables
+
+- a clearer cross-implementation picture of compile-time capability
+- fewer surprises when public macro examples move between Py/TS/`.NET`
+- a stronger path toward "meta can use the whole shebang"
+- an explicit direction that compile-time execution should share the normal
+  parser/compiler pipeline wherever practical
 
 ## 4. API and CLI consistency
 

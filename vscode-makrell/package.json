@@ -1,7 +1,7 @@
 {
     "name": "vscode-makrell",
     "displayName": "Makrell",
-    "description": "Extension for the Makrell programming language.",
+    "description": "VS Code support for the Makrell family: Makrell, MakrellPy, MakrellTS, Makrell#, MRON, MRML, and MRTD.",
     "version": "0.8.0",
     "publisher": "hcholm",
     "icon": "images/makrell.png",
@@ -12,19 +12,29 @@
         "ms-python.python"
     ],
     "categories": [
-        "Programming Languages"
+        "Programming Languages",
+        "Snippets"
+    ],
+    "keywords": [
+        "makrell",
+        "makrellpy",
+        "makrellts",
+        "makrellsharp",
+        "mron",
+        "mrml",
+        "mrtd"
     ],
     "activationEvents": [
         "onStartupFinished"
     ],
     "repository": {
         "type": "git",
-        "url": "https://github.com/hcholm/vscode-makrell.git"
+        "url": "https://github.com/hcholm/makrell-omni.git"
     },
     "bugs": {
-        "url": "https://github.com/hcholm/vscode-makrell/issues"
+        "url": "https://github.com/hcholm/makrell-omni/issues"
     },
-    "homepage": "https://github.com/hcholm/vscode-makrell",
+    "homepage": "https://makrell.dev/",
     "contributes": {
         "commands": [
             {
@@ -75,7 +85,8 @@
                     ".mr",
                     ".mrx",
                     ".mrpy",
-                    ".mrts"
+                    ".mrts",
+                    ".mrsh"
                 ],
                 "configuration": "./language-configuration.json",
                 "icon": {
@@ -87,7 +98,9 @@
                 "id": "makrell-on",
                 "aliases": [
                     "Makrell Object Notation",
-                    "makrell object notation"
+                    "MRON",
+                    "makrell object notation",
+                    "mron"
                 ],
                 "extensions": [
                     ".mron"
@@ -102,7 +115,9 @@
                 "id": "makrell-ml",
                 "aliases": [
                     "Makrell Markup Language",
-                    "makrell markup language"
+                    "MRML",
+                    "makrell markup language",
+                    "mrml"
                 ],
                 "extensions": [
                     ".mrml"
@@ -111,6 +126,23 @@
                 "icon": {
                     "light": "./images/makrell-x.png",
                     "dark": "./images/makrell-x.png"
+                }
+            },
+            {
+                "id": "makrell-td",
+                "aliases": [
+                    "Makrell Tabular Data",
+                    "MRTD",
+                    "makrell tabular data",
+                    "mrtd"
+                ],
+                "extensions": [
+                    ".mrtd"
+                ],
+                "configuration": "./language-configuration.json",
+                "icon": {
+                    "light": "./images/makrell-o.png",
+                    "dark": "./images/makrell-o.png"
                 }
             }
         ],
@@ -129,11 +161,20 @@
                 "language": "makrell-ml",
                 "scopeName": "source.makrell",
                 "path": "./syntaxes/makrell.tmLanguage.json"
+            },
+            {
+                "language": "makrell-td",
+                "scopeName": "source.makrell",
+                "path": "./syntaxes/makrell.tmLanguage.json"
             }
         ],
         "snippets": [
             {
                 "language": "makrell",
+                "path": "./snippets/makrell.code-snippets.json"
+            },
+            {
+                "language": "makrell-td",
                 "path": "./snippets/makrell.code-snippets.json"
             }
         ],
