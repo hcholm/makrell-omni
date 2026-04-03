@@ -27,6 +27,20 @@ If you already know what you want:
 * use **MRON** for structured data
 * use **MRML** for markup and document-like trees
 
+Suggested first hour
+--------------------
+
+If you want a simple way to get oriented without reading too widely, this is a
+reasonable first hour:
+
+1. skim :doc:`concepts/overview`
+2. read :doc:`mron/quick-start`
+3. read :doc:`mrml/quick-start`
+4. choose one implementation:
+   * :doc:`makrellpy/quick-start`
+   * :doc:`makrellts/quick-start`
+   * :doc:`makrellsharp/quick-start`
+
 Fast entry points
 -----------------
 
@@ -67,6 +81,17 @@ The common thread is **MBF**, the Makrell Base Format:
 
 That is why Makrell can support languages like MakrellPy and Makrell#, while also
 supporting formats like MRON and MRML.
+
+Where to look for detail
+------------------------
+
+Different parts of the site serve different purposes:
+
+* **tutorials** for guided learning
+* **cookbook** for short task-oriented examples
+* **implementation sections** for practical host-specific usage
+* **reference** for lookup material
+* **specs in the repo** for more formal detail
 
 Quick orientation by section
 ----------------------------

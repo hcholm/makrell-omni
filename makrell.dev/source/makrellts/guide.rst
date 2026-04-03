@@ -34,7 +34,7 @@ That means the familiar family ideas should still be central:
       2 "two"
       _ "other"}
 
-In practice, MakrellTS becomes most interesting when these familiar Makrell forms can
+In practice, MakrellTS is most useful when these familiar Makrell forms can
 be used while still fitting naturally into JS/TS projects.
 
 TypeScript-oriented flavour

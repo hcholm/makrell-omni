@@ -1,6 +1,13 @@
 First Program in MakrellTS
 ==========================
 
+This short tutorial shows a minimal MakrellTS workflow: install dependencies,
+run a small source file, and see how familiar Makrell forms carry into the
+TypeScript-hosted track.
+
+Set up the implementation
+-------------------------
+
 From ``impl/ts`` run:
 
 .. code-block:: bash
@@ -8,7 +15,11 @@ From ``impl/ts`` run:
     bun install
     bun run src/cli.ts examples/hello.mrjs
 
-Try a small source file:
+That gives you a quick end-to-end check that the TypeScript implementation is
+installed and the CLI path is working.
+
+Try a small source file
+-----------------------
 
 .. code-block:: makrell
 
@@ -18,21 +29,37 @@ Try a small source file:
     add3 = {add 3 _}
     [2 5 8] | {map add3} | sum
 
-Then try a tiny macro:
+This example should already look familiar if you have seen MakrellPy or the
+shared family examples.
+
+Then try a tiny macro
+---------------------
 
 .. code-block:: makrell
 
     {def macro twice [x]
       [{quote $x} {quote $x}]}
 
-What this shows:
+This does not attempt to be a full macro tutorial. The point is to show that
+the TypeScript track also participates in the family macro model rather than
+only mirroring runtime syntax.
+
+What this shows
+---------------
+
+This small session shows:
 
 * familiar Makrell syntax in a JS/TS-oriented host
 * CLI-based execution
 * the same family concepts carrying into the TypeScript track
+* a first hint of how compile-time forms fit into the implementation
 
-Next steps:
+Next steps
+----------
+
+Continue with:
 
 * :doc:`../makrellts/quick-start`
 * :doc:`../makrellts/guide`
 * :doc:`../makrellts/cookbook`
+* :doc:`../makrellts/metaprogramming`

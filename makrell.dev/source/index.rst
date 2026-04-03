@@ -2,7 +2,6 @@
     :alt: Makrell
     :align: center
     :width: 200
-    :height: 200
 
 Makrell
 =======
@@ -10,6 +9,9 @@ Makrell
 Makrell is a family of languages and formats built around a shared structural core.
 It combines compact syntax, functional flow, metaprogramming, structured data, and
 markup in one coherent ecosystem.
+
+If most language projects force you to choose between code, data, markup, and host
+ecosystem fit, Makrell is trying to make those pieces belong to the same world.
 
 The family currently centres on:
 
@@ -20,13 +22,24 @@ The family currently centres on:
 * **MRML**, a Makrell-shaped alternative to XML and HTML.
 * **MBF** (Makrell Base Format), the shared structural foundation underneath the family.
 
-Makrell is interesting when you want more than one thing at once:
+Makrell is useful when you want more than one thing at once:
 
 * one structural model across code, data, and markup
 * concise functional and operator-oriented syntax
 * pattern matching and metaprogramming
 * embedded mini-languages
 * multiple host ecosystems without giving up a family identity
+
+What you can do here
+--------------------
+
+Use this site in the way that matches your goal:
+
+* learn the shared ideas first in :doc:`concepts/index`
+* start building immediately in :doc:`makrellpy/index`, :doc:`makrellts/index`, or :doc:`makrellsharp/index`
+* explore formats directly in :doc:`mron/index` and :doc:`mrml/index`
+* learn by example in :doc:`tutorials/index`
+* solve concrete problems in :doc:`cookbook/index`
 
 Quick Taste
 -----------
@@ -97,7 +110,7 @@ Popular Paths
 Why Makrell?
 ------------
 
-Makrell is not just another syntax for one runtime. The compelling idea is that the
+Makrell is not just another syntax for one runtime. The central idea is that the
 same structural model can carry:
 
 * a programming language
@@ -107,6 +120,13 @@ same structural model can carry:
 * similar idioms across multiple host ecosystems
 
 That makes Makrell useful both as a practical tool and as a language-design platform.
+
+It also makes Makrell feel different from projects that are only:
+
+* a syntax experiment
+* a host-language wrapper
+* a data format with no language story
+* a macro system with no broader family structure
 
 Implementation Picture
 ----------------------

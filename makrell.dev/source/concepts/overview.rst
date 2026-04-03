@@ -27,13 +27,13 @@ The family currently contains:
 Each one uses the shared structural vocabulary differently, but they are meant to
 feel related rather than accidental.
 
-What makes the family distinctive?
-----------------------------------
+What defines the family?
+------------------------
 
-Makrell is most interesting when the family relationship matters, not only the
+Makrell makes the most sense when the family relationship matters, not only the
 surface syntax of one language.
 
-The distinctive combination is:
+The combination is:
 
 * one structural core used for languages, data, and markup
 * a syntax model that stays compact while remaining highly structured

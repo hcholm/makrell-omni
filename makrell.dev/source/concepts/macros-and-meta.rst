@@ -1,7 +1,7 @@
 Macros and Meta
 ===============
 
-Metaprogramming is one of the main reasons Makrell is interesting.
+Metaprogramming is one of the main parts of the Makrell design.
 
 The family aims to support:
 
@@ -59,7 +59,7 @@ Representative meta shape
 Whitespace-sensitive expansion
 ------------------------------
 
-One of the more distinctive ideas in the Makrell family is that macro expansion may
+One of the more notable ideas in the Makrell family is that macro expansion may
 need access to the original source-shaped nodes, including whitespace-sensitive
 structure.
 

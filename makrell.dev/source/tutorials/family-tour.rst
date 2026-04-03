@@ -1,7 +1,9 @@
 Family Tour
 ===========
 
-Makrell makes the most sense when you see the family side by side.
+Makrell makes the most sense when you see the family side by side. This short
+tutorial is meant as a quick orientation pass across the main layers rather than
+a deep dive into one implementation.
 
 One shared idea
 ---------------
@@ -12,6 +14,9 @@ At the centre is **MBF**, a structural format that can support:
 * data notations
 * markup notations
 * macros and embedded sublanguages
+
+That shared base is what makes the family feel related instead of merely
+co-branded.
 
 Three quick glimpses
 --------------------
@@ -40,9 +45,24 @@ MRML:
         {title Makrell}
         {p One structural family for code, data, and markup.}}
 
+What this should suggest
+------------------------
+
+These examples are intentionally small, but together they show the family idea:
+
+* one structural model for code
+* one structural model for data
+* one structural model for markup
+
+The details differ by implementation and format, but the shared shape is still
+visible.
+
 Where to go next
 ----------------
 
-* learn the common model in :doc:`../concepts/index`
-* choose a host in :doc:`choosing-an-implementation`
-* start with :doc:`first-program-makrellpy`, :doc:`first-program-makrellts`, or :doc:`first-program-makrellsharp`
+Continue with:
+
+* :doc:`../concepts/index` for the common model
+* :doc:`choosing-an-implementation` to pick a host track
+* :doc:`first-program-makrellpy`, :doc:`first-program-makrellts`, or
+  :doc:`first-program-makrellsharp` for a first implementation-specific step

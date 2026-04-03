@@ -40,3 +40,37 @@ Static and instance examples
     sb = {new StringBuilder ["Mak"]}
     {sb.Append "rell#"}
     {sb.ToString}
+
+What this page is about
+-----------------------
+
+Makrell# interop is about making CLR access fit naturally into Makrell-shaped code.
+
+In practice, that means:
+
+* imports should look like part of the language, not bolted-on foreign syntax
+* generic types should use Makrell-shaped forms
+* object construction, member access, and static calls should compose with normal
+  Makrell flow
+
+Representative combined example
+-------------------------------
+
+.. code-block:: makrell
+
+    {import System.Text}
+
+    names = {new (list string) ["Makrell" "Sharp"]}
+    joined = {String.Join " " names}
+
+    sb = {new StringBuilder []}
+    {sb.Append joined}
+    {sb.ToString}
+
+Related pages
+-------------
+
+* :doc:`guide`
+* :doc:`tooling`
+* :doc:`cookbook-interop`
+* :doc:`cookbook-cli`

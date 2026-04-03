@@ -32,9 +32,9 @@ exclude_patterns = []
 
 # if os.getenv("GITHUB_ACTIONS") or os.getenv("TRAVIS") or os.getenv("CIRCLECI") or os.getenv("GITLAB_CI"):
 #     extensions.append("sphinxcontrib.googleanalytics")
-#     googleanalytics_id = "G-3431CMCBXW"
+#     googleanalytics_id = "G-FERPT02DWQ"
 extensions.append("sphinxcontrib.googleanalytics")
-googleanalytics_id = "G-3431CMCBXW"
+googleanalytics_id = "G-FERPT02DWQ"
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

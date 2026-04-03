@@ -25,7 +25,7 @@ Makrell# already includes:
 Everyday Makrell# shape
 -----------------------
 
-Makrell# is most compelling when ordinary Makrell code and CLR-facing code feel like
+Makrell# works best when ordinary Makrell code and CLR-facing code feel like
 parts of the same language rather than two disconnected modes.
 
 Core example:
@@ -62,7 +62,7 @@ Example:
 CLR interop as a first-class use case
 -------------------------------------
 
-The distinctive Makrell# story is that .NET access is treated as part of the core
+An important part of the Makrell# design is that .NET access is treated as part of the core
 experience.
 
 Example:
@@ -81,7 +81,7 @@ while still fitting the CLR world.
 Compile/load workflow
 ---------------------
 
-Makrell# is also interesting because it is not only interpreted source-to-runtime
+Makrell# also matters because it is not only interpreted source-to-runtime
 plumbing. It already has a real compilation and loading story:
 
 * emit C#

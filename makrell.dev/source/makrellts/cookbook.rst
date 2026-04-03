@@ -1,7 +1,7 @@
 Cookbook
 ========
 
-MakrellTS is especially interesting when you want Makrell-style structure in
+MakrellTS is especially useful when you want Makrell-style structure in
 JavaScript and TypeScript environments.
 
 Useful recipe areas
@@ -60,3 +60,10 @@ Recipe: a tiny macro
       [{quote $x} {quote $x}]}
 
     {twice {print "hello"}}
+
+More MakrellTS recipes
+----------------------
+
+* :doc:`cookbook-cli`
+* :doc:`cookbook-browser`
+* :doc:`cookbook-macros`

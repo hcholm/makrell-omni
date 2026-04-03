@@ -2,29 +2,185 @@
   --makrell-accent: #0f766e;
   --makrell-accent-2: #b45309;
   --makrell-surface: #f7faf9;
+  --sidebar-width: 21rem;
+  --sidebar-width--mobile: 18rem;
+}
+
+body {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.content {
+  max-width: 64rem;
+}
+
+.main .content {
+  padding-top: 1.1rem;
+  padding-bottom: 1.2rem;
+}
+
+.main .sidebar-drawer,
+.toc-drawer {
+  font-size: 0.92rem;
+}
+
+.sidebar-container {
+  font-size: 0.98rem;
+  background: linear-gradient(180deg, rgba(15, 118, 110, 0.055), rgba(15, 118, 110, 0.02));
+  border-right: 1px solid rgba(15, 118, 110, 0.12);
+}
+
+@media (min-width: 67em) {
+  .sidebar-drawer {
+    width: 21rem;
+  }
+
+  .sidebar-container {
+    width: 21rem;
+  }
 }
 
 .sidebar-brand-text {
   letter-spacing: 0.02em;
   font-weight: 700;
+  font-size: 1.02rem;
+  line-height: 1.15;
+  overflow-wrap: normal;
+  word-break: keep-all;
+  hyphens: none;
+}
+
+.sidebar-brand {
+  align-items: flex-start;
+}
+
+.sidebar-search {
+  font-size: 0.92rem;
+  padding-top: 0.45rem;
+  padding-bottom: 0.45rem;
+}
+
+.sidebar-tree .reference {
+  line-height: 1.24;
+  font-weight: 560;
+}
+
+.sidebar-tree li {
+  margin: 0.08rem 0;
+}
+
+.sidebar-tree ul {
+  gap: 0;
+}
+
+.sidebar-tree a {
+  padding: 0.18rem 0.45rem;
+  border-radius: 0.4rem;
+}
+
+.sidebar-tree .current-page > .reference,
+.sidebar-tree .current > .reference {
+  background: rgba(15, 118, 110, 0.12);
+  color: var(--makrell-accent);
+  font-weight: 700;
+}
+
+.sidebar-tree .caption {
+  font-size: 0.83rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #334155;
+  margin-top: 0.55rem;
+  margin-bottom: 0.18rem;
+}
+
+.sidebar-tree ul ul {
+  margin-top: 0.1rem;
+  padding-left: 0.5rem;
+  border-left: 1px solid rgba(15, 118, 110, 0.1);
+}
+
+.sidebar-tree a:hover {
+  background: rgba(15, 118, 110, 0.08);
+  text-decoration: none;
+}
+
+.sidebar-search {
+  border-bottom: 1px solid rgba(15, 118, 110, 0.1);
+  margin-bottom: 0.45rem;
+}
+
+.sidebar-search-container input {
+  border-radius: 0.45rem;
+  border: 1px solid rgba(15, 118, 110, 0.16);
+}
+
+.sidebar-brand {
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid rgba(15, 118, 110, 0.1);
+  margin-bottom: 0.45rem;
 }
 
 .content h1 {
   color: var(--makrell-accent);
+  font-size: 1.8rem;
+  margin-bottom: 0.55rem;
 }
 
 .content h2 {
   color: #1f2937;
   border-bottom: 1px solid rgba(15, 118, 110, 0.18);
   padding-bottom: 0.2rem;
+  margin-top: 1.35rem;
+  margin-bottom: 0.4rem;
+  font-size: 1.22rem;
+}
+
+.content h3 {
+  margin-top: 1rem;
+  margin-bottom: 0.25rem;
+  font-size: 1rem;
+}
+
+.content p,
+.content ul,
+.content ol,
+.content dl {
+  margin-top: 0.3rem;
+  margin-bottom: 0.48rem;
+}
+
+.content li {
+  margin: 0.1rem 0;
+}
+
+.content ul,
+.content ol {
+  padding-left: 1.15rem;
+}
+
+.content pre {
+  padding: 0.58rem 0.78rem;
+  font-size: 0.84rem;
+}
+
+.content div.highlight,
+.content .highlight {
+  margin: 0.45rem 0 0.7rem;
 }
 
 .content img[alt="Makrell"] {
   filter: drop-shadow(0 10px 24px rgba(15, 118, 110, 0.18));
+  max-width: 150px;
+  height: auto;
+  width: auto;
 }
 
 .highlight {
   border: 1px solid rgba(15, 118, 110, 0.12);
+  border-radius: 0.35rem;
 }
 
 .toctree-wrapper.compound > p.caption {
@@ -34,8 +190,57 @@
 
 div.admonition, .docutils .admonition {
   border-left: 4px solid var(--makrell-accent);
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
 }
 
 .content .section:first-of-type > p:first-of-type {
-  font-size: 1.08rem;
+  font-size: 0.98rem;
+}
+
+.related-pages {
+  margin-top: 1.15rem;
+}
+
+.related-pages a {
+  padding: 0.75rem 0.95rem;
+  border: 1px solid rgba(15, 118, 110, 0.12);
+  border-radius: 0.55rem;
+  background: rgba(15, 118, 110, 0.04);
+}
+
+.related-pages a:hover {
+  background: rgba(15, 118, 110, 0.08);
+  border-color: rgba(15, 118, 110, 0.2);
+  text-decoration: none;
+}
+
+.related-pages .context {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.related-pages .title {
+  font-size: 0.98rem;
+  font-weight: 650;
+  line-height: 1.25;
+  color: #1f2937;
+}
+
+.related-pages svg.furo-related-icon,
+.related-pages svg.furo-related-icon use {
+  width: 0.95rem;
+  height: 0.95rem;
+  color: var(--makrell-accent);
+}
+
+.toc-tree {
+  line-height: 1.2;
+}
+
+.toc-tree li {
+  margin: 0.05rem 0;
 }
