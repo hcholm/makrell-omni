@@ -18,9 +18,21 @@ Experience
     .. container:: playground-section-nav
 
         :doc:`Overview <index>`
+        :doc:`Features <features>`
+        :doc:`Workspace <workspace>`
+        :doc:`Docs panel <docs-panel>`
+        :doc:`Onboarding <onboarding>`
+        :doc:`Views <views>`
+        :doc:`Sharing <sharing>`
+        :doc:`Responsive <responsive>`
+        :doc:`Status <status>`
+        :doc:`States <states>`
+        :doc:`Flows <flows>`
         :doc:`Experience <experience>`
         :doc:`Examples <examples>`
         :doc:`Architecture <architecture>`
+        :doc:`Implementation <implementation>`
+        :doc:`Launch checklist <launch-checklist>`
         :doc:`Roadmap <roadmap>`
 
 The playground should feel different from the documentation area even while it
@@ -76,3 +88,20 @@ lean more strongly into the editor/workspace identity. In both modes:
 * navigation should stay visible and stable
 * the route back to ``makrell.dev`` should stay easy to spot
 * interactive zones should remain clear without relying on harsh borders
+
+Product chrome
+--------------
+
+The playground should also have a small amount of persistent chrome that makes
+the product feel self-contained without becoming heavy.
+
+Good permanent controls for the first version:
+
+* light/dark switch
+* docs toggle or docs tab
+* examples access
+* share or copy-link action
+* explicit route back to the main docs/site
+
+These controls should feel calm and structural. They are not the main event,
+but they strongly shape whether the playground feels intentional.

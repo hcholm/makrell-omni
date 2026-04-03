@@ -57,9 +57,6 @@ Suggested item format:
 - [ ] Plan the MakrellTS web playground for `v0.10.0` once the design profile exists.
   - Source: desired browser-based playground with examples, docs, REPL, and editor
   - Target docs: `docs/`, release notes, `makrell.dev/`, possible dedicated plan note
-- [ ] Extract shared `vscode-makrell` language/editor assets for reuse by future web tooling.
-  - Source: playground and VS Code extension should share grammar/snippets/language metadata rather than duplicate them
-  - Target docs: `docs/consolidation-plan.md`, `docs/v0.10.0-release-plan.md`, `vscode-makrell/README.md`, possible architecture note
 - [ ] Pick and package the MakrellTS `v0.10.0` showcase examples.
   - Source: `impl/ts/examples/hello.mrts`, `impl/ts/examples/nbody-browser/`, `impl/ts/examples/browser-compile/`
   - Target docs: release notes, `impl/ts/README.md`, `makrell.dev/`, possible examples/showcase directory
@@ -81,3 +78,6 @@ Suggested item format:
 - [x] Document typed MRTD APIs across `.NET`, MakrellTS, and MakrellPy.
   - Source: typed/object-and-tuple MRTD read/write helpers now exist in all three implementations
   - Target docs: `impl/dotnet/README.md`, `impl/py/README.md`, `impl/ts/README.md`, `makrell.dev/`
+- [x] Extract shared `vscode-makrell` language/editor assets for reuse by future web tooling.
+  - Source: playground and VS Code extension should share grammar/snippets/language metadata rather than duplicate them
+  - Target docs: `docs/consolidation-plan.md`, `docs/v0.10.0-release-plan.md`, `vscode-makrell/README.md`, possible architecture note

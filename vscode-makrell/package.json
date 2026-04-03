@@ -273,8 +273,10 @@
     },
     "main": "./out/extension",
     "scripts": {
+        "sync:assets": "node ./scripts/sync-shared-assets.mjs",
+        "check:assets": "node ./scripts/check-shared-assets.mjs",
         "vscode:prepublish": "npm run compile",
-        "compile": "tsc -p .",
+        "compile": "npm run sync:assets && npm run check:assets && tsc -p .",
         "watch": "tsc -p . -w"
     },
     "devDependencies": {

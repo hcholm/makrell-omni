@@ -55,4 +55,7 @@ html_js_files = [
     "cookie-init.js",  # This script initializes the banner
     "keyboard-nav.js",
     "github-link.js",
+    "playground-nav.js",
+    "playground-theme.js",
+    "playground-workspace-demo.js",
 ]

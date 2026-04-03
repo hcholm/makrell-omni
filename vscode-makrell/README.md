@@ -16,6 +16,14 @@ Current features:
 * Start a Makrell REPL and send code to it
 * Connect to the Makrell language server and get basic diagnostics
 
+Editor asset source of truth:
+
+- shared editor-facing assets now live under `shared/makrell-editor-assets/`
+- the extension copies its packaged grammar, snippet, and language
+  configuration files from there via `npm run sync:assets`
+- this is intended to support future sharing with browser tooling rather than
+  treating the VS Code extension as the only home for Makrell editor assets
+
 Current file support:
 
 - `.mr`

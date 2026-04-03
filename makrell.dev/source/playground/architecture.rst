@@ -18,9 +18,21 @@ Architecture
     .. container:: playground-section-nav
 
         :doc:`Overview <index>`
+        :doc:`Features <features>`
+        :doc:`Workspace <workspace>`
+        :doc:`Docs panel <docs-panel>`
+        :doc:`Onboarding <onboarding>`
+        :doc:`Views <views>`
+        :doc:`Sharing <sharing>`
+        :doc:`Responsive <responsive>`
+        :doc:`Status <status>`
+        :doc:`States <states>`
+        :doc:`Flows <flows>`
         :doc:`Experience <experience>`
         :doc:`Examples <examples>`
         :doc:`Architecture <architecture>`
+        :doc:`Implementation <implementation>`
+        :doc:`Launch checklist <launch-checklist>`
         :doc:`Roadmap <roadmap>`
 
 The playground should use real implementation code rather than a separate demo
@@ -61,6 +73,37 @@ The obvious things to share early are:
 The VS Code extension should become a thin integration layer over shared
 language assets rather than the only place where those assets live.
 
+Current sources to reuse
+------------------------
+
+There is already useful material in the shared editor-asset base and in
+``vscode-makrell`` that should inform the playground rather than being copied
+by hand:
+
+* ``shared/makrell-editor-assets/``
+* the TextMate grammar
+* the snippet definitions
+* the language configuration
+* family file-extension and language metadata
+
+The VS Code extension now syncs its packaged copies from that shared asset
+base, which is the right direction for the browser playground too.
+
+There is also useful material in the MakrellTS track itself:
+
+* browser entrypoints
+* existing browser examples
+* the actual compile and runtime path
+
+The right long-term shape is probably:
+
+* shared TS-side language assets
+* a VS Code integration layer
+* a browser playground integration layer
+
+This is more important than exact folder naming. The important thing is to
+avoid duplicate language/editor definitions.
+
 Execution model
 ---------------
 
@@ -70,6 +113,17 @@ The playground should treat MakrellTS as the actual engine:
 * compile with the real compiler
 * run with the real browser-appropriate runtime path
 * keep any browser-specific glue outside the language implementation itself
+
+Static hosting shape
+--------------------
+
+The playground should remain compatible with static-site hosting on
+``makrell.dev``:
+
+* the docs and the playground should be able to live on the same site
+* browser execution should not require a custom backend to be useful
+* the first version should prefer browser-local evaluation, examples, and docs
+  integration over server-dependent features
 
 Why this matters
 ----------------
