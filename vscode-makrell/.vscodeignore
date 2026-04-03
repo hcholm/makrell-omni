@@ -1,6 +1,10 @@
 .vscode/**
 out/**/*.map
 src/**
+scripts/**
+node_modules/**
+bun.lock
+PUBLISHING.md
 .gitignore
 tsconfig.json
 tslint.json

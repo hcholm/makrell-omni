@@ -252,6 +252,11 @@ internal sealed class MetaProcessor
             {
                 return EvaluateIf(curly);
             }
+
+            if (head.Value == "match")
+            {
+                return EvaluateMatch(curly);
+            }
         }
 
         var callable = EvaluateExpression(curly.Nodes[0]);
@@ -266,6 +271,16 @@ internal sealed class MetaProcessor
             return EvaluateMemberAccess(binOp);
         }
 
+        if (binOp.Operator == "~=")
+        {
+            return MakrellCompilerRuntime.PatternMatches(EvaluateExpression(binOp.Left), binOp.Right);
+        }
+
+        if (binOp.Operator == "!~=")
+        {
+            return !MakrellCompilerRuntime.PatternMatches(EvaluateExpression(binOp.Left), binOp.Right);
+        }
+
         var left = EvaluateExpression(binOp.Left);
         var right = EvaluateExpression(binOp.Right);
 
@@ -276,6 +291,8 @@ internal sealed class MetaProcessor
             "*" => Multiply(left, right),
             "/" => Divide(left, right),
             "@" => EvaluateIndex(left, right),
+            "&&" => IsTruthy(left) && IsTruthy(right),
+            "||" => IsTruthy(left) || IsTruthy(right),
             "==" => Equals(left, right),
             "!=" => !Equals(left, right),
             "<" => Compare(left, right) < 0,
@@ -898,6 +915,81 @@ internal sealed class MetaProcessor
             : EvaluateIfParts(parts, index + 2);
     }
 
+    private object? EvaluateMatch(CurlyBracketsNode curly)
+    {
+        if (curly.Nodes.Count < 3)
+        {
+            throw new InvalidOperationException("match form must be {match value pattern} or {match value pattern result ...}.");
+        }
+
+        var value = EvaluateExpression(curly.Nodes[1]);
+        if (curly.Nodes.Count == 3)
+        {
+            return MakrellCompilerRuntime.PatternMatches(value, curly.Nodes[2]);
+        }
+
+        var clauseNodes = curly.Nodes.Skip(2).ToArray();
+        if (clauseNodes.Length % 2 != 0)
+        {
+            throw new InvalidOperationException("match form requires pattern/result pairs.");
+        }
+
+        for (var i = 0; i < clauseNodes.Length; i += 2)
+        {
+            var match = MakrellCompilerRuntime.MatchWithBindings(value, clauseNodes[i]);
+            if (!match.IsMatch)
+            {
+                continue;
+            }
+
+            var bindings = match.Bindings;
+            var clauseResult = clauseNodes[i + 1];
+            if (TryGetGuardedMatchClause(clauseResult, out var guardNode, out var guardedResultNodes))
+            {
+                var guardPassed = EvaluateWithBindings(bindings, () => IsTruthy(EvaluateExpression(guardNode)));
+                if (!guardPassed)
+                {
+                    continue;
+                }
+
+                return EvaluateWithBindings(bindings, () => EvaluateMatchClauseResult(guardedResultNodes));
+            }
+
+            return EvaluateWithBindings(bindings, () => EvaluateMatchClauseResult([clauseResult]));
+        }
+
+        return null;
+    }
+
+    private object? EvaluateMatchClauseResult(IReadOnlyList<Node> resultNodes)
+    {
+        return resultNodes.Count switch
+        {
+            0 => null,
+            1 when resultNodes[0] is SequenceNode sequence => ExecuteStatements(sequence.Nodes),
+            1 => EvaluateExpression(resultNodes[0]),
+            _ => ExecuteStatements(resultNodes),
+        };
+    }
+
+    private T EvaluateWithBindings<T>(IReadOnlyDictionary<string, object?> bindings, Func<T> action)
+    {
+        var snapshots = CaptureSymbols(bindings.Keys);
+        try
+        {
+            foreach (var binding in bindings)
+            {
+                symbols[binding.Key] = binding.Value;
+            }
+
+            return action();
+        }
+        finally
+        {
+            RestoreSymbols(snapshots);
+        }
+    }
+
     private object? InvokeFunction(MetaFunction function, IReadOnlyList<object?> arguments)
     {
         var namesToRestore = function.ParameterNames
@@ -1240,6 +1332,28 @@ internal sealed class MetaProcessor
 
     private static bool IsReturnHead(CurlyBracketsNode curly) =>
         curly.Nodes.Count > 0 && curly.Nodes[0] is IdentifierNode { Value: "return" };
+
+    private static bool TryGetGuardedMatchClause(Node clauseResult, out Node guardNode, out IReadOnlyList<Node> guardedResultNodes)
+    {
+        if (clauseResult is CurlyBracketsNode
+            {
+                Nodes.Count: >= 3,
+                Nodes:
+                [
+                    IdentifierNode { Value: "when" },
+                    ..
+                ]
+            } guarded)
+        {
+            guardNode = guarded.Nodes[1];
+            guardedResultNodes = guarded.Nodes.Skip(2).ToArray();
+            return true;
+        }
+
+        guardNode = null!;
+        guardedResultNodes = [];
+        return false;
+    }
 
     private static string QuoteStringLiteral(string text) =>
         "\"" + text.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal) + "\"";

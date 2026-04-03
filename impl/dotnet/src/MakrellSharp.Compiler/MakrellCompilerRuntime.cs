@@ -380,12 +380,11 @@ public static class MakrellCompilerRuntime
         args ??= [];
 
         var targetType = target.GetType();
-        var match = targetType
+        var methods = targetType
             .GetMethods(BindingFlags.Public | BindingFlags.Instance)
-            .Where(method => method.Name == memberName)
-            .Select(method => TryBindArguments(method.GetParameters(), args, out var convertedArgs, out var score)
-                ? new Candidate<MethodInfo>(method, convertedArgs, score)
-                : null)
+            .Where(method => method.Name == memberName);
+        var match = methods
+            .Select(method => TryBindCallableMethod(method, args, out var candidate) ? candidate : null)
             .Where(static candidate => candidate is not null)
             .OrderBy(static candidate => candidate!.Score)
             .FirstOrDefault();
@@ -432,12 +431,11 @@ public static class MakrellCompilerRuntime
         ArgumentException.ThrowIfNullOrEmpty(memberName);
         args ??= [];
 
-        var match = targetType
+        var methods = targetType
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
-            .Where(method => method.Name == memberName)
-            .Select(method => TryBindArguments(method.GetParameters(), args, out var convertedArgs, out var score)
-                ? new Candidate<MethodInfo>(method, convertedArgs, score)
-                : null)
+            .Where(method => method.Name == memberName);
+        var match = methods
+            .Select(method => TryBindCallableMethod(method, args, out var candidate) ? candidate : null)
             .Where(static candidate => candidate is not null)
             .OrderBy(static candidate => candidate!.Score)
             .FirstOrDefault();
@@ -1765,6 +1763,322 @@ public static class MakrellCompilerRuntime
 
         candidate = new Candidate<MethodInfo>(closedMethod, convertedArgs, score);
         return true;
+    }
+
+    private static bool TryBindCallableMethod(
+        MethodInfo method,
+        object?[] args,
+        out Candidate<MethodInfo>? candidate)
+    {
+        if (method.IsGenericMethodDefinition)
+        {
+            return TryBindInferredGenericMethod(method, args, out candidate);
+        }
+
+        if (TryBindArguments(method.GetParameters(), args, out var convertedArgs, out var score))
+        {
+            candidate = new Candidate<MethodInfo>(method, convertedArgs, score);
+            return true;
+        }
+
+        candidate = null;
+        return false;
+    }
+
+    private static bool TryBindInferredGenericMethod(
+        MethodInfo methodDefinition,
+        object?[] args,
+        out Candidate<MethodInfo>? candidate)
+    {
+        candidate = null;
+
+        if (!TryInferGenericMethodArguments(methodDefinition, args, out var typeArguments))
+        {
+            return false;
+        }
+
+        if (!TryBindGenericMethod(methodDefinition, typeArguments, args, out var boundCandidate))
+        {
+            return false;
+        }
+
+        var resolvedCandidate = boundCandidate
+            ?? throw new InvalidOperationException("A bound generic method candidate was expected.");
+
+        // Prefer non-generic matches when they are otherwise equivalent.
+        candidate = resolvedCandidate with { Score = resolvedCandidate.Score + 1 };
+        return true;
+    }
+
+    private static bool TryInferGenericMethodArguments(
+        MethodInfo methodDefinition,
+        object?[] args,
+        out Type[] typeArguments)
+    {
+        typeArguments = [];
+
+        var genericParameters = methodDefinition.GetGenericArguments();
+        if (genericParameters.Length == 0)
+        {
+            return false;
+        }
+
+        var parameters = methodDefinition.GetParameters();
+        var hasParamsArray = parameters.Length > 0
+            && parameters[^1].GetCustomAttribute<ParamArrayAttribute>() is not null;
+
+        if (!hasParamsArray && parameters.Length != args.Length)
+        {
+            return false;
+        }
+
+        if (hasParamsArray && args.Length < parameters.Length - 1)
+        {
+            return false;
+        }
+
+        var inferred = new Dictionary<Type, Type>();
+        for (var i = 0; i < parameters.Length; i += 1)
+        {
+            var parameter = parameters[i];
+            if (hasParamsArray && i == parameters.Length - 1)
+            {
+                var elementType = parameter.ParameterType.GetElementType()
+                    ?? throw new InvalidOperationException("Params array element type is missing.");
+                for (var j = i; j < args.Length; j += 1)
+                {
+                    if (!TryInferTypeArguments(elementType, args[j], inferred))
+                    {
+                        return false;
+                    }
+                }
+
+                break;
+            }
+
+            if (!TryInferTypeArguments(parameter.ParameterType, args[i], inferred))
+            {
+                return false;
+            }
+        }
+
+        typeArguments = new Type[genericParameters.Length];
+        for (var i = 0; i < genericParameters.Length; i += 1)
+        {
+            if (!inferred.TryGetValue(genericParameters[i], out var inferredType))
+            {
+                return false;
+            }
+
+            typeArguments[i] = inferredType;
+        }
+
+        return true;
+    }
+
+    private static bool TryInferTypeArguments(
+        Type parameterType,
+        object? value,
+        Dictionary<Type, Type> inferred)
+    {
+        if (parameterType.IsByRef)
+        {
+            parameterType = parameterType.GetElementType()
+                ?? throw new InvalidOperationException("By-ref parameter type is missing.");
+        }
+
+        if (parameterType.IsGenericParameter)
+        {
+            return TryRegisterInferredType(parameterType, value?.GetType(), inferred);
+        }
+
+        if (value is null)
+        {
+            return !ContainsGenericParameter(parameterType);
+        }
+
+        var valueType = value.GetType();
+
+        var nullableParameter = Nullable.GetUnderlyingType(parameterType);
+        if (nullableParameter is not null)
+        {
+            return TryInferTypeArguments(nullableParameter, value, inferred);
+        }
+
+        if (parameterType.IsArray)
+        {
+            if (!valueType.IsArray)
+            {
+                return !ContainsGenericParameter(parameterType);
+            }
+
+            var parameterElementType = parameterType.GetElementType()
+                ?? throw new InvalidOperationException("Array parameter type is missing.");
+            var valueElementType = valueType.GetElementType();
+            if (valueElementType is null)
+            {
+                return false;
+            }
+
+            return TryInferTypeArgumentsFromTypes(parameterElementType, valueElementType, inferred);
+        }
+
+        if (parameterType.IsGenericType)
+        {
+            var matchingValueType = FindMatchingGenericType(valueType, parameterType.GetGenericTypeDefinition());
+            if (matchingValueType is null)
+            {
+                return !ContainsGenericParameter(parameterType);
+            }
+
+            var parameterArguments = parameterType.GetGenericArguments();
+            var valueArguments = matchingValueType.GetGenericArguments();
+            for (var i = 0; i < parameterArguments.Length; i += 1)
+            {
+                if (!TryInferTypeArgumentsFromTypes(parameterArguments[i], valueArguments[i], inferred))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private static bool TryInferTypeArgumentsFromTypes(
+        Type parameterType,
+        Type valueType,
+        Dictionary<Type, Type> inferred)
+    {
+        if (parameterType.IsByRef)
+        {
+            parameterType = parameterType.GetElementType()
+                ?? throw new InvalidOperationException("By-ref parameter type is missing.");
+        }
+
+        if (parameterType.IsGenericParameter)
+        {
+            return TryRegisterInferredType(parameterType, valueType, inferred);
+        }
+
+        var nullableParameter = Nullable.GetUnderlyingType(parameterType);
+        if (nullableParameter is not null)
+        {
+            var nullableValue = Nullable.GetUnderlyingType(valueType) ?? valueType;
+            return TryInferTypeArgumentsFromTypes(nullableParameter, nullableValue, inferred);
+        }
+
+        if (parameterType.IsArray)
+        {
+            if (!valueType.IsArray)
+            {
+                return !ContainsGenericParameter(parameterType);
+            }
+
+            var parameterElementType = parameterType.GetElementType()
+                ?? throw new InvalidOperationException("Array parameter type is missing.");
+            var valueElementType = valueType.GetElementType();
+            if (valueElementType is null)
+            {
+                return false;
+            }
+
+            return TryInferTypeArgumentsFromTypes(parameterElementType, valueElementType, inferred);
+        }
+
+        if (!parameterType.IsGenericType)
+        {
+            return true;
+        }
+
+        var matchingValueType = FindMatchingGenericType(valueType, parameterType.GetGenericTypeDefinition());
+        if (matchingValueType is null)
+        {
+            return !ContainsGenericParameter(parameterType);
+        }
+
+        var parameterArguments = parameterType.GetGenericArguments();
+        var valueArguments = matchingValueType.GetGenericArguments();
+        for (var i = 0; i < parameterArguments.Length; i += 1)
+        {
+            if (!TryInferTypeArgumentsFromTypes(parameterArguments[i], valueArguments[i], inferred))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool TryRegisterInferredType(
+        Type genericParameter,
+        Type? inferredType,
+        Dictionary<Type, Type> inferred)
+    {
+        if (inferredType is null)
+        {
+            return false;
+        }
+
+        if (!inferred.TryGetValue(genericParameter, out var existing))
+        {
+            inferred[genericParameter] = inferredType;
+            return true;
+        }
+
+        if (existing == inferredType)
+        {
+            return true;
+        }
+
+        if (existing.IsAssignableFrom(inferredType))
+        {
+            inferred[genericParameter] = inferredType;
+            return true;
+        }
+
+        return inferredType.IsAssignableFrom(existing);
+    }
+
+    private static bool ContainsGenericParameter(Type type)
+    {
+        if (type.IsGenericParameter)
+        {
+            return true;
+        }
+
+        if (type.IsByRef)
+        {
+            return ContainsGenericParameter(type.GetElementType()
+                ?? throw new InvalidOperationException("By-ref parameter type is missing."));
+        }
+
+        if (type.IsArray)
+        {
+            return ContainsGenericParameter(type.GetElementType()
+                ?? throw new InvalidOperationException("Array parameter type is missing."));
+        }
+
+        return type.IsGenericType && type.GetGenericArguments().Any(ContainsGenericParameter);
+    }
+
+    private static Type? FindMatchingGenericType(Type valueType, Type genericDefinition)
+    {
+        if (valueType.IsGenericType && valueType.GetGenericTypeDefinition() == genericDefinition)
+        {
+            return valueType;
+        }
+
+        foreach (var interfaceType in valueType.GetInterfaces())
+        {
+            if (interfaceType.IsGenericType && interfaceType.GetGenericTypeDefinition() == genericDefinition)
+            {
+                return interfaceType;
+            }
+        }
+
+        var baseType = valueType.BaseType;
+        return baseType is null ? null : FindMatchingGenericType(baseType, genericDefinition);
     }
 
     private sealed record Candidate<TMember>(TMember Member, object?[] Arguments, int Score)

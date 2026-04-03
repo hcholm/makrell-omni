@@ -70,6 +70,8 @@ In practice:
   compile-time features are sharply different in one track and not another
 - in the long run, meta should reuse the same parser and compiler path as
   ordinary code, rather than relying on a separate permanent evaluator model
+- for Makrell# specifically, meta should not become a second independent
+  implementation of Makrell# semantics
 
 ### 5. Shared async/await support is uneven
 
@@ -289,6 +291,9 @@ it can do at runtime.
 - a stronger path toward "meta can use the whole shebang"
 - an explicit direction that compile-time execution should share the normal
   parser/compiler pipeline wherever practical
+- an explicit Makrell# rule that compile-time support code may orchestrate or
+  bootstrap, but should not reimplement the language as a separate semantic
+  engine
 
 ## 3c. Shared async/await surface
 
@@ -440,6 +445,13 @@ Examples:
 - parse MRTD
 - emit C# from `.mrsh`
 
+For `v0.10.0`, the extension should aim for a basic run/build/check story
+across:
+
+- MakrellPy
+- MakrellTS
+- Makrell#
+
 These can begin as thin wrappers around existing CLIs.
 
 #### 5. Diagnostics
@@ -451,6 +463,16 @@ possible:
 - obvious parse failures
 - wrong language mode hints
 - maybe later MRTD row-width or obvious shape validation
+
+For `v0.10.0`, compiler/format diagnostics with editor markings should be
+treated as a real release requirement for the current family surface:
+
+- MakrellPy
+- MakrellTS
+- Makrell#
+- MRON
+- MRML
+- MRTD
 
 #### 6. Formatting strategy
 
@@ -466,6 +488,22 @@ Recommended structure:
 - extension front-end in TypeScript
 - use existing TS-side knowledge where practical
 - call Python or other subprocesses only when they provide unique value
+
+Longer-term direction:
+
+- converge on one TypeScript-based family language-server/tooling layer
+- support:
+  - Makrell
+  - MakrellPy
+  - MakrellTS
+  - Makrell#
+  - MRON
+  - MRML
+  - MRTD
+- make the data formats first-class editor citizens, not only file extensions
+  with syntax colouring
+- use one shared parser/AST/diagnostics foundation where practical, then add
+  per-track semantic layers rather than maintaining separate editor backends
 
 ### Test/fixture strategy
 

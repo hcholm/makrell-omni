@@ -41,6 +41,30 @@ Static and instance examples
     {sb.Append "rell#"}
     {sb.ToString}
 
+Generic method examples
+-----------------------
+
+Explicit generic calls are supported:
+
+.. code-block:: makrell
+
+    {import System.Linq}
+    repeated = {Enumerable.Repeat@(string) "ha" 3}
+    {String.Join "" repeated}
+
+Makrell# also handles some common inferred generic static calls, which makes
+interop feel closer to ordinary CLR use:
+
+.. code-block:: makrell
+
+    {import System.Linq}
+    repeated = {Enumerable.Repeat "ha" 3}
+    {String.Join "" repeated}
+
+    {import System.Threading.Tasks@[Task]}
+    task = {Task.FromResult 42}
+    {await task}
+
 What this page is about
 -----------------------
 
@@ -52,6 +76,8 @@ In practice, that means:
 * generic types should use Makrell-shaped forms
 * object construction, member access, and static calls should compose with normal
   Makrell flow
+* common generic calls should not feel artificially noisy when CLR type
+  inference already has enough information
 
 Representative combined example
 -------------------------------

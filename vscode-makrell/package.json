@@ -8,9 +8,6 @@
     "engines": {
         "vscode": "^1.78.0"
     },
-    "extensionDependencies": [
-        "ms-python.python"
-    ],
     "categories": [
         "Programming Languages",
         "Snippets"
@@ -38,18 +35,13 @@
     "contributes": {
         "commands": [
             {
-                "command": "makrell.server.hi",
-                "title": "Makrell Server Hi",
-                "category": "makrell"
-            },
-            {
                 "command": "makrell.server.restart",
-                "title": "Restart Makrell Server",
+                "title": "Restart Makrell Language Server",
                 "category": "makrell"
             },
             {
                 "command": "makrell.server.executeCommand",
-                "title": "Execute Makrell Command",
+                "title": "Execute Makrell Language Server Command",
                 "category": "makrell"
             },
             {
@@ -65,6 +57,26 @@
             {
                 "command": "makrell.server.stopRepl",
                 "title": "Stop Makrell REPL",
+                "category": "makrell"
+            },
+            {
+                "command": "makrell.runCurrentFile",
+                "title": "Run Current File",
+                "category": "makrell"
+            },
+            {
+                "command": "makrell.python.checkCurrentFile",
+                "title": "Check Current MakrellPy File",
+                "category": "makrell"
+            },
+            {
+                "command": "makrell.ts.checkCurrentFile",
+                "title": "Check Current MakrellTS File",
+                "category": "makrell"
+            },
+            {
+                "command": "makrell.sharp.checkCurrentFile",
+                "title": "Check Current Makrell# File",
                 "category": "makrell"
             },
             {
@@ -199,26 +211,33 @@
         "configuration": [
             {
                 "type": "object",
-                "title": "Makrell Server Configuration",
+                "title": "Makrell Language Server Configuration",
                 "properties": {
+                    "makrell.server.enabled": {
+                        "scope": "window",
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Whether the optional Makrell language server should be started when Makrell family files are opened."
+                    },
                     "makrell.server.cwd": {
                         "scope": "resource",
                         "type": "string",
-                        "description": "The working directory from which to launch the server.",
-                        "markdownDescription": "The working directory from which to launch the server.\nIf blank, this will default to the `examples/servers` directory."
+                        "description": "Optional working directory used when launching the Makrell language server."
                     },
-                    "makrell.server.launchScript": {
+                    "makrell.server.command": {
                         "scope": "resource",
                         "type": "string",
                         "default": "makrell-langserver",
-                        "description": "The python script to run when launching the server.",
-                        "markdownDescription": "The python script to run when launching the server.\n Relative to #makrell.server.cwd#"
+                        "description": "Command used to start the optional Makrell language server."
                     },
-                    "makrell.server.pythonPath": {
+                    "makrell.server.args": {
                         "scope": "resource",
-                        "type": "string",
-                        "default": "makrell-langserver",
-                        "description": "The python interpreter to use to run the server.\nBy default, this extension will attempt to use the Python interpreter configured via the Python extension, setting this setting will override this behavior."
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "default": [],
+                        "description": "Additional arguments passed to the optional Makrell language server."
                     },
                     "makrell.trace.server": {
                         "scope": "resource",
@@ -228,11 +247,35 @@
                             "off",
                             "verbose"
                         ],
-                        "description": "Controls if LSP messages send to/from the server should be logged.",
+                        "description": "Controls if LSP messages sent to and from the optional language server should be logged.",
                         "enumDescriptions": [
-                            "do not log any lsp messages",
-                            "log all lsp messages sent to/from the server"
+                            "Do not log any LSP messages.",
+                            "Log all LSP messages sent to and from the language server."
                         ]
+                    }
+                }
+            },
+            {
+                "type": "object",
+                "title": "Makrell Run Commands",
+                "properties": {
+                    "makrell.run.pythonCommand": {
+                        "scope": "resource",
+                        "type": "string",
+                        "default": "makrell",
+                        "description": "Command used to run MakrellPy files such as .mrpy."
+                    },
+                    "makrell.run.tsCommand": {
+                        "scope": "resource",
+                        "type": "string",
+                        "default": "makrellts",
+                        "description": "Command used to run MakrellTS files such as .mrts."
+                    },
+                    "makrell.run.sharpCommand": {
+                        "scope": "resource",
+                        "type": "string",
+                        "default": "makrellsharp",
+                        "description": "Command used to run Makrell# files such as .mrsh."
                     }
                 }
             },
@@ -264,8 +307,62 @@
                                 "language": "makrell-td"
                             }
                         ],
-                        "description": "The client uses this to decide which documents the server is able to help with.",
-                        "markdownDescription": "The client uses this to decide which documents the server is able to help with.\n See [DocumentSelector](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#documentFilter) in the LSP Specification for more details."
+                        "description": "The client uses this to decide which documents the optional language server should handle.",
+                        "markdownDescription": "The client uses this to decide which documents the optional language server should handle.\nSee [DocumentSelector](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#documentFilter) in the LSP specification for more details."
+                    }
+                }
+            },
+            {
+                "type": "object",
+                "title": "MakrellPy Diagnostics",
+                "properties": {
+                    "makrell.python.diagnosticsEnabled": {
+                        "scope": "resource",
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Whether the extension should run `makrell check --json` for .mrpy files on open and save."
+                    },
+                    "makrell.python.command": {
+                        "scope": "resource",
+                        "type": "string",
+                        "default": "makrell",
+                        "description": "Command used for MakrellPy CLI features such as diagnostics."
+                    }
+                }
+            },
+            {
+                "type": "object",
+                "title": "MakrellTS Diagnostics",
+                "properties": {
+                    "makrell.ts.diagnosticsEnabled": {
+                        "scope": "resource",
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Whether the extension should run `makrellts check --json` for .mrts files on open and save."
+                    },
+                    "makrell.ts.command": {
+                        "scope": "resource",
+                        "type": "string",
+                        "default": "makrellts",
+                        "description": "Command used for MakrellTS CLI features such as diagnostics."
+                    }
+                }
+            },
+            {
+                "type": "object",
+                "title": "Makrell# Diagnostics",
+                "properties": {
+                    "makrell.sharp.diagnosticsEnabled": {
+                        "scope": "resource",
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Whether the extension should run `makrellsharp check --json` and family-format checks for .mrsh, .mron, .mrml, and .mrtd files on open and save."
+                    },
+                    "makrell.sharp.command": {
+                        "scope": "resource",
+                        "type": "string",
+                        "default": "makrellsharp",
+                        "description": "Command used for Makrell# and family-format CLI features such as diagnostics."
                     }
                 }
             }
@@ -275,23 +372,21 @@
     "scripts": {
         "sync:assets": "node ./scripts/sync-shared-assets.mjs",
         "check:assets": "node ./scripts/check-shared-assets.mjs",
-        "vscode:prepublish": "npm run compile",
-        "compile": "npm run sync:assets && npm run check:assets && tsc -p .",
-        "watch": "tsc -p . -w"
+        "vscode:prepublish": "bun run compile",
+        "package:vsix": "bunx @vscode/vsce package",
+        "verify:release": "bun run compile && bun run package:vsix",
+        "compile": "bun run sync:assets && bun run check:assets && bunx tsc --noEmit -p . && bunx esbuild ./src/extension.ts --bundle --packages=bundle --platform=node --format=cjs --outfile=./out/extension.js --external:vscode --sourcemap",
+        "watch": "bunx tsc -p . -w"
     },
     "devDependencies": {
+        "@vscode/vsce": "^3.6.2",
         "@types/node": "^16.11.6",
-        "@types/semver": "^7.5.0",
         "@types/vscode": "^1.78.0",
         "@typescript-eslint/eslint-plugin": "^5.3.0",
         "@typescript-eslint/parser": "^5.3.0",
+        "esbuild": "^0.28.0",
         "eslint": "^8.2.0",
-        "typescript": "^5.1.0"
-    },
-    "dependencies": {
-        "@vscode/python-extension": "^1.0.4",
-        "semver": "^7.5.4",
-        "vsce": "^2.15.0",
+        "typescript": "^5.1.0",
         "vscode-languageclient": "^8.1.0"
     }
 }

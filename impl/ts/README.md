@@ -17,6 +17,12 @@ bun install
 The package is being prepared for npm publication as `makrellts`. The current
 CLI/build story is Bun-first.
 
+Package smoke check:
+
+```bash
+bun pm pack --dry-run
+```
+
 Planned package shape:
 
 - library entry: `makrellts`
@@ -47,6 +53,12 @@ Emit generated JS:
 
 ```bash
 bun run src/cli.ts examples/hello.mrts --emit-js
+```
+
+Check a MakrellTS file and emit machine-readable diagnostics:
+
+```bash
+bun run src/cli.ts check examples/hello.mrts --json
 ```
 
 Typed outputs (API):

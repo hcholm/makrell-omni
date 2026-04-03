@@ -39,6 +39,53 @@ public sealed class MakrellSharpCliTests
     }
 
     [Fact]
+    public async Task RunAsync_CheckCommand_PrintsOkForValidFile()
+    {
+        var path = CreateTempFile(".mrsh", "2 + 3");
+        using var stdout = new StringWriter();
+        using var stderr = new StringWriter();
+
+        try
+        {
+            var exitCode = await MakrellSharpCli.RunAsync(["check", path], stdout, stderr);
+
+            Assert.Equal(0, exitCode);
+            Assert.Equal("OK", stdout.ToString().Trim());
+            Assert.Equal(string.Empty, stderr.ToString());
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public async Task RunAsync_CheckCommand_WithJson_PrintsDiagnosticsForInvalidFile()
+    {
+        var path = CreateTempFile(".mrsh", "{if 2 + 3");
+        using var stdout = new StringWriter();
+        using var stderr = new StringWriter();
+
+        try
+        {
+            var exitCode = await MakrellSharpCli.RunAsync(["check", path, "--json"], stdout, stderr);
+            var output = stdout.ToString();
+
+            Assert.Equal(1, exitCode);
+            Assert.Contains("\"ok\": false", output, StringComparison.Ordinal);
+            Assert.Contains("\"phase\": \"baseformat\"", output, StringComparison.Ordinal);
+            Assert.Contains("\"code\": \"MBF001\"", output, StringComparison.Ordinal);
+            Assert.Contains("\"line\": 1", output, StringComparison.Ordinal);
+            Assert.Contains("\"column\": 1", output, StringComparison.Ordinal);
+            Assert.Equal(string.Empty, stderr.ToString());
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
     public async Task RunAsync_DirectFilePath_ExecutesMakrellSharpFile()
     {
         var path = CreateTempFile(".mrsh", "\"Hello\"");
@@ -295,6 +342,29 @@ public sealed class MakrellSharpCliTests
     }
 
     [Fact]
+    public async Task RunAsync_CheckMron_WithJson_PrintsDiagnosticsForInvalidFile()
+    {
+        var path = CreateTempFile(".mron", "a 2 b");
+        using var stdout = new StringWriter();
+        using var stderr = new StringWriter();
+
+        try
+        {
+            var exitCode = await MakrellSharpCli.RunAsync(["check-mron", path, "--json"], stdout, stderr);
+            var output = stdout.ToString();
+
+            Assert.Equal(1, exitCode);
+            Assert.Contains("\"ok\": false", output, StringComparison.Ordinal);
+            Assert.Contains("\"phase\": \"mron\"", output, StringComparison.Ordinal);
+            Assert.Equal(string.Empty, stderr.ToString());
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
     public async Task RunAsync_ParseMrml_WritesXml()
     {
         var path = CreateTempFile(".mrml", "{a [b=\"2\"] \"x\"}");
@@ -310,6 +380,29 @@ public sealed class MakrellSharpCliTests
             Assert.Contains("<a", output, StringComparison.Ordinal);
             Assert.Contains("b=\"2\"", output, StringComparison.Ordinal);
             Assert.Contains(">x</a>", output, StringComparison.Ordinal);
+            Assert.Equal(string.Empty, stderr.ToString());
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public async Task RunAsync_CheckMrml_WithJson_PrintsDiagnosticsForInvalidFile()
+    {
+        var path = CreateTempFile(".mrml", "\"x\"");
+        using var stdout = new StringWriter();
+        using var stderr = new StringWriter();
+
+        try
+        {
+            var exitCode = await MakrellSharpCli.RunAsync(["check-mrml", path, "--json"], stdout, stderr);
+            var output = stdout.ToString();
+
+            Assert.Equal(1, exitCode);
+            Assert.Contains("\"ok\": false", output, StringComparison.Ordinal);
+            Assert.Contains("\"phase\": \"mrml\"", output, StringComparison.Ordinal);
             Assert.Equal(string.Empty, stderr.ToString());
         }
         finally
@@ -339,6 +432,34 @@ public sealed class MakrellSharpCliTests
             Assert.Contains("\"columns\": [", output, StringComparison.Ordinal);
             Assert.Contains("\"records\": [", output, StringComparison.Ordinal);
             Assert.Contains("\"name\": \"Ada\"", output, StringComparison.Ordinal);
+            Assert.Equal(string.Empty, stderr.ToString());
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public async Task RunAsync_CheckMrtd_WithJson_PrintsDiagnosticsForInvalidFile()
+    {
+        var path = CreateTempFile(
+            ".mrtd",
+            """
+            name:string qty:int
+            Ada
+            """);
+        using var stdout = new StringWriter();
+        using var stderr = new StringWriter();
+
+        try
+        {
+            var exitCode = await MakrellSharpCli.RunAsync(["check-mrtd", path, "--json"], stdout, stderr);
+            var output = stdout.ToString();
+
+            Assert.Equal(1, exitCode);
+            Assert.Contains("\"ok\": false", output, StringComparison.Ordinal);
+            Assert.Contains("\"phase\": \"mrtd\"", output, StringComparison.Ordinal);
             Assert.Equal(string.Empty, stderr.ToString());
         }
         finally

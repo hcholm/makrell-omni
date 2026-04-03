@@ -928,6 +928,32 @@ public sealed class MakrellCompilerTests
     }
 
     [Fact]
+    public void Run_CallsInferredGenericStaticClrMethods_WithArguments()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {import System.Linq}
+            repeated = {Enumerable.Repeat "ha" 3}
+            {String.Join "" repeated}
+            """);
+
+        Assert.Equal("hahaha", result);
+    }
+
+    [Fact]
+    public void Run_AwaitsInferredGenericStaticClrTaskFactory()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {import System.Threading.Tasks@[Task]}
+            task = {Task.FromResult 42}
+            {await task}
+            """);
+
+        Assert.Equal(42, Convert.ToInt32(result));
+    }
+
+    [Fact]
     public void Run_CallsGenericInstanceClrMethods_WithMakrellFunctionDelegate()
     {
         var result = MakrellCompiler.Run(
@@ -1328,6 +1354,59 @@ public sealed class MakrellCompilerTests
     }
 
     [Fact]
+    public void Run_MetaMatchExpression_UsesPatternBindings()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {meta
+                total = {match [2 5]
+                    [x=_ y=_]
+                        x + y
+                    _
+                        0}}
+            total
+            """);
+
+        Assert.Equal(7, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_MetaMatchExpression_SupportsGuardedClauses()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {meta
+                verdict = {match [2 5]
+                    [x=_ y=_]
+                        {when x > y
+                            "descending"}
+                    [x=_ y=_]
+                        {when x < y
+                            "ascending"}
+                    _
+                        "other"}}
+            verdict
+            """);
+
+        Assert.Equal("ascending", result);
+    }
+
+    [Fact]
+    public void Run_MetaPatternMatchOperators_Work()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {meta
+                a = [2 3] ~= [_ _]
+                b = [2 3] !~= [_]
+                ok = a && b}
+            ok
+            """);
+
+        Assert.True(Convert.ToBoolean(result));
+    }
+
+    [Fact]
     public void Run_MetaBreakAndContinue_WorkInsideLoops()
     {
         var result = MakrellCompiler.Run(
@@ -1378,6 +1457,24 @@ public sealed class MakrellCompilerTests
             """);
 
         Assert.Equal(5, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_DefMacro_CanUseMetaMatch()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {def macro second [ns]
+                ns = {regular ns}
+                {match ns
+                    [_ value=_ $rest]
+                        {quote {unquote value}}
+                    _
+                        {quote null}}}
+            {second 2 3 5}
+            """);
+
+        Assert.Equal(3, Convert.ToInt32(result));
     }
 
     [Fact]

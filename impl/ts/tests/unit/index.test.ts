@@ -1,4 +1,7 @@
 import { describe, expect, test } from "bun:test";
+import { rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   clearPatternHooks,
   compile,
@@ -237,6 +240,53 @@ describe("MakrellTs MVP", () => {
       a =
     `;
     expect(() => compile(src)).toThrow(/line 2, col 7|line 3, col 1|line 2/);
+  });
+
+  test("CLI check reports OK for valid source", async () => {
+    const file = join(tmpdir(), `makrellts-check-${crypto.randomUUID()}.mrts`);
+    await Bun.write(file, "2 + 3\n");
+
+    try {
+      const result = Bun.spawnSync({
+        cwd: process.cwd(),
+        stdout: "pipe",
+        stderr: "pipe",
+        cmd: [process.execPath, "run", "src/cli.ts", "check", file, "--json"],
+      });
+      const stdout = new TextDecoder().decode(result.stdout);
+
+      expect(result.exitCode).toBe(0);
+      const parsed = JSON.parse(stdout);
+      expect(parsed.ok).toBe(true);
+      expect(parsed.diagnostics).toEqual([]);
+    } finally {
+      rmSync(file, { force: true });
+    }
+  });
+
+  test("CLI check reports diagnostics for invalid source", async () => {
+    const file = join(tmpdir(), `makrellts-check-${crypto.randomUUID()}.mrts`);
+    await Bun.write(file, "a =\n");
+
+    try {
+      const result = Bun.spawnSync({
+        cwd: process.cwd(),
+        stdout: "pipe",
+        stderr: "pipe",
+        cmd: [process.execPath, "run", "src/cli.ts", "check", file, "--json"],
+      });
+      const stdout = new TextDecoder().decode(result.stdout);
+
+      expect(result.exitCode).toBe(1);
+      const parsed = JSON.parse(stdout);
+      expect(parsed.ok).toBe(false);
+      expect(parsed.diagnostics.length).toBeGreaterThan(0);
+      expect(parsed.diagnostics[0].severity).toBe("error");
+      expect(parsed.diagnostics[0].range.start.line).toBeGreaterThanOrEqual(1);
+      expect(parsed.diagnostics[0].range.start.column).toBeGreaterThanOrEqual(1);
+    } finally {
+      rmSync(file, { force: true });
+    }
   });
 
   test("makrell macro execution can be routed through runtime adapter", () => {

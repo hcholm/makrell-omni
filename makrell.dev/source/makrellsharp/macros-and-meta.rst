@@ -16,6 +16,7 @@ The current Makrell# compile-time model revolves around:
 * Makrell-defined macros
 * replayable compile-time metadata via ``importm``
 * whitespace-preserving macro input when needed
+* pattern matching inside compile-time code
 
 Representative macro example
 ----------------------------
@@ -58,9 +59,38 @@ run during compilation rather than at runtime. In practice, that often means:
 * preparing quoted syntax
 * defining compile-time helper values
 * sharing compile-time state across macro definitions
+* using ``match`` or ``~=`` to dispatch on syntax and small compile-time values
 
 The important distinction is that ``meta`` is not ordinary runtime code placed
 early in the file. It belongs to the compile-time phase.
+
+Compile-time pattern matching
+-----------------------------
+
+Makrell# meta now reuses the same basic pattern engine as runtime Makrell# for
+common compile-time cases. In practice, that means compile-time code can use:
+
+* ``match``
+* ``~=``
+* ``!~=``
+* capture bindings such as ``name=_``
+* guarded clauses written with ``{when ...}``
+
+That makes syntax-directed macros cleaner, because a macro can often dispatch on
+its input with Makrell-shaped matching logic instead of open-coded indexing and
+manual checks.
+
+.. code-block:: makrell
+
+    {def macro second [ns]
+        ns = {regular ns}
+        {match ns
+            [_ value=_ $rest]
+                {quote {unquote value}}
+            _
+                {quote null}}}
+
+    {second 2 3 5}
 
 How to think about macros
 -------------------------

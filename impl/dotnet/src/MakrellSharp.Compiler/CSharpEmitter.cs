@@ -18,6 +18,9 @@ internal static class CSharpEmitter
         return usingDirectives +
             Environment.NewLine +
             Environment.NewLine +
+            "#nullable enable" +
+            Environment.NewLine +
+            Environment.NewLine +
             """
             public static class __MakrellModule
             {

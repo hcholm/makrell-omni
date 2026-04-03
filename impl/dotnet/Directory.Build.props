@@ -4,4 +4,20 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(MSBuildProjectName)' != 'MakrellSharp.Cli' and !$([System.String]::Copy('$(MSBuildProjectName)').Contains('Tests'))">
+    <IsPackable>true</IsPackable>
+    <Version>0.10.0</Version>
+    <Authors>Hans-Christian Holm</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://makrell.dev</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/hcholm/makrell-omni</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <Description>$(MSBuildProjectName) for the Makrell language family.</Description>
+    <PackageReadmeFile>NUGET_README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(MSBuildProjectName)' != 'MakrellSharp.Cli' and !$([System.String]::Copy('$(MSBuildProjectName)').Contains('Tests'))">
+    <None Include="$(MSBuildThisFileDirectory)NUGET_README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 </Project>

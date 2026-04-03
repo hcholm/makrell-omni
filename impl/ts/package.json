@@ -22,7 +22,12 @@
     "mrtd"
   ],
   "files": [
-    "dist",
+    "dist/index.js",
+    "dist/cli.js",
+    "dist/editor_assets.js",
+    "dist/playground.js",
+    "dist/browser/browser.js",
+    "dist/browser/meta_worker.js",
     "README.md",
     "COMPATIBILITY.md",
     "IMPORT_MODEL.md"

@@ -16,6 +16,16 @@ Website and documentation: **[makrell.dev](https://makrell.dev)**
 pip install makrell
 ```
 
+Package smoke check from a built artefact:
+
+```bash
+python -m build
+python -m venv .pack-smoke
+.pack-smoke\Scripts\python.exe -m pip install .\dist\makrell-0.9.1-py3-none-any.whl
+.pack-smoke\Scripts\makrell.exe --help
+.pack-smoke\Scripts\makrell-langserver.exe --help
+```
+
 ### Run tests
 
 ```bash
@@ -133,6 +143,10 @@ Run it from `impl/py/`:
 
 ```bash
 python -m makrell examples/macros/showcase.mr
+```
+
+```bash
+python -m makrell check examples/macros/showcase.mr --json
 ```
 
 These are good examples not because they are large, but because they show three

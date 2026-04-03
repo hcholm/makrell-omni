@@ -13,6 +13,15 @@ Current status: early implementation, but already usable for core MBF parsing, M
 - `MakrellSharp.Mrtd`: MRTD to a normalised tabular model with JSON projections
 - `MakrellSharp.Compiler`: Makrell# to generated C# and compiled .NET bytecode
 
+## Packaging status for v0.10.0
+
+For `v0.10.0`, the `.NET` packaging decision is:
+
+- package the library projects as NuGet-ready units
+- package `MakrellSharp.Cli` as a `.NET` tool
+
+See [`PACKAGING.md`](PACKAGING.md) for the recorded scope and rationale.
+
 ## Build and test
 
 From `impl/dotnet/`:
@@ -26,6 +35,7 @@ Run the CLI directly from the solution:
 
 ```bash
 dotnet run --project src/MakrellSharp.Cli -- examples/hello.mrsh
+dotnet run --project src/MakrellSharp.Cli -- check examples/hello.mrsh
 dotnet run --project src/MakrellSharp.Cli -- build examples/hello.mrsh
 dotnet run --project src/MakrellSharp.Cli -- run-assembly examples/hello.dll
 dotnet run --project src/MakrellSharp.Cli -- meta-sources examples/macros.dll
@@ -33,6 +43,15 @@ dotnet run --project src/MakrellSharp.Cli -- emit-csharp examples/hello.mrsh
 dotnet run --project src/MakrellSharp.Cli -- parse-mron examples/sample.mron
 dotnet run --project src/MakrellSharp.Cli -- parse-mrml examples/sample.mrml
 dotnet run --project src/MakrellSharp.Cli -- parse-mrtd examples/sample.mrtd
+```
+
+Install the packaged CLI tool locally from a built package:
+
+```bash
+dotnet pack MakrellSharp.sln -c Release
+dotnet tool install MakrellSharp.Cli --tool-path .tmp-tools --add-source src/MakrellSharp.Cli/bin/Release
+.tmp-tools/makrellsharp examples/hello.mrsh
+.tmp-tools/makrellsharp check examples/hello.mrsh --json
 ```
 
 ## Current language slice
@@ -48,7 +67,7 @@ Implemented so far:
 - compile-time `meta`
 - Makrell-defined macros with original whitespace-preserving nodes
 - dynamic compile/load with replayable `importm` metadata
-- first-pass .NET interop through `import`, `new`, member calls, generic member calls, property assignment, and index assignment
+- first-pass .NET interop through `import`, `new`, member calls, generic member calls, inferred generic static calls, property assignment, and index assignment
 - basic constructor and method overload coercion for common scalar CLR arguments
 - adaptation of Makrell functions to CLR delegate parameters for common interop calls
 
@@ -57,7 +76,7 @@ Not implemented yet:
 - REPL
 - full parity with MakrellPy/MakrellTS
 - full MakrellPy pattern-matching parity
-- broader CLR overload/generic-method ergonomics
+- broader CLR overload/generic-method ergonomics beyond the current common cases
 
 ## Function calls and lambdas
 
@@ -304,6 +323,18 @@ repeated = {Enumerable.Repeat@(string) "ha" 3}
 ```
 
 ```makrell
+{import System.Linq}
+repeated = {Enumerable.Repeat "ha" 3}
+{String.Join "" repeated}
+```
+
+```makrell
+{import System.Threading.Tasks@[Task]}
+task = {Task.FromResult 42}
+{await task}
+```
+
+```makrell
 items = {new (list string) ["mak" "rell"]}
 upper = {items.ConvertAll@(string) {fun [x] {x.ToUpperInvariant}}}
 {String.Join "" upper}
@@ -319,6 +350,11 @@ items @ 1
 
 Macros receive original nodes, including whitespace nodes. Whitespace-insensitive macros should call `regular` explicitly.
 
+Compile-time `meta` code now supports the same basic pattern engine as runtime
+Makrell# for common cases, including `match`, `~=`, `!~=`, capture bindings,
+and guarded clauses. That means macros can use pattern-shaped logic directly
+instead of rebuilding simple dispatch by hand.
+
 Example:
 
 ```makrell
@@ -327,6 +363,18 @@ Example:
     {quote {unquote ns@0} + 1}}
 
 {incr 4}
+```
+
+```makrell
+{def macro second [ns]
+    ns = {regular ns}
+    {match ns
+        [_ value=_ $rest]
+            {quote {unquote value}}
+        _
+            {quote null}}}
+
+{second 2 3 5}
 ```
 
 Compile-time definitions can be replayed from compiled assemblies with `importm`.

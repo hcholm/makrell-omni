@@ -1,6 +1,8 @@
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.Loader;
+using MakrellSharp.Ast;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
@@ -8,6 +10,18 @@ namespace MakrellSharp.Compiler;
 
 internal static class RoslynExecutor
 {
+    public static IReadOnlyList<MakrellDiagnostic> Check(string csharpSource, IReadOnlyList<string>? metaSources = null)
+    {
+        using var peStream = new MemoryStream();
+        using var pdbStream = new MemoryStream();
+        metaSources ??= Array.Empty<string>();
+        var emit = CreateCompilation(csharpSource, metaSources).Emit(peStream, pdbStream);
+        return emit.Diagnostics
+            .Where(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
+            .Select(ToMakrellDiagnostic)
+            .ToArray();
+    }
+
     public static MakrellAssemblyImage Compile(string csharpSource, IReadOnlyList<string>? metaSources = null)
     {
         using var peStream = new MemoryStream();
@@ -25,6 +39,36 @@ internal static class RoslynExecutor
         }
 
         return new MakrellAssemblyImage(csharpSource, peStream.ToArray(), pdbStream.ToArray(), metaSources);
+    }
+
+    private static MakrellDiagnostic ToMakrellDiagnostic(Microsoft.CodeAnalysis.Diagnostic diagnostic)
+    {
+        var severity = diagnostic.Severity switch
+        {
+            DiagnosticSeverity.Error => MakrellDiagnosticSeverity.Error,
+            DiagnosticSeverity.Warning => MakrellDiagnosticSeverity.Warning,
+            DiagnosticSeverity.Info => MakrellDiagnosticSeverity.Information,
+            DiagnosticSeverity.Hidden => MakrellDiagnosticSeverity.Hint,
+            _ => MakrellDiagnosticSeverity.Error,
+        };
+
+        SourceSpan? span = null;
+        if (diagnostic.Location is { IsInSource: true })
+        {
+            var lineSpan = diagnostic.Location.GetLineSpan();
+            var start = lineSpan.StartLinePosition;
+            var end = lineSpan.EndLinePosition;
+            span = new SourceSpan(
+                new SourcePosition(0, start.Line + 1, start.Character + 1),
+                new SourcePosition(0, end.Line + 1, end.Character + 1));
+        }
+
+        return new MakrellDiagnostic(
+            "csharp",
+            diagnostic.Id,
+            diagnostic.GetMessage(CultureInfo.InvariantCulture),
+            severity,
+            span);
     }
 
     public static MakrellModule Load(MakrellAssemblyImage image)

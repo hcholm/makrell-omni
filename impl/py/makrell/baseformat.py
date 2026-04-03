@@ -177,8 +177,15 @@ def operator_parse(nodes: list[Node],
 
     def has_ops_on_stack():
         return len(opstack) > 0
+
+    def malformed_expression(node: Node | None = None):
+        where = f" at {node.pos_str()}" if node is not None else ""
+        raise ParseError(f"Malformed expression{where}")
           
     def apply_opstack(right: Node):
+        op = opstack[-1] if len(opstack) > 0 else None
+        if len(output) == 0:
+            malformed_expression(op or right)
         left = output.pop()
         op = opstack.pop()
         binop = BinOp(left, op.value, right)
@@ -189,6 +196,8 @@ def operator_parse(nodes: list[Node],
         output.append(binop)
 
     def apply_opstack_1():
+        if len(output) == 0:
+            malformed_expression(opstack[-1] if len(opstack) > 0 else None)
         right = output.pop()
         apply_opstack(right)
 
