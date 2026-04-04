@@ -23,8 +23,8 @@ import {
   TextDocumentSyncKind,
   TextEdit,
   createConnection,
-} from "vscode-languageserver/lib/node/main";
-import { TextDocument } from "vscode-languageserver-textdocument/lib/umd/main";
+} from "vscode-languageserver/lib/node/main.js";
+import { TextDocument } from "vscode-languageserver-textdocument";
 
 const execFileAsync = promisify(execFile);
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -70,7 +70,7 @@ interface IndexedDefinition {
   detail: string;
 }
 
-const connection: Connection = createConnection(ProposedFeatures.all);
+const connection: Connection = createConnection(ProposedFeatures.all, process.stdin, process.stdout);
 const documents = new Map<string, TextDocument>();
 
 const fallbackCompletions: CompletionItem[] = [
@@ -266,6 +266,19 @@ function createIndexedDefinition(
   };
 }
 
+function parseCliResult(raw: string | undefined): CliResult | undefined {
+  const trimmed = raw?.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  try {
+    return JSON.parse(trimmed) as CliResult;
+  } catch {
+    return undefined;
+  }
+}
+
 function wordRangeAtPosition(document: TextDocument, line: number, character: number) {
   const textLine = document.getText().split(/\r?\n/)[line] ?? "";
   if (!textLine) {
@@ -432,8 +445,8 @@ async function validateDocument(document: TextDocument): Promise<void> {
       cwd: path.dirname(filePath),
     });
 
-    const parsed = JSON.parse(stdout) as CliResult;
-    const diagnostics: Diagnostic[] = (parsed.diagnostics ?? []).map((item) => ({
+    const parsed = parseCliResult(stdout);
+    const diagnostics: Diagnostic[] = (parsed?.diagnostics ?? []).map((item) => ({
       range: toRange(item.range),
       severity: toSeverity(item.severity),
       message: item.message ?? "Makrell diagnostic",
@@ -442,6 +455,18 @@ async function validateDocument(document: TextDocument): Promise<void> {
 
     connection.sendDiagnostics({ uri: document.uri, diagnostics });
   } catch (error: any) {
+    const parsed = parseCliResult(error?.stdout);
+    if (parsed) {
+      const diagnostics: Diagnostic[] = (parsed.diagnostics ?? []).map((item) => ({
+        range: toRange(item.range),
+        severity: toSeverity(item.severity),
+        message: item.message ?? "Makrell diagnostic",
+        source: cli.source,
+      }));
+      connection.sendDiagnostics({ uri: document.uri, diagnostics });
+      return;
+    }
+
     const diagnostics: Diagnostic[] = [
       {
         range: {

@@ -6,3 +6,11 @@ declare module "vscode-languageserver-textdocument/lib/umd/main" {
     getText(): string;
   }
 }
+
+declare module "vscode-languageserver-textdocument/lib/umd/main.js" {
+  export * from "vscode-languageserver-textdocument/lib/umd/main";
+}
+
+declare module "vscode-languageserver-textdocument" {
+  export * from "vscode-languageserver-textdocument/lib/umd/main";
+}

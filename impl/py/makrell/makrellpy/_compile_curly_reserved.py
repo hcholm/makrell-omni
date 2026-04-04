@@ -52,7 +52,8 @@ def compile_curly_reserved(n: CurlyBrackets, cc: CompilerContext, compile_mr, op
                 cc.diag.error(0, "No arguments to if.", n0)
                 return None
             if len(pars) == 1:
-                return pb.constant(None)
+                cc.diag.error(0, "Invalid if form: expected at least a condition and a consequent expression.", original)
+                return None
             
             def iff(ps: list[Node]) -> py.expr:
                 if len(ps) == 0:

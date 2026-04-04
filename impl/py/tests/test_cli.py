@@ -44,3 +44,20 @@ def test_check_command_reports_diagnostics_for_invalid_source(tmp_path: Path):
     assert first["range"] is not None
     assert first["range"]["start"]["line"] >= 1
     assert first["range"]["start"]["column"] >= 1
+
+
+def test_check_command_reports_diagnostics_for_invalid_if_form(tmp_path: Path):
+    source = tmp_path / "bad_if.mrpy"
+    source.write_text("{if a > 5}\n", encoding="utf-8")
+
+    result = run_cli("check", str(source), "--json")
+
+    assert result.returncode == 1
+    parsed = json.loads(result.stdout)
+    assert parsed["ok"] is False
+    assert len(parsed["diagnostics"]) > 0
+    first = parsed["diagnostics"][0]
+    assert first["severity"] == "error"
+    assert "Invalid if form" in first["message"]
+    assert first["range"] is not None
+    assert first["range"]["start"]["line"] == 1

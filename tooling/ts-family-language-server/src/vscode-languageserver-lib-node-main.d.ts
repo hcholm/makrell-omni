@@ -69,3 +69,7 @@ declare module "vscode-languageserver/lib/node/main" {
 
   export function createConnection(...args: any[]): any;
 }
+
+declare module "vscode-languageserver/lib/node/main.js" {
+  export * from "vscode-languageserver/lib/node/main";
+}

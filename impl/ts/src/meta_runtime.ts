@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -32,7 +33,9 @@ export class SubprocessMetaRuntimeAdapter implements MetaRuntimeAdapter {
 
   constructor() {
     const here = dirname(fileURLToPath(import.meta.url));
-    this.runnerPath = join(here, "scripts", "meta-runner.js");
+    const packagedRunner = join(here, "scripts", "meta-runner.js");
+    const sourceRunner = join(here, "..", "scripts", "meta-runner.ts");
+    this.runnerPath = existsSync(packagedRunner) ? packagedRunner : sourceRunner;
   }
 
   runMakrellMacro(name: string, macro: MakrellMacroEntry, args: Node[], registry: MacroRegistry): Node | Node[] {

@@ -65,6 +65,12 @@ The following reserved forms are implemented:
 - `{def intsuffix ...}`
 - `{def floatsuffix ...}`
 
+`if` form:
+- minimum valid shape: `{if CONDITION CONSEQUENT}`
+- `{if CONDITION CONSEQUENT}` means "if condition then consequent else null"
+- longer forms chain as alternating condition/consequent pairs with an optional final else expression
+- `{if CONDITION}` is invalid and MUST produce a compile-time diagnostic
+
 ## 6. Binary Operator Semantics
 
 In addition to standard arithmetic/comparison/logical operators, MakrellPy defines:

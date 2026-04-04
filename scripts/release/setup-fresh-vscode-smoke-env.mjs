@@ -10,7 +10,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import readline from "node:readline";
 import { fileURLToPath } from "node:url";
 import { spawn, spawnSync } from "node:child_process";
 
@@ -234,25 +233,6 @@ function getWindowsVsCodeUpdateProcesses() {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
-}
-
-async function waitForEnter(message) {
-  if (!process.stdin.isTTY || !process.stdout.isTTY) {
-    return;
-  }
-
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
-  try {
-    await new Promise((resolve) => {
-      rl.question(message, () => resolve());
-    });
-  } finally {
-    rl.close();
-  }
 }
 
 function toolExecutable(toolDir, commandName) {
@@ -544,7 +524,6 @@ try {
     }
     console.log(`  Launched isolated VS Code window for: ${workspaceDir}`);
     console.log(`  Fallback launcher: ${openVscodeCmdPath}`);
-    await waitForEnter("Press Enter after you have checked whether VS Code opened...");
   } else {
     console.log("\n[next]");
     console.log(`  Open the isolated workspace with: ${openVscodeCmdPath}`);

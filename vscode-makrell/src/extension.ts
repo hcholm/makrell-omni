@@ -19,6 +19,11 @@ type CommandResult = {
     stderr: string;
 };
 
+type CliResult = {
+    ok?: boolean;
+    diagnostics?: any[];
+};
+
 let client: LanguageClient | undefined;
 let clientStarting = false;
 let logger: vscode.LogOutputChannel;
@@ -106,6 +111,19 @@ async function runCommandCapture(command: string, args: string[], cwd?: string):
             reject(error);
         });
     });
+}
+
+function parseCliResult(raw: string | undefined): CliResult | undefined {
+    const trimmed = raw?.trim();
+    if (!trimmed) {
+        return undefined;
+    }
+
+    try {
+        return JSON.parse(trimmed) as CliResult;
+    } catch {
+        return undefined;
+    }
 }
 
 function getTerminalCommand(): string {
@@ -371,12 +389,24 @@ async function validateCliDiagnosticsDocument(document: vscode.TextDocument, sho
             : isMakrellTsDocument(document)
                 ? "makrellts"
                 : "makrellsharp";
-        const parsed = JSON.parse(stdout);
+        const parsed = parseCliResult(stdout);
         const diagnostics = Array.isArray(parsed?.diagnostics)
             ? parsed.diagnostics.map((item: any) => toVsCodeDiagnostic(item, defaultSource))
             : [];
         cliDiagnostics.set(document.uri, diagnostics);
     } catch (error: any) {
+        const defaultSource = isMakrellPyDocument(document)
+            ? "makrell"
+            : isMakrellTsDocument(document)
+                ? "makrellts"
+                : "makrellsharp";
+        const parsed = parseCliResult(error?.stdout);
+        if (parsed && Array.isArray(parsed.diagnostics)) {
+            const diagnostics = parsed.diagnostics.map((item: any) => toVsCodeDiagnostic(item, defaultSource));
+            cliDiagnostics.set(document.uri, diagnostics);
+            return;
+        }
+
         cliDiagnostics.delete(document.uri);
         logger.error(`Makrell CLI diagnostics failed: ${String(error)}`);
         if (showErrors && !cliDiagnosticsWarningShown) {
