@@ -48,16 +48,20 @@ Suggested item format:
 - [ ] Write a concrete TS family language-server plan for Makrell, MakrellPy, MakrellTS, Makrell#, MRON, MRML, and MRTD.
   - Source: `v0.10.0` direction toward one TS-based editor/tooling stack with first-class data-format support
   - Target docs: `docs/`, `vscode-makrell/`, possible dedicated plan note, release/consolidation docs
-- [ ] Define and document `run current file` support for MakrellPy, MakrellTS, and Makrell# in `v0.10.0`.
-  - Source: extension should give the three main language tracks a credible run/build/check workflow
-  - Target docs: `vscode-makrell/`, implementation READMEs, `docs/v0.10.0-release-plan.md`, possible workflow docs
-- [ ] Add editor-visible diagnostics/code markings for MakrellPy, MakrellTS, Makrell#, MRON, MRML, and MRTD.
-  - Source: `v0.10.0` should provide compiler/format errors with in-editor markings across the three language tracks plus the three family data formats
-  - Target docs: `vscode-makrell/`, `docs/editor-support-audit.md`, implementation docs, possible TS tooling plan
 - [ ] Apply the language documentation guide to the highest-traffic Makrell docs pages.
   - Source: current docs are too repetitive and too light on substantive runnable examples
   - Target docs: `makrell.dev/` homepage/getting-started/language pages, implementation README pages, `docs/language-documentation-guide.md`
 ## Completed
+
+- [x] Freeze the intended `v0.10.0` release scope.
+  - Source: milestone work is now broad enough that the main risk is continued expansion rather than missing foundations
+  - Target docs: `docs/v0.10.0-release-plan.md`, release framing
+- [x] Define and document `run current file` support for MakrellPy, MakrellTS, and Makrell# in `v0.10.0`.
+  - Source: extension should give the three main language tracks a credible run/build/check workflow
+  - Target docs: `vscode-makrell/`, implementation READMEs, `docs/v0.10.0-release-plan.md`, possible workflow docs
+- [x] Add editor-visible diagnostics/code markings for MakrellPy, MakrellTS, Makrell#, MRON, MRML, and MRTD.
+  - Source: `v0.10.0` should provide compiler/format errors with in-editor markings across the three language tracks plus the three family data formats
+  - Target docs: `vscode-makrell/`, `docs/editor-support-audit.md`, implementation docs, possible TS tooling plan
 
 - [x] Write down the current debug-information/source-mapping story for MakrellPy, MakrellTS, and Makrell#.
   - Source: `v0.10.0` should state clearly what exists today (PDBs, host sourcemaps, traceback filenames) and what is still missing (Makrell-aware source maps)

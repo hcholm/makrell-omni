@@ -22,6 +22,11 @@ Current scope:
 - same-file definition lookup for `fun`, `def macro`, and simple bindings
 - same-file references and rename for that same symbol slice
 
+Package:
+
+- package name: `makrell-family-lsp`
+- binary: `makrell-family-lsp`
+
 Build:
 
 ```bash
@@ -34,3 +39,14 @@ Run directly:
 ```bash
 bun run start
 ```
+
+Package dry run:
+
+```bash
+bun run pack:dry-run
+```
+
+Use with editors:
+
+- VS Code via `vscode-makrell`
+- other editors that can launch a stdio language server

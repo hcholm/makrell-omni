@@ -1,16 +1,41 @@
 {
   "name": "makrell-family-lsp",
   "version": "0.10.0",
-  "private": true,
   "description": "TypeScript-based family language server for Makrell, MakrellPy, MakrellTS, Makrell#, MRON, MRML, and MRTD.",
   "type": "module",
+  "license": "MIT",
+  "homepage": "https://makrell.dev/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hcholm/makrell-omni.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hcholm/makrell-omni/issues"
+  },
+  "keywords": [
+    "makrell",
+    "language-server",
+    "lsp",
+    "makrellpy",
+    "makrellts",
+    "makrellsharp",
+    "mron",
+    "mrml",
+    "mrtd"
+  ],
   "bin": {
     "makrell-family-lsp": "./dist/server.js"
   },
+  "files": [
+    "dist/",
+    "README.md"
+  ],
   "scripts": {
     "build": "bunx tsc -p .",
     "typecheck": "bunx tsc --noEmit -p .",
-    "start": "bun run src/server.ts"
+    "start": "bun run src/server.ts",
+    "prepack": "bun run build",
+    "pack:dry-run": "bun pm pack --dry-run"
   },
   "dependencies": {
     "vscode-languageserver": "^9.0.1",

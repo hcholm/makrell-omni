@@ -5,6 +5,7 @@ the Makrell monorepo:
 
 - MakrellPy
 - MakrellTS
+- Makrell Family LSP
 - Makrell# libraries and CLI tool
 - `vscode-makrell`
 
@@ -22,6 +23,7 @@ That runs the current publish preflight across:
 
 - MakrellPy build plus fresh-venv smoke check
 - MakrellTS CI and package dry run
+- Makrell Family LSP build and package dry run
 - Makrell# pack plus local tool smoke check
 - `vscode-makrell` release verification and VSIX build
 
@@ -64,6 +66,8 @@ Current bump points:
   - `impl/py/setup.py`
 - MakrellTS:
   - `impl/ts/package.json`
+- Makrell Family LSP:
+  - `tooling/ts-family-language-server/package.json`
 - Makrell# libraries:
   - `impl/dotnet/Directory.Build.props`
 - Makrell# CLI tool:
@@ -146,6 +150,36 @@ Manual checklist:
 - [ ] `impl/ts/package.json` version updated
 - [ ] `bun run ci` succeeded
 - [ ] `bun pm pack --dry-run` looked correct
+- [ ] npm authentication is active
+- [ ] `bun publish --access public` completed
+
+## Makrell Family LSP
+
+Working directory:
+
+```bash
+cd tooling/ts-family-language-server
+```
+
+Preflight:
+
+```bash
+bun install
+bun run build
+bun run pack:dry-run
+```
+
+Publish:
+
+```bash
+bun publish --access public
+```
+
+Manual checklist:
+
+- [ ] `tooling/ts-family-language-server/package.json` version updated
+- [ ] `bun run build` succeeded
+- [ ] `bun run pack:dry-run` looked correct
 - [ ] npm authentication is active
 - [ ] `bun publish --access public` completed
 
@@ -248,12 +282,14 @@ If publishing everything in one pass, this is the safest order:
 
 1. MakrellPy
 2. MakrellTS
-3. Makrell# libraries and CLI tool
-4. `vscode-makrell`
+3. Makrell Family LSP
+4. Makrell# libraries and CLI tool
+5. `vscode-makrell`
 
 Why this order:
 
 - language/runtime packages first
+- the family LSP before the editor package that points at it
 - editor package last, once package names and install flows are already real
 
 ## Final human checklist
@@ -262,6 +298,7 @@ Why this order:
 - [ ] `node scripts/release/verify-publish.mjs` succeeded
 - [ ] MakrellPy uploaded
 - [ ] MakrellTS uploaded
+- [ ] Makrell Family LSP uploaded
 - [ ] Makrell# libraries uploaded
 - [ ] Makrell# CLI tool uploaded
 - [ ] `vscode-makrell` published

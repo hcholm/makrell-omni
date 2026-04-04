@@ -10,11 +10,14 @@ const isWindows = process.platform === "win32";
 
 const pyDir = path.join(root, "impl", "py");
 const tsDir = path.join(root, "impl", "ts");
+const familyLspDir = path.join(root, "tooling", "ts-family-language-server");
 const dotnetDir = path.join(root, "impl", "dotnet");
 const vscodeDir = path.join(root, "vscode-makrell");
 const tsNodeModulesDir = path.join(tsDir, "node_modules");
+const familyLspNodeModulesDir = path.join(familyLspDir, "node_modules");
 const vscodeNodeModulesDir = path.join(vscodeDir, "node_modules");
 const tsBunLockPath = path.join(tsDir, "bun.lock");
+const familyLspBunLockPath = path.join(familyLspDir, "bun.lock");
 
 function run(command, args, cwd) {
   console.log(`\n[run] ${command} ${args.join(" ")}`);
@@ -78,6 +81,7 @@ function toolExecutable(toolDir, commandName) {
 const python = process.env.PYTHON || "python";
 const pyVersion = parsePythonVersion();
 const tsVersion = readJson(path.join(tsDir, "package.json")).version;
+const familyLspVersion = readJson(path.join(familyLspDir, "package.json")).version;
 const dotnetVersion = parseDotnetVersion();
 const dotnetCliVersion = parseDotnetCliVersion();
 const vscodeVersion = readJson(path.join(vscodeDir, "package.json")).version;
@@ -85,6 +89,7 @@ const vscodeVersion = readJson(path.join(vscodeDir, "package.json")).version;
 console.log("[versions]");
 console.log(`  MakrellPy     ${pyVersion}`);
 console.log(`  MakrellTS     ${tsVersion}`);
+console.log(`  Family LSP    ${familyLspVersion}`);
 console.log(`  Makrell# libs ${dotnetVersion}`);
 console.log(`  Makrell# CLI  ${dotnetCliVersion}`);
 console.log(`  VS Code       ${vscodeVersion}`);
@@ -101,8 +106,10 @@ const dotnetToolDir = path.join(tmpRoot, "dotnet-tools");
 
 console.log(`\n[temp] ${tmpRoot}`);
 const tsNodeModulesExisted = existsSync(tsNodeModulesDir);
+const familyLspNodeModulesExisted = existsSync(familyLspNodeModulesDir);
 const vscodeNodeModulesExisted = existsSync(vscodeNodeModulesDir);
 const tsBunLockExisted = existsSync(tsBunLockPath);
+const familyLspBunLockExisted = existsSync(familyLspBunLockPath);
 
 let pyWheel = "";
 const dotnetCliPackageDir = path.join(dotnetDir, "src", "MakrellSharp.Cli", "bin", "Release");
@@ -119,6 +126,10 @@ try {
   run("bun", ["install"], tsDir);
   run("bun", ["run", "ci"], tsDir);
   run("bun", ["pm", "pack", "--dry-run"], tsDir);
+
+  run("bun", ["install"], familyLspDir);
+  run("bun", ["run", "build"], familyLspDir);
+  run("bun", ["run", "pack:dry-run"], familyLspDir);
 
   run("dotnet", ["pack", "MakrellSharp.sln", "-c", "Release", "/nodeReuse:false", "-p:UseSharedCompilation=false"], dotnetDir);
   run("dotnet", [
@@ -140,6 +151,7 @@ try {
 
   console.log("\n[artifacts]");
   console.log(`  MakrellPy wheel: ${pyWheel}`);
+  console.log(`  Family LSP dir: ${familyLspDir}`);
   console.log(`  Makrell# CLI source: ${dotnetCliPackageDir}`);
   console.log(`  VSIX: ${vsixPath}`);
 
@@ -152,7 +164,13 @@ try {
   if (!vscodeNodeModulesExisted && existsSync(vscodeNodeModulesDir)) {
     rmSync(vscodeNodeModulesDir, { recursive: true, force: true });
   }
+  if (!familyLspNodeModulesExisted && existsSync(familyLspNodeModulesDir)) {
+    rmSync(familyLspNodeModulesDir, { recursive: true, force: true });
+  }
   if (!tsBunLockExisted && existsSync(tsBunLockPath)) {
     rmSync(tsBunLockPath, { force: true });
+  }
+  if (!familyLspBunLockExisted && existsSync(familyLspBunLockPath)) {
+    rmSync(familyLspBunLockPath, { force: true });
   }
 }
