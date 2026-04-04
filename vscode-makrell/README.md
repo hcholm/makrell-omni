@@ -64,16 +64,24 @@ Current editor workflow commands:
 - `Makrell: Run Current File`
 - `MakrellPy: Check Current MakrellPy File`
 - `MakrellTS: Check Current MakrellTS File`
+- `MakrellTS: Emit JavaScript for Current MakrellTS File`
 - `Makrell#: Check Current Makrell# File`
+- `Makrell#: Build Current Makrell# File`
+- `Makrell#: Emit C# for Current Makrell# File`
+- `Makrell#: Run Built Assembly for Current Makrell# File`
+- `Makrell#: Show Meta Sources for Current Makrell# File`
+- `Makrell: Parse Current MRON File`
+- `Makrell: Parse Current MRML File`
+- `Makrell: Parse Current MRTD File`
 - `Makrell: Start Makrell REPL`
 - `Makrell: Send Code to Makrell REPL`
 
 If you also want hover, go-to, completions, diagnostics, and related LSP-backed
-editor features, make `makrell-langserver` available on your `PATH` or point
+editor features, make `makrell-family-lsp` available on your `PATH` or point
 the extension at it via settings:
 
 ```bash
-pip install makrell
+bunx makrell-family-lsp
 ```
 
 Relevant settings:
@@ -123,9 +131,8 @@ makrellsharp check-mrml path/to/file.mrml --json
 makrellsharp check-mrtd path/to/file.mrtd --json
 ```
 
-The long-term direction is a TypeScript-based family language-server/tooling
-stack, but the current extension can still use `makrell-langserver` as an
-optional bridge in the meantime.
+The long-term direction is now a TypeScript-based family language-server/tooling
+stack, with `makrell-family-lsp` as the first concrete slice.
 
 This extension is part of the Makrell monorepo:
 

@@ -10,7 +10,7 @@ import {
     LanguageClientOptions,
     ServerOptions,
     State,
-} from "vscode-languageclient/node.js";
+} from "vscode-languageclient/lib/node/main";
 
 const execFileAsync = promisify(execFile);
 
@@ -91,6 +91,16 @@ function getRunCommandForDocument(document: vscode.TextDocument): string | undef
     }
 }
 
+function getMakrellTsCommand(document: vscode.TextDocument): string {
+    const config = vscode.workspace.getConfiguration("makrell.ts", document.uri);
+    return config.get<string>("command", "makrellts");
+}
+
+function getMakrellSharpCommand(document: vscode.TextDocument): string {
+    const config = vscode.workspace.getConfiguration("makrell.sharp", document.uri);
+    return config.get<string>("command", "makrellsharp");
+}
+
 function getRunTerminal(): vscode.Terminal {
     const shellPath = getTerminalCommand();
     if (!runTerminal) {
@@ -167,6 +177,18 @@ function isMakrellTsDocument(document: vscode.TextDocument): boolean {
 function isMakrellPyDocument(document: vscode.TextDocument): boolean {
     const extension = path.extname(document.fileName).toLowerCase();
     return document.uri.scheme === "file" && extension === ".mrpy";
+}
+
+function isMronDocument(document: vscode.TextDocument): boolean {
+    return document.uri.scheme === "file" && path.extname(document.fileName).toLowerCase() === ".mron";
+}
+
+function isMrmlDocument(document: vscode.TextDocument): boolean {
+    return document.uri.scheme === "file" && path.extname(document.fileName).toLowerCase() === ".mrml";
+}
+
+function isMrtdDocument(document: vscode.TextDocument): boolean {
+    return document.uri.scheme === "file" && path.extname(document.fileName).toLowerCase() === ".mrtd";
 }
 
 function getCliCheckCommand(document: vscode.TextDocument): string[] | undefined {
@@ -301,6 +323,237 @@ async function runCurrentFile() {
     terminal.sendText(`${command} ${quoteForShell(document.fileName)}`);
 }
 
+async function getSavedActiveDocument(
+    predicate: (document: vscode.TextDocument) => boolean,
+    warningMessage: string,
+): Promise<vscode.TextDocument | undefined> {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor || !predicate(editor.document)) {
+        await vscode.window.showWarningMessage(warningMessage);
+        return undefined;
+    }
+
+    if (editor.document.uri.scheme !== "file") {
+        await vscode.window.showWarningMessage("Current file must be saved before this command can run.");
+        return undefined;
+    }
+
+    if (editor.document.isDirty) {
+        const saved = await editor.document.save();
+        if (!saved) {
+            return undefined;
+        }
+    }
+
+    return editor.document;
+}
+
+async function openGeneratedPreview(content: string, language: string): Promise<void> {
+    const document = await vscode.workspace.openTextDocument({ content, language });
+    await vscode.window.showTextDocument(document, { preview: true });
+}
+
+async function emitCurrentMakrellTsFile() {
+    const document = await getSavedActiveDocument(
+        isMakrellTsDocument,
+        "Open a MakrellTS (.mrts) file first.",
+    );
+    if (!document) {
+        return;
+    }
+
+    const command = getMakrellTsCommand(document);
+    const cwd = getWorkspaceCwd(document);
+
+    try {
+        const { stdout, stderr } = await execFileAsync(command, [document.fileName, "--emit-js"], { cwd });
+        if (stderr?.trim()) {
+            logger.warn(stderr.trim());
+        }
+
+        await openGeneratedPreview(stdout, "javascript");
+    } catch (error: any) {
+        logger.error(`MakrellTS emit JS failed: ${String(error)}`);
+        await vscode.window.showErrorMessage("Unable to emit generated JavaScript for the current MakrellTS file.");
+    }
+}
+
+async function buildCurrentMakrellSharpFile() {
+    const document = await getSavedActiveDocument(
+        isMakrellSharpDocument,
+        "Open a Makrell# (.mrsh) file first.",
+    );
+    if (!document) {
+        return;
+    }
+
+    const command = getMakrellSharpCommand(document);
+    const cwd = getWorkspaceCwd(document);
+
+    try {
+        const { stdout, stderr } = await execFileAsync(command, ["build", document.fileName], { cwd });
+        if (stderr?.trim()) {
+            logger.warn(stderr.trim());
+        }
+
+        const outputPath = stdout.trim();
+        if (outputPath) {
+            await vscode.window.showInformationMessage(`Makrell# assembly built: ${outputPath}`);
+            return;
+        }
+
+        await vscode.window.showInformationMessage("Makrell# assembly built.");
+    } catch (error: any) {
+        logger.error(`Makrell# build failed: ${String(error)}`);
+        await vscode.window.showErrorMessage("Unable to build the current Makrell# file.");
+    }
+}
+
+function getDefaultMakrellSharpAssemblyPath(document: vscode.TextDocument): string {
+    const parsed = path.parse(document.fileName);
+    return path.join(parsed.dir, `${parsed.name}.dll`);
+}
+
+async function buildMakrellSharpFile(document: vscode.TextDocument): Promise<string> {
+    const command = getMakrellSharpCommand(document);
+    const cwd = getWorkspaceCwd(document);
+    const { stdout, stderr } = await execFileAsync(command, ["build", document.fileName], { cwd });
+    if (stderr?.trim()) {
+        logger.warn(stderr.trim());
+    }
+
+    return stdout.trim() || getDefaultMakrellSharpAssemblyPath(document);
+}
+
+async function emitCSharpCurrentMakrellSharpFile() {
+    const document = await getSavedActiveDocument(
+        isMakrellSharpDocument,
+        "Open a Makrell# (.mrsh) file first.",
+    );
+    if (!document) {
+        return;
+    }
+
+    const command = getMakrellSharpCommand(document);
+    const cwd = getWorkspaceCwd(document);
+
+    try {
+        const { stdout, stderr } = await execFileAsync(command, ["emit-csharp", document.fileName], { cwd });
+        if (stderr?.trim()) {
+            logger.warn(stderr.trim());
+        }
+
+        await openGeneratedPreview(stdout, "csharp");
+    } catch (error: any) {
+        logger.error(`Makrell# emit C# failed: ${String(error)}`);
+        await vscode.window.showErrorMessage("Unable to emit generated C# for the current Makrell# file.");
+    }
+}
+
+async function runBuiltAssemblyCurrentMakrellSharpFile() {
+    const document = await getSavedActiveDocument(
+        isMakrellSharpDocument,
+        "Open a Makrell# (.mrsh) file first.",
+    );
+    if (!document) {
+        return;
+    }
+
+    try {
+        const assemblyPath = await buildMakrellSharpFile(document);
+        const command = getMakrellSharpCommand(document);
+        const cwd = getWorkspaceCwd(document);
+        const { stdout, stderr } = await execFileAsync(command, ["run-assembly", assemblyPath], { cwd });
+        if (stderr?.trim()) {
+            logger.warn(stderr.trim());
+        }
+
+        await openGeneratedPreview(stdout, "plaintext");
+    } catch (error: any) {
+        logger.error(`Makrell# run assembly failed: ${String(error)}`);
+        await vscode.window.showErrorMessage("Unable to run the built assembly for the current Makrell# file.");
+    }
+}
+
+async function showMetaSourcesCurrentMakrellSharpFile() {
+    const document = await getSavedActiveDocument(
+        isMakrellSharpDocument,
+        "Open a Makrell# (.mrsh) file first.",
+    );
+    if (!document) {
+        return;
+    }
+
+    try {
+        const assemblyPath = await buildMakrellSharpFile(document);
+        const command = getMakrellSharpCommand(document);
+        const cwd = getWorkspaceCwd(document);
+        const { stdout, stderr } = await execFileAsync(command, ["meta-sources", assemblyPath], { cwd });
+        if (stderr?.trim()) {
+            logger.warn(stderr.trim());
+        }
+
+        await openGeneratedPreview(stdout, "plaintext");
+    } catch (error: any) {
+        logger.error(`Makrell# meta sources failed: ${String(error)}`);
+        await vscode.window.showErrorMessage("Unable to show compile-time meta sources for the current Makrell# file.");
+    }
+}
+
+async function parseCurrentFamilyFormat(
+    predicate: (document: vscode.TextDocument) => boolean,
+    warningMessage: string,
+    parseCommand: string,
+    previewLanguage: string,
+) {
+    const document = await getSavedActiveDocument(predicate, warningMessage);
+    if (!document) {
+        return;
+    }
+
+    const command = getMakrellSharpCommand(document);
+    const cwd = getWorkspaceCwd(document);
+
+    try {
+        const { stdout, stderr } = await execFileAsync(command, [parseCommand, document.fileName], { cwd });
+        if (stderr?.trim()) {
+            logger.warn(stderr.trim());
+        }
+
+        await openGeneratedPreview(stdout, previewLanguage);
+    } catch (error: any) {
+        logger.error(`Makrell family parse failed (${parseCommand}): ${String(error)}`);
+        await vscode.window.showErrorMessage(`Unable to parse the current file with \`${parseCommand}\`.`);
+    }
+}
+
+async function parseCurrentMronFile() {
+    await parseCurrentFamilyFormat(
+        isMronDocument,
+        "Open an MRON (.mron) file first.",
+        "parse-mron",
+        "json",
+    );
+}
+
+async function parseCurrentMrmlFile() {
+    await parseCurrentFamilyFormat(
+        isMrmlDocument,
+        "Open an MRML (.mrml) file first.",
+        "parse-mrml",
+        "xml",
+    );
+}
+
+async function parseCurrentMrtdFile() {
+    await parseCurrentFamilyFormat(
+        isMrtdDocument,
+        "Open an MRTD (.mrtd) file first.",
+        "parse-mrtd",
+        "json",
+    );
+}
+
 async function checkCurrentMakrellSharpFile() {
     const editor = vscode.window.activeTextEditor;
     if (!editor || !isMakrellSharpDocument(editor.document)) {
@@ -377,7 +630,7 @@ function getServerEnabled(): boolean {
 
 function getServerCommand(): string {
     const config = vscode.workspace.getConfiguration("makrell.server");
-    return config.get<string>("command", "makrell-langserver");
+    return config.get<string>("command", "makrell-family-lsp");
 }
 
 function getServerArgs(): string[] {
@@ -450,7 +703,7 @@ async function startLangServer(showErrors = false) {
         client = undefined;
         if (showErrors) {
             void vscode.window.showWarningMessage(
-                "Makrell language server is not available. Editor support still works, but hover, go-to, completions, and diagnostics need `makrell-langserver` on PATH or configured via settings.",
+                "Makrell language server is not available. Editor support still works, but hover, go-to, completions, and richer diagnostics need `makrell-family-lsp` on PATH or configured via settings.",
             );
         }
     } finally {
@@ -524,8 +777,32 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand("makrell.ts.checkCurrentFile", async () => {
             await checkCurrentMakrellTsFile();
         }),
+        vscode.commands.registerCommand("makrell.ts.emitCurrentFile", async () => {
+            await emitCurrentMakrellTsFile();
+        }),
         vscode.commands.registerCommand("makrell.sharp.checkCurrentFile", async () => {
             await checkCurrentMakrellSharpFile();
+        }),
+        vscode.commands.registerCommand("makrell.sharp.buildCurrentFile", async () => {
+            await buildCurrentMakrellSharpFile();
+        }),
+        vscode.commands.registerCommand("makrell.sharp.emitCSharpCurrentFile", async () => {
+            await emitCSharpCurrentMakrellSharpFile();
+        }),
+        vscode.commands.registerCommand("makrell.sharp.runBuiltAssemblyCurrentFile", async () => {
+            await runBuiltAssemblyCurrentMakrellSharpFile();
+        }),
+        vscode.commands.registerCommand("makrell.sharp.showMetaSourcesCurrentFile", async () => {
+            await showMetaSourcesCurrentMakrellSharpFile();
+        }),
+        vscode.commands.registerCommand("makrell.family.parseCurrentMronFile", async () => {
+            await parseCurrentMronFile();
+        }),
+        vscode.commands.registerCommand("makrell.family.parseCurrentMrmlFile", async () => {
+            await parseCurrentMrmlFile();
+        }),
+        vscode.commands.registerCommand("makrell.family.parseCurrentMrtdFile", async () => {
+            await parseCurrentMrtdFile();
         }),
         vscode.commands.registerCommand("makrell.openDocs", async () => {
             await vscode.env.openExternal(vscode.Uri.parse("https://makrell.dev/"));

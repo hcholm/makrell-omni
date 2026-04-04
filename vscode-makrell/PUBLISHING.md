@@ -43,7 +43,7 @@ Smoke-check at least:
 - `Makrell: Open Makrell Docs`
 - `Makrell: Open Makrell Repository`
 
-If `makrell-langserver` is available locally, also smoke-check:
+If `makrell-family-lsp` is available locally, also smoke-check:
 
 - `Makrell: Start Makrell REPL`
 - REPL send/stop commands
@@ -83,5 +83,5 @@ For `v0.10.0`, the extension release should reflect:
 - shared editor assets sourced from `shared/makrell-editor-assets/`
 - Bun-first local packaging workflow
 - no hard dependency on the Python VS Code extension
-- optional `makrell-langserver` integration while broader TS-based family
-  tooling is still being built
+- optional `makrell-family-lsp` integration as the first TS-based family
+  tooling slice

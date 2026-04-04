@@ -75,8 +75,48 @@
                 "category": "makrell"
             },
             {
+                "command": "makrell.ts.emitCurrentFile",
+                "title": "Emit JavaScript for Current MakrellTS File",
+                "category": "makrell"
+            },
+            {
                 "command": "makrell.sharp.checkCurrentFile",
                 "title": "Check Current Makrell# File",
+                "category": "makrell"
+            },
+            {
+                "command": "makrell.sharp.buildCurrentFile",
+                "title": "Build Current Makrell# File",
+                "category": "makrell"
+            },
+            {
+                "command": "makrell.sharp.emitCSharpCurrentFile",
+                "title": "Emit C# for Current Makrell# File",
+                "category": "makrell"
+            },
+            {
+                "command": "makrell.sharp.runBuiltAssemblyCurrentFile",
+                "title": "Run Built Assembly for Current Makrell# File",
+                "category": "makrell"
+            },
+            {
+                "command": "makrell.sharp.showMetaSourcesCurrentFile",
+                "title": "Show Meta Sources for Current Makrell# File",
+                "category": "makrell"
+            },
+            {
+                "command": "makrell.family.parseCurrentMronFile",
+                "title": "Parse Current MRON File",
+                "category": "makrell"
+            },
+            {
+                "command": "makrell.family.parseCurrentMrmlFile",
+                "title": "Parse Current MRML File",
+                "category": "makrell"
+            },
+            {
+                "command": "makrell.family.parseCurrentMrtdFile",
+                "title": "Parse Current MRTD File",
                 "category": "makrell"
             },
             {
@@ -227,7 +267,7 @@
                     "makrell.server.command": {
                         "scope": "resource",
                         "type": "string",
-                        "default": "makrell-langserver",
+                        "default": "makrell-family-lsp",
                         "description": "Command used to start the optional Makrell language server."
                     },
                     "makrell.server.args": {
