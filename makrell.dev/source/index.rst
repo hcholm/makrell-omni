@@ -70,13 +70,14 @@ Editor Workflow
 ---------------
 
 If you want the quickest current development experience, start with
-:doc:`reference/vscode-makrell`.
+:doc:`reference/vscode-makrell` or install the published extension from the
+`Visual Studio Marketplace <https://marketplace.visualstudio.com/items?itemName=hchrholm.vscode-makrell-omni>`_.
 
 .. image:: /_static/ide.png
-    :alt: vscode-makrell showing Makrell code diagnostics in VS Code
+    :alt: vscode-makrell-omni showing Makrell code diagnostics in VS Code
     :class: vscode-screenshot
 
-``vscode-makrell`` is now part of the practical front door for the project:
+``vscode-makrell-omni`` is now part of the practical front door for the project:
 
 * syntax highlighting and snippets for the family
 * run/check workflow for MakrellPy, MakrellTS, and Makrell#

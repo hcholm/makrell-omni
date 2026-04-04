@@ -1,7 +1,7 @@
 VS Code Extension
 =================
 
-``vscode-makrell`` is the current editor-facing package for the Makrell family.
+``vscode-makrell-omni`` is the current editor-facing package for the Makrell family.
 For ``v0.10.0`` it is meant to give a credible everyday experience across:
 
 * MakrellPy
@@ -11,8 +11,11 @@ For ``v0.10.0`` it is meant to give a credible everyday experience across:
 * MRML
 * MRTD
 
+Install it from the
+`Visual Studio Marketplace <https://marketplace.visualstudio.com/items?itemName=hchrholm.vscode-makrell-omni>`_.
+
 .. image:: /_static/ide.png
-    :alt: vscode-makrell showing Makrell diagnostics in VS Code
+    :alt: vscode-makrell-omni showing Makrell diagnostics in VS Code
     :class: vscode-screenshot
 
 For ``v0.10.0``, this should be treated as part of the main Makrell
