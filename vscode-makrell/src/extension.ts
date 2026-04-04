@@ -36,6 +36,39 @@ function isWindowsBatchCommand(command: string): boolean {
     return extension === ".cmd" || extension === ".bat";
 }
 
+function quotePowerShellArg(text: string): string {
+    return `'${text.replace(/'/g, "''")}'`;
+}
+
+function getServerOptions(command: string, args: string[], cwd?: string): ServerOptions {
+    if (!isWindowsBatchCommand(command)) {
+        return {
+            command,
+            args,
+            options: {
+                ...(cwd ? { cwd } : {}),
+            },
+        };
+    }
+
+    const invocation = `& ${quotePowerShellArg(command)} ${args.map(quotePowerShellArg).join(" ")}`.trim();
+    return {
+        command: "powershell.exe",
+        args: [
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            invocation,
+        ],
+        options: {
+            ...(cwd ? { cwd } : {}),
+            windowsHide: true,
+        },
+    };
+}
+
 async function runCommandCapture(command: string, args: string[], cwd?: string): Promise<CommandResult> {
     if (!isWindowsBatchCommand(command)) {
         return execFileAsync(command, args, { cwd }) as Promise<CommandResult>;
@@ -126,6 +159,14 @@ function quoteForShell(text: string): string {
     }
 
     return `'${text.replace(/'/g, "'\\''")}'`;
+}
+
+function buildTerminalInvocation(command: string, args: string[]): string {
+    if (os.platform() === "win32") {
+        return `& ${quoteForShell(command)}${args.length ? ` ${args.map(quoteForShell).join(" ")}` : ""}`;
+    }
+
+    return `${quoteForShell(command)}${args.length ? ` ${args.map(quoteForShell).join(" ")}` : ""}`;
 }
 
 function getRunCommandForDocument(document: vscode.TextDocument): string | undefined {
@@ -373,7 +414,7 @@ async function runCurrentFile() {
 
     const terminal = getRunTerminal();
     terminal.show(true);
-    terminal.sendText(`${command} ${quoteForShell(document.fileName)}`);
+    terminal.sendText(buildTerminalInvocation(command, [document.fileName]));
 }
 
 async function getSavedActiveDocument(
@@ -734,14 +775,7 @@ async function startLangServer(showErrors = false) {
     logger.info(`server args: ${JSON.stringify(args)}`);
     logger.info(`server cwd: '${cwd ?? "<default>"}'`);
 
-    const serverOptions: ServerOptions = {
-        command,
-        args,
-        options: {
-            ...(cwd ? { cwd } : {}),
-            ...(isWindowsBatchCommand(command) ? { shell: true, windowsHide: true } : {}),
-        },
-    };
+    const serverOptions = getServerOptions(command, args, cwd);
 
     client = new LanguageClient(
         "makrell",

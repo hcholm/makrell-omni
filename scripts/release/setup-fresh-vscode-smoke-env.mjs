@@ -263,9 +263,21 @@ function toolExecutable(toolDir, commandName) {
 
 function localBinExecutable(jsToolsDir, commandName) {
   const binDir = path.join(jsToolsDir, "node_modules", ".bin");
-  return isWindows
-    ? path.join(binDir, `${commandName}.cmd`)
-    : path.join(binDir, commandName);
+  if (!isWindows) {
+    return path.join(binDir, commandName);
+  }
+
+  const exePath = path.join(binDir, `${commandName}.exe`);
+  if (existsSync(exePath)) {
+    return exePath;
+  }
+
+  const cmdPath = path.join(binDir, `${commandName}.cmd`);
+  if (existsSync(cmdPath)) {
+    return cmdPath;
+  }
+
+  return exePath;
 }
 
 function writeJson(filePath, value) {

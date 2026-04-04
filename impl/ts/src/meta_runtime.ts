@@ -32,7 +32,7 @@ export class SubprocessMetaRuntimeAdapter implements MetaRuntimeAdapter {
 
   constructor() {
     const here = dirname(fileURLToPath(import.meta.url));
-    this.runnerPath = join(here, "..", "scripts", "meta-runner.ts");
+    this.runnerPath = join(here, "scripts", "meta-runner.js");
   }
 
   runMakrellMacro(name: string, macro: MakrellMacroEntry, args: Node[], registry: MacroRegistry): Node | Node[] {
