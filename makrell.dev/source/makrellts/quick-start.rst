@@ -5,21 +5,26 @@ This page gives a short first pass through MakrellTS. The aim is to show the
 basic CLI workflow and a few familiar Makrell forms in the TypeScript-hosted
 track.
 
-Run a MakrellTS source file
----------------------------
-
-From ``impl/ts``:
+Install the CLI
+---------------
 
 .. code-block:: bash
 
-    bun run src/cli.ts examples/hello.mrts
+    bun add -g makrellts
+
+Run a MakrellTS source file
+---------------------------
+
+.. code-block:: bash
+
+    makrellts hello.mrts
 
 Emit generated JavaScript
 -------------------------
 
 .. code-block:: bash
 
-    bun run src/cli.ts examples/hello.mrts --emit-js
+    makrellts hello.mrts --emit-js
 
 This is useful when you want to see how a MakrellTS source file lowers into the
 current JavaScript output.
@@ -64,6 +69,13 @@ Async example
 
 MakrellTS now supports the shared family async baseline as part of the
 ``v0.10.0`` consolidation work.
+
+Diagnostics
+-----------
+
+.. code-block:: bash
+
+    makrellts check hello.mrts --json
 
 MRON example
 ------------

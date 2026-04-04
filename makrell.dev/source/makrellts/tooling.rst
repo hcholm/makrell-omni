@@ -29,6 +29,33 @@ Some useful implementation-oriented files are:
 Basic workflow
 --------------
 
+Install the CLI:
+
+.. code-block:: bash
+
+    bun add -g makrellts
+
+Run a source file:
+
+.. code-block:: bash
+
+    makrellts hello.mrts
+
+Emit generated JavaScript:
+
+.. code-block:: bash
+
+    makrellts hello.mrts --emit-js
+
+Check a file and emit diagnostics:
+
+.. code-block:: bash
+
+    makrellts check hello.mrts --json
+
+Repository development workflow
+-------------------------------
+
 From ``impl/ts``:
 
 .. code-block:: bash
@@ -37,18 +64,6 @@ From ``impl/ts``:
     bun run build
     bun run test
     bun run typecheck
-
-Run a source file:
-
-.. code-block:: bash
-
-    bun run src/cli.ts examples/hello.mrts
-
-Emit generated JavaScript:
-
-.. code-block:: bash
-
-    bun run src/cli.ts examples/hello.mrts --emit-js
 
 Browser-related material
 ------------------------
@@ -71,11 +86,10 @@ Suggested workflow
 
 A practical local workflow is:
 
-#. install dependencies with ``bun install``
-#. run build, test, and typecheck
+#. install ``makrellts``
 #. run a small source file through the CLI
-#. inspect emitted JavaScript when the lowered output matters
-#. add browser build and browser test steps when your work depends on them
+#. use ``check`` and ``--emit-js`` when needed
+#. switch to the repo workflow when you are working on MakrellTS itself
 
 Where to continue
 -----------------

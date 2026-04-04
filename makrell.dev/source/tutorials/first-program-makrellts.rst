@@ -1,22 +1,19 @@
 First Program in MakrellTS
 ==========================
 
-This short tutorial shows a minimal MakrellTS workflow: install dependencies,
-run a small source file, and see how familiar Makrell forms carry into the
+This short tutorial shows a minimal MakrellTS workflow: install the CLI, run a
+small source file, and see how familiar Makrell forms carry into the
 TypeScript-hosted track.
 
-Set up the implementation
--------------------------
-
-From ``impl/ts`` run:
+Install the CLI
+---------------
 
 .. code-block:: bash
 
-    bun install
-    bun run src/cli.ts examples/hello.mrts
+    bun add -g makrellts
+    makrellts hello.mrts
 
-That gives you a quick end-to-end check that the TypeScript implementation is
-installed and the CLI path is working.
+That gives you a quick end-to-end check that the installed CLI path is working.
 
 Try a small source file
 -----------------------

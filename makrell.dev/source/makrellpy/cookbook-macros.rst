@@ -1,29 +1,32 @@
 Macro Recipes
 =============
 
-This page collects a few small MakrellPy macro patterns. The point is not to
-cover every macro feature, but to show the kinds of compile-time transformations
-that are practical in day-to-day use.
+Use this page for small MakrellPy macro patterns that you can adapt directly.
+For the broader model behind ``meta`` and macros, continue with
+:doc:`metaprogramming`.
 
-Showcase: ``pipe``, ``rpn``, and ``lisp``
------------------------------------------
+Start with the checked-in showcase
+----------------------------------
 
-MakrellPy already has a compact macro showcase in
-``impl/py/examples/macros/showcase.mr`` built around three examples:
+MakrellPy already has a compact public macro example in
+``impl/py/examples/macros/showcase.mr``.
+
+Run it:
+
+.. code-block:: bash
+
+    makrell showcase.mr
+
+That example is worth reading because it shows three different kinds of macro:
 
 * ``pipe``
   rewrites a sequence of forms into pipeline style
 * ``rpn``
-  interprets postfix input and builds ordinary Makrell syntax from it
+  reads postfix input and builds ordinary Makrell syntax
 * ``lisp``
   hosts a Lisp-like round-bracket notation inside Makrell
 
-Taken together, these are a good summary of why Makrell macros are interesting:
-they can improve surface ergonomics, introduce alternative notation styles, and
-embed small languages without leaving the normal Makrell structure model.
-
-The examples are intentionally small. They are useful because each one shows a
-different kind of compile-time transformation clearly.
+If you only read one macro example first, make it that one.
 
 Recipe: duplicate an expression
 -------------------------------
@@ -33,11 +36,62 @@ Recipe: duplicate an expression
     {def macro twice [x]
         [{quote $x} {quote $x}]}
 
-This is a minimal structural macro: receive syntax, return syntax, and keep the
-transformation easy to inspect.
+    {twice {print "hello"}}
 
-Recipe: wrap a block
---------------------
+This is the smallest useful macro shape:
+
+* receive syntax
+* return syntax
+* keep the transformation obvious
+
+It is a good first macro because you can inspect what it receives and what it
+returns without much surrounding machinery.
+
+Recipe: reshape a whole form with ``regular``
+---------------------------------------------
+
+.. code-block:: makrell
+
+    {def macro second [ns]
+        ns = {regular ns}
+        {quote {unquote ns@1}}}
+
+    {second 2 3 5}
+
+Use ``regular`` when you want the macro arguments as a more ordinary list of
+nodes rather than relying on raw spacing or other structure details.
+
+This is the pattern behind many practical macros:
+
+* normalise the incoming nodes
+* pick out the parts you need
+* build a new expression with ``quote`` and ``unquote``
+
+Recipe: keep helper logic in ``meta``
+-------------------------------------
+
+.. code-block:: makrell
+
+    {meta
+        {fun wrap_print [label expr]
+            {quote
+                {print {unquote label}}
+                {unquote expr}}}}
+
+    {def macro announce [ns]
+        ns = {regular ns}
+        {wrap_print ns@0 ns@1}}
+
+Keeping helper logic in ``meta`` is usually easier to read than packing all the
+logic into one large ``def macro`` body.
+
+This split is often a good default:
+
+* ``meta`` for compile-time helper functions and values
+* ``def macro`` for the syntax transformation entry point
+
+Recipe: wrap a block with setup and teardown
+--------------------------------------------
 
 .. code-block:: makrell
 
@@ -49,44 +103,44 @@ Recipe: wrap a block
             {quote {print "Time taken:" {time.time} - start}}
         ]}
 
-This kind of macro is useful when you want to inject repeated structural setup
-around a user-provided block.
+This kind of macro is useful when you want to inject repeated structure around
+a user-provided block.
 
-Recipe: use a meta helper
--------------------------
+It is a good pattern for:
 
-.. code-block:: makrell
+* instrumentation
+* tracing
+* repeated setup
+* repeated cleanup
 
-    {meta
-        {fun twice_fn [x]
-            [{quote $x} {quote $x}]}}
+Recipe: build a tiny language, not just a shortcut
+--------------------------------------------------
 
-    {def macro twice [x]
-        {twice_fn x}}
+The checked-in ``pipe``, ``rpn``, and ``lisp`` examples are useful because they
+show three different macro ambitions:
 
-This shows the split between compile-time helper logic and the macro form
-itself. Keeping helper logic in ``meta`` often makes macro code easier to read.
+* ergonomic rewriting
+* alternative notation
+* embedded language surface
 
-Recipe: think about hygiene
----------------------------
+That is usually where Makrell macros become most interesting: not only saving a
+few characters, but making a different structural style possible.
 
-When macros introduce bindings, remember that generated names may collide with
-user code. MakrellPy's macro facilities are powerful, but hygiene and
-readability still matter in real projects.
+Practical advice
+----------------
 
-When to use these patterns
---------------------------
+When a macro becomes hard to understand:
 
-These recipes are most useful when you want:
+* shrink it to the smallest failing example
+* inspect the incoming nodes first
+* move helper logic into ``meta``
+* keep generated structure explicit with ``quote``
 
-* structural code generation
-* repeated syntax patterns factored into one place
-* compile-time helpers that keep runtime code smaller and clearer
+Also remember that macros can introduce bindings. Generated names may still
+collide with user code, so readability and restraint matter.
 
 Related pages
 -------------
-
-For broader explanation, continue with:
 
 * :doc:`metaprogramming`
 * :doc:`../concepts/macros-and-meta`

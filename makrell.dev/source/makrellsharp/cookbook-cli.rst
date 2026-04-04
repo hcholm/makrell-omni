@@ -2,14 +2,14 @@ CLI Recipes
 ===========
 
 This page collects common Makrell# CLI tasks. The commands below assume you are
-running them from ``impl/dotnet`` in the repository.
+using the installed ``makrellsharp`` command.
 
 Recipe: run a source file
 -------------------------
 
 .. code-block:: bash
 
-    dotnet run --project src/MakrellSharp.Cli -- examples/hello.mrsh
+    makrellsharp hello.mrsh
 
 Use this when you want the simplest end-to-end check that the parser, compiler,
 and runtime path are working together.
@@ -19,7 +19,7 @@ Recipe: build an assembly
 
 .. code-block:: bash
 
-    dotnet run --project src/MakrellSharp.Cli -- build examples/hello.mrsh
+    makrellsharp build hello.mrsh
 
 This writes a compiled ``.dll`` next to the source file unless you pass an
 explicit output path.
@@ -29,17 +29,17 @@ Recipe: run a built assembly
 
 .. code-block:: bash
 
-    dotnet run --project src/MakrellSharp.Cli -- run-assembly examples/hello.dll
+    makrellsharp run-assembly hello.dll
 
 Use this when you want to separate the compile step from the run step, or when
 you are checking the dynamic assembly-load path.
 
 Recipe: inspect generated C#
----------------------------
+----------------------------
 
 .. code-block:: bash
 
-    dotnet run --project src/MakrellSharp.Cli -- emit-csharp examples/hello.mrsh
+    makrellsharp emit-csharp hello.mrsh
 
 This is useful when you want to understand how a Makrell# form lowers into the
 current generated C# module.
@@ -49,7 +49,7 @@ Recipe: inspect embedded meta sources
 
 .. code-block:: bash
 
-    dotnet run --project src/MakrellSharp.Cli -- meta-sources examples/macros.dll
+    makrellsharp meta-sources macros.dll
 
 This prints the replayable compile-time sources embedded in a built assembly.
 It is mainly useful when working with ``meta``, ``def macro``, or ``importm``.

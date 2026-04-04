@@ -7,13 +7,12 @@ through the CLI, then try a very small `.NET` interop example.
 Run a source file
 -----------------
 
-From ``impl/dotnet`` run:
-
 .. code-block:: bash
 
-    dotnet run --project src/MakrellSharp.Cli -- examples/hello.mrsh
+    dotnet tool install --global MakrellSharp.Cli
+    makrellsharp hello.mrsh
 
-That gives you a direct end-to-end check of the current `.NET` parser,
+That gives you a direct end-to-end check of the current installed `.NET` parser,
 compiler, and runtime path.
 
 Try a small source file

@@ -26,40 +26,34 @@ For `v0.10.0`, the `.NET` packaging decision is:
 
 See [`PACKAGING.md`](PACKAGING.md) for the recorded scope and rationale.
 
-## Build and test
+## Install and use
+
+```bash
+dotnet tool install --global MakrellSharp.Cli
+```
+
+Run the CLI:
+
+```bash
+makrellsharp hello.mrsh
+makrellsharp check hello.mrsh --json
+makrellsharp build hello.mrsh
+makrellsharp emit-csharp hello.mrsh
+makrellsharp parse-mron sample.mron
+makrellsharp parse-mrml sample.mrml
+makrellsharp parse-mrtd sample.mrtd
+```
+
+## Build and test from the repo
 
 From `impl/dotnet/`:
 
 ```bash
 dotnet build MakrellSharp.sln
 dotnet test MakrellSharp.sln
-```
-
-Run the CLI directly from the solution:
-
-```bash
 dotnet run --project src/MakrellSharp.Cli -- examples/hello.mrsh
-dotnet run --project src/MakrellSharp.Cli -- check examples/hello.mrsh
-dotnet run --project src/MakrellSharp.Cli -- build examples/hello.mrsh
-dotnet run --project src/MakrellSharp.Cli -- run-assembly examples/hello.dll
-dotnet run --project src/MakrellSharp.Cli -- meta-sources examples/macros.dll
-dotnet run --project src/MakrellSharp.Cli -- emit-csharp examples/hello.mrsh
-dotnet run --project src/MakrellSharp.Cli -- parse-mron examples/sample.mron
-dotnet run --project src/MakrellSharp.Cli -- parse-mrml examples/sample.mrml
-dotnet run --project src/MakrellSharp.Cli -- parse-mrtd examples/sample.mrtd
+dotnet run --project src/MakrellSharp.Cli -- check examples/hello.mrsh --json
 ```
-
-Install the packaged CLI tool locally from a built package:
-
-```bash
-dotnet pack MakrellSharp.sln -c Release
-dotnet tool install MakrellSharp.Cli --tool-path .tmp-tools --add-source src/MakrellSharp.Cli/bin/Release
-.tmp-tools/makrellsharp examples/hello.mrsh
-.tmp-tools/makrellsharp check examples/hello.mrsh --json
-```
-
-This packaged-tool path is part of the current `v0.10.0` Makrell# workflow,
-alongside direct `dotnet run --project ...` use from the repo.
 
 ## Current language slice
 

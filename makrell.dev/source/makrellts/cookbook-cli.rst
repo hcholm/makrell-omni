@@ -2,16 +2,14 @@ CLI Recipes
 ===========
 
 This page collects a few common command-line tasks for MakrellTS. The examples
-assume you are working from ``impl/ts`` in the repository.
+assume you are using the installed ``makrellts`` command.
 
 Recipe: run a source file
 -------------------------
 
-From ``impl/ts``:
-
 .. code-block:: bash
 
-    bun run src/cli.ts examples/hello.mrts
+    makrellts hello.mrts
 
 This is the simplest way to confirm that the TypeScript implementation is wired
 up and able to parse and run a small source file.
@@ -21,7 +19,14 @@ Recipe: emit generated JavaScript
 
 .. code-block:: bash
 
-    bun run src/cli.ts examples/hello.mrts --emit-js
+    makrellts hello.mrts --emit-js
+
+Recipe: check a file
+--------------------
+
+.. code-block:: bash
+
+    makrellts check hello.mrts --json
 
 Use this when you want to inspect the current output shape or understand how a
 MakrellTS form maps onto generated JavaScript.

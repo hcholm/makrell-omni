@@ -1,86 +1,134 @@
 Macro and Meta Recipes
 ======================
 
-This page collects small Makrell# compile-time examples. The aim is to show the
-current ``meta`` and macro workflow in the `.NET` implementation rather than to
-serve as a complete language reference.
+Use this page for practical Makrell# compile-time patterns. For the broader
+model behind ``meta`` and macros in the `.NET` track, continue with
+:doc:`macros-and-meta`.
 
-Showcase: ``pipe``, ``rpn``, and ``lisp``
------------------------------------------
+Start with the checked-in showcase
+----------------------------------
 
-Makrell# now also has a compact public macro showcase in
-``impl/dotnet/examples/showcase.mrsh`` built around the same three examples
-used in the family-wide ``v0.10.0`` macro story:
+Makrell# has a compact public macro example in
+``impl/dotnet/examples/showcase.mrsh``.
 
-* ``pipe``
-  rewrites a sequence of forms into pipeline style
-* ``rpn``
-  turns postfix input into ordinary Makrell syntax
-* ``lisp``
-  hosts a Lisp-like round-bracket notation inside Makrell
+Run it:
 
-In the `.NET` track, these examples are useful not only because they show macro
-power, but because they also show where Makrell# is heading architecturally:
-compile-time code should feel like real Makrell#, not like a separate toy
-language bolted onto the compiler.
+.. code-block:: bash
 
-The checked-in Makrell# showcase also includes short comments in the source, so
-it works as both a runnable example and a learning aid.
+    makrellsharp showcase.mrsh
 
-Recipe: use a ``meta`` block
-----------------------------
+That example shows the current Makrell# compile-time surface through four
+small outputs:
+
+* ``pipeResult``
+* ``rpnResult``
+* ``rpnAddResult``
+* ``lispResult`` / ``lispSumSquares``
+
+Taken together, those examples show:
+
+* syntax reshaping
+* postfix-to-AST lowering
+* callable AST construction
+* embedded language notation
+
+Recipe: start with a ``meta`` helper
+------------------------------------
 
 .. code-block:: makrell
 
     {meta
         greeting = {quote "Hello"}}
 
-Use ``meta`` when you want compile-time definitions or helper values that are
-available during expansion rather than at runtime.
+Use ``meta`` when you want compile-time values or helper functions that should
+exist during expansion rather than at runtime.
 
-Recipe: define a small macro
-----------------------------
+In Makrell#, this usually makes macro code easier to read, because you can keep
+the compile-time support logic separate from the macro entry point.
+
+Recipe: define a small structural macro
+---------------------------------------
 
 .. code-block:: makrell
 
     {def macro hello [ns]
         {quote {String.Join " " [{unquote greeting} "from Makrell#"]}}}
 
-Small structural macros are usually easier to understand than broad compile-time
-systems. A good first step is to define macros that receive syntax, reshape it,
-and return syntax explicitly.
+Good Makrell# macros usually keep the same basic shape as in the other tracks:
+
+* receive syntax
+* inspect or normalise it
+* return syntax explicitly
+
+That is almost always easier to reason about than one large compile-time block
+that mixes helper logic, control flow, and returned structure.
+
+Recipe: normalise arguments with ``regular``
+--------------------------------------------
+
+.. code-block:: makrell
+
+    {def macro second [ns]
+        ns = {regular ns}
+        {quote {unquote ns@1}}}
+
+    {second 2 3 5}
+
+This is one of the most common useful patterns in Makrell# macro code:
+
+* call ``regular``
+* work with the resulting node list
+* build a new expression with ``quote``
+
+Recipe: keep compile-time and runtime roles separate
+----------------------------------------------------
+
+In Makrell#, it helps to keep these roles explicit:
+
+* ``meta`` for compile-time helpers and values
+* ``def macro`` for syntax transformation
+* ordinary code for runtime behaviour
+
+That separation is especially useful in the `.NET` track, where runtime interop
+and compile-time behaviour can otherwise become hard to distinguish.
 
 Recipe: inspect replayable compile-time sources
 -----------------------------------------------
 
+Makrell# embeds replayable compile-time sources into compiled output so they can
+be used later through ``importm``.
+
+Inspect them with:
+
 .. code-block:: bash
 
-    dotnet run --project src/MakrellSharp.Cli -- build examples/macros.mrsh
-    dotnet run --project src/MakrellSharp.Cli -- meta-sources examples/macros.dll
+    makrellsharp build macros.mrsh
+    makrellsharp meta-sources macros.dll
 
-This is useful when you want to confirm what compile-time definitions have been
-embedded for later replay through ``importm``.
+This is useful when:
 
-Recipe: keep runtime and compile-time roles separate
-----------------------------------------------------
+* ``importm`` does not behave as expected
+* you want to confirm what compile-time code was embedded
+* you are debugging macro-heavy modules
 
-In Makrell#, it helps to keep these roles clear:
+Recipe: use the public showcase as a smoke test
+-----------------------------------------------
 
-* use ``meta`` for compile-time helpers and values
-* use ``def macro`` for syntax transformation
-* use ordinary code for runtime behaviour
+The checked-in showcase is also a good compact regression surface for Makrell#
+macro behaviour.
 
-That separation makes macro-heavy modules easier to inspect and debug.
+When changing compile-time behaviour, rerun:
 
-Recipe: compare with other tracks
----------------------------------
+.. code-block:: bash
 
-For cross-family context, also see:
+    makrellsharp showcase.mrsh
 
+That keeps the most visible public macro story healthy while larger
+compile-time work continues.
+
+Related pages
+-------------
+
+* :doc:`macros-and-meta`
 * :doc:`../makrellpy/cookbook-macros`
 * :doc:`../makrellts/cookbook-macros`
-* ``impl/dotnet/examples/showcase.mrsh``
-
-The three implementation tracks share a family model, but their tooling and
-host-language integration differ enough that side-by-side reading is often
-useful.

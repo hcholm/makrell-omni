@@ -36,8 +36,8 @@ Recipe: parse MRON and MRML from the CLI
 
 .. code-block:: bash
 
-    dotnet run --project src/MakrellSharp.Cli -- parse-mron examples/sample.mron
-    dotnet run --project src/MakrellSharp.Cli -- parse-mrml examples/sample.mrml
+    makrellsharp parse-mron sample.mron
+    makrellsharp parse-mrml sample.mrml
 
 Use these commands when you want to exercise the format parsers directly from
 the `.NET` implementation.

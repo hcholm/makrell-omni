@@ -1,78 +1,124 @@
 Macro Recipes
 =============
 
-This page collects small MakrellTS-oriented macro examples and usage notes. The
-current aim is to show how the shared family model appears in the TypeScript
-track, not to provide a complete macro reference.
+Use this page for small MakrellTS macro patterns and practical habits. For the
+broader TypeScript-side model, continue with :doc:`metaprogramming`.
 
-Showcase: ``pipe``, ``rpn``, and ``lisp``
------------------------------------------
+Start with the checked-in showcase
+----------------------------------
 
-MakrellTS now also has a compact macro showcase in
-``impl/ts/examples/macros/showcase.mrts`` built around the same three examples
-used for the family-wide `v0.10.0` macro story:
+MakrellTS has a compact public macro example in
+``impl/ts/examples/macros/showcase.mrts``.
+
+Run it:
+
+.. code-block:: bash
+
+    makrellts showcase.mrts
+
+That example shows three useful macro shapes:
 
 * ``pipe``
-  rewrites a sequence of forms into pipeline style
+  rewrites a sequence into pipeline style
 * ``rpn``
-  turns postfix input into ordinary Makrell AST
+  lowers postfix input into ordinary Makrell AST
 * ``lisp``
   hosts a Lisp-like round-bracket notation inside Makrell
 
-In the TS track, these examples are useful not only as macro examples, but also
-as a reminder that the reference implementation can still host structural
-rewriting and language-embedding ideas rather than only focusing on typed
-output or browser tooling.
+This is the fastest way to see that the TS track is not only about typed output
+or browser tooling; it also supports real structural compile-time rewriting.
 
-Recipe: duplicate an expression
--------------------------------
+Recipe: write the smallest structural macro first
+-------------------------------------------------
 
 .. code-block:: makrell
 
     {def macro twice [x]
-      [{quote $x} {quote $x}]}
+        [{quote $x} {quote $x}]}
 
     {twice {print "hello"}}
 
-This kind of example is useful because it stays close to the structural model:
-receive nodes, produce nodes, and keep the transformation explicit.
+This is still the best first macro shape in MakrellTS:
 
-Recipe: keep macros small
--------------------------
+* receive syntax
+* return syntax
+* keep the rewrite explicit
 
-In MakrellTS, small structural macros are usually easier to understand and
-maintain than large compile-time systems hidden behind one form.
+If a macro is hard to debug, it is usually worth reducing it back to this kind
+of tiny shape before growing it again.
 
-As a practical rule:
+Recipe: normalise incoming nodes with ``regular``
+-------------------------------------------------
 
-* use macros for syntax-level reshaping
-* keep host-language setup and runtime behaviour outside the macro when possible
-* prefer a few simple macros over one very broad macro
+.. code-block:: makrell
 
-Recipe: compare with other tracks
----------------------------------
+    {def macro second [ns]
+        ns = {regular ns}
+        {quote {unquote ns@1}}}
 
-If you are learning MakrellTS macros, it is often helpful to compare:
+    {second 2 3 5}
 
+Many practical macros start exactly like this:
+
+* get the argument list with ``regular``
+* read out the pieces you need
+* build a new node tree with ``quote``
+
+This is often clearer than trying to work directly with raw input structure.
+
+Recipe: separate syntax work from runtime work
+----------------------------------------------
+
+In MakrellTS, macros are best used for syntax-level reshaping, not for hiding a
+large runtime subsystem.
+
+As a good rule of thumb:
+
+* use macros when you want to transform structure
+* keep browser APIs, JS objects, and runtime state outside the macro when
+  possible
+* prefer a few small macros over one broad compile-time system
+
+That keeps the compile-time layer easier to inspect and makes the generated JS
+more predictable.
+
+Recipe: inspect the generated output
+------------------------------------
+
+When a macro behaves unexpectedly, reduce the problem to a small form and then
+inspect the generated JS.
+
+A good workflow is:
+
+* simplify the macro input
+* confirm the node shape the macro receives
+* confirm the transformed structure
+* inspect the generated JS if the runtime behaviour still looks wrong
+
+This is especially useful in MakrellTS because the track sits so close to the
+browser and editor tooling story.
+
+Recipe: use the showcase as a regression surface
+------------------------------------------------
+
+The checked-in ``pipe``, ``rpn``, and ``lisp`` showcase is useful not only as a
+learning example, but also as a compact regression surface.
+
+If you are working on macro behaviour in the TS track, it is worth rerunning:
+
+.. code-block:: bash
+
+    makrellts showcase.mrts
+
+That helps catch accidental regressions in:
+
+* structural rewriting
+* callable AST construction
+* compile-time/runtime interplay
+
+Related pages
+-------------
+
+* :doc:`metaprogramming`
 * :doc:`../makrellpy/cookbook-macros`
 * :doc:`../makrellsharp/macros-and-meta`
-
-That makes the shared family model easier to see while also showing where the
-TypeScript track has its own tooling and host-language constraints.
-
-Recipe: inspect generated structure
------------------------------------
-
-When a macro behaves unexpectedly, it often helps to simplify the form and work
-with quoted structure first. For example, reduce a failing case to a small
-quoted node shape, confirm what the macro receives, and only then rebuild the
-larger example.
-
-This approach is especially helpful when a macro crosses the boundary between
-Makrell structure and JavaScript or TypeScript behaviour.
-
-How to use this page
---------------------
-
-Use this page for small patterns and practical habits. For broader explanation
-of the TypeScript-side macro story, continue with :doc:`metaprogramming`.

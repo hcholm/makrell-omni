@@ -12,22 +12,31 @@ Current editor workflow: [`../../vscode-makrell/README.md`](../../vscode-makrell
 
 ## Install
 
-From `impl/ts/`:
-
 ```bash
-bun install
+bun add -g makrellts
 ```
 
-The package is being prepared for npm publication as `makrellts`. The current
-CLI/build story is Bun-first.
+The published CLI/build story is Bun-first.
 
-Package smoke check:
+Run a script:
 
 ```bash
-bun pm pack --dry-run
+makrellts hello.mrts
 ```
 
-Planned package shape:
+Emit generated JS:
+
+```bash
+makrellts hello.mrts --emit-js
+```
+
+Check a file and emit machine-readable diagnostics:
+
+```bash
+makrellts check hello.mrts --json
+```
+
+Published package shape:
 
 - library entry: `makrellts`
 - browser entry: `makrellts/browser`
@@ -38,9 +47,11 @@ Planned package shape:
 For the current browser-facing product direction, see
 [`https://makrell.dev/playground/`](https://makrell.dev/playground/).
 
-## Commands
+## Contributor commands
 
 ```bash
+cd impl/ts
+bun install
 bun run build
 bun run build:browser
 bun run test
@@ -48,24 +59,6 @@ bun run typecheck
 bun run lint
 bun run test:browser
 bun run ci
-```
-
-Run a Makrell source file:
-
-```bash
-bun run src/cli.ts examples/hello.mrts
-```
-
-Emit generated JS:
-
-```bash
-bun run src/cli.ts examples/hello.mrts --emit-js
-```
-
-Check a MakrellTS file and emit machine-readable diagnostics:
-
-```bash
-bun run src/cli.ts check examples/hello.mrts --json
 ```
 
 Typed outputs (API):

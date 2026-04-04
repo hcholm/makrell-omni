@@ -37,74 +37,70 @@ implementation rather than hiding everything behind one generic command.
 Basic workflow
 --------------
 
-From ``impl/dotnet``:
+Install the packaged tool:
 
 .. code-block:: bash
 
-    dotnet build MakrellSharp.sln
-    dotnet test MakrellSharp.sln
+    dotnet tool install --global MakrellSharp.Cli
 
 Run a source file:
 
 .. code-block:: bash
 
-    dotnet run --project src/MakrellSharp.Cli -- examples/hello.mrsh
+    makrellsharp hello.mrsh
 
 Check a source file for editor-friendly diagnostics:
 
 .. code-block:: bash
 
-    dotnet run --project src/MakrellSharp.Cli -- check examples/hello.mrsh --json
+    makrellsharp check hello.mrsh --json
 
 Run the checked-in async example:
 
 .. code-block:: bash
 
-    dotnet run --project src/MakrellSharp.Cli -- examples/async.mrsh
+    makrellsharp async.mrsh
 
 Build and inspect:
 
 .. code-block:: bash
 
-    dotnet run --project src/MakrellSharp.Cli -- build examples/hello.mrsh
-    dotnet run --project src/MakrellSharp.Cli -- emit-csharp examples/hello.mrsh
+    makrellsharp build hello.mrsh
+    makrellsharp emit-csharp hello.mrsh
 
 Use MRON and MRML from the CLI:
 
 .. code-block:: bash
 
-    dotnet run --project src/MakrellSharp.Cli -- parse-mron examples/sample.mron
-    dotnet run --project src/MakrellSharp.Cli -- parse-mrml examples/sample.mrml
+    makrellsharp parse-mron sample.mron
+    makrellsharp parse-mrml sample.mrml
 
 Use MRTD and format checks from the CLI:
 
 .. code-block:: bash
 
-    dotnet run --project src/MakrellSharp.Cli -- parse-mrtd examples/sample.mrtd
-    dotnet run --project src/MakrellSharp.Cli -- check-mron examples/sample.mron --json
-    dotnet run --project src/MakrellSharp.Cli -- check-mrml examples/sample.mrml --json
-    dotnet run --project src/MakrellSharp.Cli -- check-mrtd examples/sample.mrtd --json
+    makrellsharp parse-mrtd sample.mrtd
+    makrellsharp check-mron sample.mron --json
+    makrellsharp check-mrml sample.mrml --json
+    makrellsharp check-mrtd sample.mrtd --json
 
-Packaged tool workflow
-----------------------
-
-The source-oriented ``dotnet run --project ...`` path is still useful during
-development, but ``v0.10.0`` also now has a real packaged CLI-tool path.
+Repository development workflow
+-------------------------------
 
 From ``impl/dotnet/``:
 
 .. code-block:: bash
 
-    dotnet pack MakrellSharp.sln -c Release
-    dotnet tool install MakrellSharp.Cli --tool-path .tmp-tools --add-source src/MakrellSharp.Cli/bin/Release
-    .tmp-tools/makrellsharp examples/hello.mrsh
-    .tmp-tools/makrellsharp check examples/hello.mrsh --json
+    dotnet build MakrellSharp.sln
+    dotnet test MakrellSharp.sln
+    dotnet run --project src/MakrellSharp.Cli -- examples/hello.mrsh
+    dotnet run --project src/MakrellSharp.Cli -- check examples/hello.mrsh --json
 
 Inspect compile-time metadata:
 
 .. code-block:: bash
 
-    dotnet run --project src/MakrellSharp.Cli -- meta-sources examples/macros.dll
+    makrellsharp meta-sources macros.dll
 
 Why this matters
 ----------------

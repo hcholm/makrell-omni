@@ -1,12 +1,9 @@
 Installation
 ============
 
-Makrell# currently lives in the ``impl/dotnet`` area of the monorepo.
-
-For ``v0.10.0`` there are now two real workflows:
-
-* run the CLI directly from source with ``dotnet run --project ...``
-* install the packaged ``MakrellSharp.Cli`` tool from a built package or feed
+Makrell# is documented here as a published `.NET` tool first.
+The source-tree workflow still exists for contributors, but it should not be
+the main user path.
 
 Prerequisites
 -------------
@@ -14,30 +11,51 @@ Prerequisites
 Before working with Makrell#, make sure you have:
 
 * a recent `.NET` SDK installed
-* the Makrell repository checked out locally
 * a shell where ``dotnet`` is available on ``PATH``
 
-If you are only exploring the language from the repo, the quickest way to
-start is still to build the solution and run one of the example ``.mrsh``
-files.
-
-Use the packaged tool
----------------------
-
-From ``impl/dotnet/``:
+Install the tool
+----------------
 
 .. code-block:: bash
 
-    dotnet pack MakrellSharp.sln -c Release
-    dotnet tool install MakrellSharp.Cli --tool-path .tmp-tools --add-source src/MakrellSharp.Cli/bin/Release
-    .tmp-tools/makrellsharp examples/hello.mrsh
-    .tmp-tools/makrellsharp check examples/hello.mrsh --json
+    dotnet tool install --global MakrellSharp.Cli
 
-This is the current packaged CLI workflow that belongs to the ``v0.10.0``
-release shape.
+This gives you the ``makrellsharp`` command.
 
-Build and test
---------------
+Run a first source file
+-----------------------
+
+Save a file as ``hello.mrsh``:
+
+.. code-block:: makrell
+
+    {import System}
+    {Console.WriteLine "Hello from Makrell#"}
+
+Then run it:
+
+.. code-block:: bash
+
+    makrellsharp hello.mrsh
+
+Check a file and emit diagnostics:
+
+.. code-block:: bash
+
+    makrellsharp check hello.mrsh --json
+
+Build and inspect:
+
+.. code-block:: bash
+
+    makrellsharp build hello.mrsh
+    makrellsharp emit-csharp hello.mrsh
+
+Use the source checkout for development
+---------------------------------------
+
+If you are working on Makrell# itself, use the source-tree workflow from
+``impl/dotnet/``.
 
 From ``impl/dotnet/``:
 
@@ -52,38 +70,31 @@ This gives you:
 * the CLI entry point
 * the current test suite for the `.NET` implementation
 
-Run the CLI
------------
-
-The most direct source-oriented way to use Makrell# is through the CLI project:
-
-.. code-block:: bash
-
-    dotnet run --project src/MakrellSharp.Cli -- examples/hello.mrsh
-
-That command builds the CLI if needed and runs the example program.
-
 Representative commands
 -----------------------
 
 .. code-block:: bash
 
-    dotnet run --project src/MakrellSharp.Cli -- examples/hello.mrsh
-    dotnet run --project src/MakrellSharp.Cli -- build examples/hello.mrsh
-    dotnet run --project src/MakrellSharp.Cli -- emit-csharp examples/hello.mrsh
-    dotnet run --project src/MakrellSharp.Cli -- parse-mron examples/sample.mron
-    dotnet run --project src/MakrellSharp.Cli -- parse-mrml examples/sample.mrml
-
-These commands are useful during development because they exercise the same
-implementation that the tests use.
+    makrellsharp hello.mrsh
+    makrellsharp check hello.mrsh --json
+    makrellsharp build hello.mrsh
+    makrellsharp emit-csharp hello.mrsh
+    makrellsharp parse-mron sample.mron
+    makrellsharp parse-mrml sample.mrml
 
 Common workflow
 ---------------
 
-A typical local workflow looks like this:
+A typical user workflow looks like this:
+
+#. install ``MakrellSharp.Cli``
+#. run a small ``.mrsh`` file
+#. use ``check`` and ``emit-csharp`` as needed
+
+A typical contributor workflow looks like this:
 
 #. build and test the solution
-#. run an example ``.mrsh`` file
+#. run the CLI from the source tree
 #. inspect emitted C# when you want to understand how a Makrell# form lowers
 #. build a ``.dll`` when you want to try the compile-and-load path
 #. optionally switch to the packaged ``makrellsharp`` tool flow once you want a
@@ -93,9 +104,8 @@ For example:
 
 .. code-block:: bash
 
-    dotnet test MakrellSharp.sln
-    dotnet run --project src/MakrellSharp.Cli -- emit-csharp examples/interop.mrsh
-    dotnet run --project src/MakrellSharp.Cli -- build examples/interop.mrsh
+    makrellsharp hello.mrsh
+    makrellsharp emit-csharp hello.mrsh
 
 What is included today
 ----------------------

@@ -115,52 +115,46 @@ Today, `vscode-makrell` gives you:
 
 The long-term source of truth should be the specs and conformance tests rather than any single implementation in isolation.
 
-## Working With MakrellTS
-
-From `impl/ts/`:
+## Using MakrellTS
 
 ```bash
-bun install
-bun run ci
-bun run src/cli.ts examples/hello.mrts
-bun run src/cli.ts check examples/hello.mrts --json
+bun add -g makrellts
+makrellts hello.mrts
+makrellts check hello.mrts --json
+makrellts hello.mrts --emit-js
 ```
 
-## Working With MakrellPy
-
-From `impl/py/`:
+## Using MakrellPy
 
 ```bash
-pip install -e .
-python -m pytest
+pip install makrell
 makrell
 makrell path/to/script.mrpy
 makrell check path/to/script.mrpy --json
 ```
 
-## Working With Makrell#
-
-From `impl/dotnet/`:
+## Using Makrell#
 
 ```bash
-dotnet build MakrellSharp.sln
-dotnet test MakrellSharp.sln
-dotnet run --project src/MakrellSharp.Cli -- examples/hello.mrsh
-dotnet run --project src/MakrellSharp.Cli -- check examples/hello.mrsh --json
-dotnet run --project src/MakrellSharp.Cli -- build examples/hello.mrsh
-dotnet run --project src/MakrellSharp.Cli -- run-assembly examples/hello.dll
-dotnet run --project src/MakrellSharp.Cli -- meta-sources examples/macros.dll
-dotnet run --project src/MakrellSharp.Cli -- parse-mron examples/sample.mron
-dotnet run --project src/MakrellSharp.Cli -- parse-mrml examples/sample.mrml
-dotnet run --project src/MakrellSharp.Cli -- parse-mrtd examples/sample.mrtd
+dotnet tool install --global MakrellSharp.Cli
+makrellsharp hello.mrsh
+makrellsharp check hello.mrsh --json
+makrellsharp build hello.mrsh
+makrellsharp emit-csharp hello.mrsh
+makrellsharp parse-mron sample.mron
+makrellsharp parse-mrml sample.mrml
+makrellsharp parse-mrtd sample.mrtd
 ```
 
-Local tool install from a packed CLI package:
+## Contributor workflows
+
+For local repo development, the implementation directories still contain the
+full source-oriented workflows:
 
 ```bash
-dotnet pack MakrellSharp.sln -c Release
-dotnet tool install MakrellSharp.Cli --tool-path .tmp-tools --add-source src/MakrellSharp.Cli/bin/Release
-.tmp-tools/makrellsharp examples/hello.mrsh
+cd impl/ts && bun install && bun run ci
+cd impl/py && python -m pytest
+cd impl/dotnet && dotnet build MakrellSharp.sln && dotnet test MakrellSharp.sln
 ```
 
 ## Development Principle

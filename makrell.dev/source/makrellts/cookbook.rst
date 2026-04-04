@@ -21,13 +21,13 @@ Run a source file:
 
 .. code-block:: bash
 
-    bun run src/cli.ts examples/hello.mrts
+    makrellts hello.mrts
 
 Emit generated JavaScript:
 
 .. code-block:: bash
 
-    bun run src/cli.ts examples/hello.mrts --emit-js
+    makrellts hello.mrts --emit-js
 
 Recipe: compact MRON
 --------------------

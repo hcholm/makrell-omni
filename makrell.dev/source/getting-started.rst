@@ -79,17 +79,16 @@ MakrellTS
 
 .. code-block:: bash
 
-    cd impl/ts
-    bun install
-    bun run src/cli.ts examples/hello.mrts
+    bun add -g makrellts
+    makrellts hello.mrts
 
 Makrell#
 ^^^^^^^^
 
 .. code-block:: bash
 
-    cd impl/dotnet
-    dotnet run --project src/MakrellSharp.Cli -- examples/hello.mrsh
+    dotnet tool install --global MakrellSharp.Cli
+    makrellsharp hello.mrsh
 
 What is shared across the family?
 ---------------------------------

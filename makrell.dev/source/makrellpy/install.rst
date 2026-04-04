@@ -4,7 +4,7 @@ Installation
 MakrellPy is currently the easiest general entry point into the Makrell family
 if you are comfortable with Python tooling.
 
-Current usage is centred on Python packaging.
+The normal user workflow is package-first.
 
 Install from PyPI
 -----------------
@@ -15,8 +15,8 @@ Install from PyPI
 
 This is the simplest route if you want to try the language quickly.
 
-Install from source
--------------------
+Install from source for development
+-----------------------------------
 
 .. code-block:: bash
 
@@ -25,7 +25,7 @@ Install from source
     pip install .
 
 Use this when you want to work directly on the implementation or follow the
-current repo state more closely than a packaged release.
+repo state more closely than the published package.
 
 Common next commands
 --------------------

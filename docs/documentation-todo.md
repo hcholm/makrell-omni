@@ -54,6 +54,9 @@ Suggested item format:
 - [ ] Add editor-visible diagnostics/code markings for MakrellPy, MakrellTS, Makrell#, MRON, MRML, and MRTD.
   - Source: `v0.10.0` should provide compiler/format errors with in-editor markings across the three language tracks plus the three family data formats
   - Target docs: `vscode-makrell/`, `docs/editor-support-audit.md`, implementation docs, possible TS tooling plan
+- [ ] Apply the language documentation guide to the highest-traffic Makrell docs pages.
+  - Source: current docs are too repetitive and too light on substantive runnable examples
+  - Target docs: `makrell.dev/` homepage/getting-started/language pages, implementation README pages, `docs/language-documentation-guide.md`
 ## Completed
 
 - [x] Write down the current debug-information/source-mapping story for MakrellPy, MakrellTS, and Makrell#.

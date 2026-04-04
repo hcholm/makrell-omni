@@ -31,6 +31,7 @@ python -m venv .pack-smoke
 ### Run tests
 
 ```bash
+cd impl/py
 python -m pytest
 ```
 
@@ -123,7 +124,7 @@ Checked-in examples:
 Run the coroutine example from `impl/py/`:
 
 ```bash
-python -m makrell examples/makrellpy/coroutines.mr
+makrell examples/makrellpy/coroutines.mr
 ```
 
 ### Macro showcase
@@ -141,14 +142,14 @@ It collects three small macros that are worth surfacing for `v0.10.0`:
 - `lisp`
   - hosts a Lisp-like round-bracket notation inside Makrell
 
-Run it from `impl/py/`:
+Run it:
 
 ```bash
-python -m makrell examples/macros/showcase.mr
+makrell examples/macros/showcase.mr
 ```
 
 ```bash
-python -m makrell check examples/macros/showcase.mr --json
+makrell check examples/macros/showcase.mr --json
 ```
 
 These are good examples not because they are large, but because they show three

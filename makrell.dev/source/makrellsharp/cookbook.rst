@@ -25,18 +25,18 @@ Recipe: run and build
 
 .. code-block:: bash
 
-    dotnet run --project src/MakrellSharp.Cli -- examples/hello.mrsh
-    dotnet run --project src/MakrellSharp.Cli -- build examples/hello.mrsh
-    dotnet run --project src/MakrellSharp.Cli -- run-assembly examples/hello.dll
+    makrellsharp hello.mrsh
+    makrellsharp build hello.mrsh
+    makrellsharp run-assembly hello.dll
 
 These commands cover the basic source-to-assembly workflow.
 
 Recipe: inspect generated C#
----------------------------
+----------------------------
 
 .. code-block:: bash
 
-    dotnet run --project src/MakrellSharp.Cli -- emit-csharp examples/hello.mrsh
+    makrellsharp emit-csharp hello.mrsh
 
 This is useful when you want to understand how a Makrell# form lowers into the
 current generated C# module.
@@ -71,8 +71,8 @@ Recipe: parse MRON and MRML
 
 .. code-block:: bash
 
-    dotnet run --project src/MakrellSharp.Cli -- parse-mron examples/sample.mron
-    dotnet run --project src/MakrellSharp.Cli -- parse-mrml examples/sample.mrml
+    makrellsharp parse-mron sample.mron
+    makrellsharp parse-mrml sample.mrml
 
 Use these commands when you want to exercise the format parsers through the same
 implementation track.
@@ -96,8 +96,8 @@ Recipe: inspect replayable compile-time metadata
 
 .. code-block:: bash
 
-    dotnet run --project src/MakrellSharp.Cli -- build examples/macros.mrsh
-    dotnet run --project src/MakrellSharp.Cli -- meta-sources examples/macros.dll
+    makrellsharp build macros.mrsh
+    makrellsharp meta-sources macros.dll
 
 This is useful when you want to inspect the compile-time sources that have been
 embedded for later replay.

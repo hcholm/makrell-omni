@@ -1,42 +1,57 @@
 Installation
 ============
 
-MakrellTS currently lives under ``impl/ts`` in the monorepo. Like the other
-implementations in this repository, the current ``v0.10.0`` workflow is still
-primarily source-oriented even though the package surface is now being shaped
-for publication.
+MakrellTS is documented here as a published package with a normal installed CLI
+workflow. The source-tree workflow still exists for contributors, but it should
+not be the main user story.
 
-Prerequisites
--------------
-
-Before working with MakrellTS, make sure you have:
-
-* the Makrell repository checked out locally
-* Bun installed
-* a recent Node.js environment if you also want to test Node-oriented usage
-
-Install dependencies
---------------------
-
-From ``impl/ts/``:
+Install the CLI
+---------------
 
 .. code-block:: bash
 
-    bun install
+    bun add -g makrellts
 
-This installs the dependencies used for the library, browser build, tests, and
-tooling around the TypeScript implementation.
+This gives you the ``makrellts`` command.
 
 Run a first source file
 -----------------------
 
-From ``impl/ts/``:
+Save a file as ``hello.mrts``:
+
+.. code-block:: makrell
+
+    a = 2
+    b = a + 3
+    [a b 5] | sum
+
+Then run it:
 
 .. code-block:: bash
 
-    bun run src/cli.ts examples/hello.mrts
+    makrellts hello.mrts
 
-This is the quickest current way to confirm that the CLI path is working.
+Emit generated JavaScript:
+
+.. code-block:: bash
+
+    makrellts hello.mrts --emit-js
+
+Check a file and emit machine-readable diagnostics:
+
+.. code-block:: bash
+
+    makrellts check hello.mrts --json
+
+Use source checkout for development
+-----------------------------------
+
+If you are working on MakrellTS itself, use the source-tree workflow from
+``impl/ts/``:
+
+.. code-block:: bash
+
+    bun install
 
 Common commands
 ---------------
@@ -70,23 +85,17 @@ MakrellTS is aimed at:
 Typical workflow
 ----------------
 
-A common local workflow is:
+A common user workflow is:
 
-#. install dependencies with ``bun install``
-#. run a small ``.mrts`` example
+#. install ``makrellts``
+#. run a small ``.mrts`` file
+#. use ``check`` and ``--emit-js`` as needed
+
+A common contributor workflow is:
+
+#. ``bun install``
 #. run the build and test commands
-#. use the examples and docs pages to try MakrellTS in either Node.js or the
-   browser-oriented build
-
-For example:
-
-.. code-block:: bash
-
-    bun install
-    bun run src/cli.ts examples/hello.mrts
-    bun run build
-    bun run test
-    bun run build:browser
+#. use the examples and browser build from the source tree
 
 What to read next
 -----------------

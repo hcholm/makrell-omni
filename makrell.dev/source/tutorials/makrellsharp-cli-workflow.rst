@@ -6,40 +6,39 @@ The Makrell# CLI is the main practical entry point into the .NET implementation.
 Step 1: run a source file
 -------------------------
 
-From ``impl/dotnet``:
-
 .. code-block:: bash
 
-    dotnet run --project src/MakrellSharp.Cli -- examples/hello.mrsh
+    dotnet tool install --global MakrellSharp.Cli
+    makrellsharp hello.mrsh
 
 Step 2: build an assembly
 -------------------------
 
 .. code-block:: bash
 
-    dotnet run --project src/MakrellSharp.Cli -- build examples/hello.mrsh
+    makrellsharp build hello.mrsh
 
 Step 3: inspect generated C#
----------------------------
+----------------------------
 
 .. code-block:: bash
 
-    dotnet run --project src/MakrellSharp.Cli -- emit-csharp examples/hello.mrsh
+    makrellsharp emit-csharp hello.mrsh
 
 Step 4: parse MRON or MRML
 --------------------------
 
 .. code-block:: bash
 
-    dotnet run --project src/MakrellSharp.Cli -- parse-mron examples/sample.mron
-    dotnet run --project src/MakrellSharp.Cli -- parse-mrml examples/sample.mrml
+    makrellsharp parse-mron sample.mron
+    makrellsharp parse-mrml sample.mrml
 
 Step 5: inspect replayable compile-time metadata
 ------------------------------------------------
 
 .. code-block:: bash
 
-    dotnet run --project src/MakrellSharp.Cli -- meta-sources examples/macros.dll
+    makrellsharp meta-sources macros.dll
 
 Why this matters
 ----------------
