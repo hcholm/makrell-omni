@@ -44,9 +44,6 @@
 
 {def macro lisp [nodes]
     nodes = {regular nodes}
-    sourceNode = nodes@0
-    source = sourceNode.value
-    parsed = {parse source}
     {fun transform [n]
         {when {isinstance n RoundBrackets}
             ns = {regular n.nodes}
@@ -87,7 +84,7 @@
         n
     }
 
-    {transform parsed@0}
+    {transform nodes@0}
 }
 
 {print "== MakrellTS macro showcase =="}
@@ -109,10 +106,10 @@ rpnAddResult = {rpnAdd 4 9}
 lispAdd = [x y z] -> x + y + z
 lispSquare = [x] -> x * x
 
-lispResult = {lisp "(lispAdd 6 35 11)"}
+lispResult = {lisp (lispAdd 6 35 11)}
 {print "lispResult =" lispResult}
 
-lispSumSquares = {lisp "(lispAdd (lispSquare 2) (lispSquare 3) (lispSquare 5))"}
+lispSumSquares = {lisp (lispAdd (lispSquare 2) (lispSquare 3) (lispSquare 5))}
 {print "lispSumSquares =" lispSumSquares}
 
 [pipeResult rpnResult rpnAddResult lispResult lispSumSquares]

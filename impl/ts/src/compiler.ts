@@ -72,9 +72,10 @@ function expandMacro(n: CurlyBracketsNode, ctx: Ctx): Node[] | null {
   if (head.kind !== "identifier") return null;
   const entry = ctx.macros.getEntry(head.value);
   if (!entry) return null;
+  const macroArgs = (n.rawNodes ?? n.nodes).slice(1);
   const out = entry.kind === "native"
-    ? entry.fn(n.nodes.slice(1), ctx.macroCtx)
-    : ctx.metaRuntime.runMakrellMacro(head.value, entry, n.nodes.slice(1), ctx.macros);
+    ? entry.fn(macroArgs, ctx.macroCtx)
+    : ctx.metaRuntime.runMakrellMacro(head.value, entry, macroArgs, ctx.macros);
   return Array.isArray(out) ? out : [out];
 }
 

@@ -2,8 +2,9 @@
   --makrell-accent: #0f766e;
   --makrell-accent-2: #b45309;
   --makrell-surface: #f7faf9;
-  --sidebar-width: 21rem;
-  --sidebar-width--mobile: 18rem;
+  --sidebar-width: 18.75rem;
+  --sidebar-width--mobile: 17rem;
+  --docs-body-max: 104rem;
 }
 
 body {
@@ -11,13 +12,24 @@ body {
   line-height: 1.5;
 }
 
+.page {
+  width: min(100%, var(--docs-body-max));
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .content {
-  max-width: 64rem;
+  max-width: 72rem;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .main .content {
   padding-top: 1.1rem;
   padding-bottom: 1.2rem;
+  width: min(100%, 72rem);
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .main .sidebar-drawer,
@@ -37,13 +49,26 @@ body {
   min-height: 100vh;
 }
 
+.article-container,
+.toc-sticky {
+  max-width: 100%;
+}
+
 @media (min-width: 67em) {
+  .page {
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr) minmax(14rem, 18rem);
+  }
+
   .sidebar-drawer {
-    width: 21rem;
+    width: 18.75rem;
   }
 
   .sidebar-container {
-    width: 21rem;
+    width: 18.75rem;
+  }
+
+  .toc-drawer {
+    width: auto;
   }
 }
 

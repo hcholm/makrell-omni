@@ -34,7 +34,7 @@ Observed outputs:
   - `lisp_sum_squares = 38`
 - MakrellTS
   - `pipeResult = 64`
-  - `rpnResult = 107`
+  - `rpnResult = 41`
   - `rpnAddResult = 13`
   - `lispResult = 52`
   - `lispSumSquares = 38`
@@ -66,7 +66,7 @@ Release judgement:
 
 ## MakrellTS
 
-Status: credible public compile-time story, but not full parity.
+Status: credible public compile-time story with the shared showcase now aligned.
 
 What is strong:
 
@@ -76,25 +76,13 @@ What is strong:
 - browser/tooling integration makes this track especially important for the
   future editor and playground story
 
-Important current gap:
-
-- the TS `rpn` showcase does not currently match the Py/`.NET` behaviour
-  exactly
-- in the verified `v0.10.0` showcase run:
-  - MakrellPy / Makrell# `rpn_result = 41`
-  - MakrellTS `rpnResult = 107`
-
-Practical interpretation:
-
-- the shared showcase exists and is real
-- but the TS compile-time surface still exposes a meaningful parity gap around
-  macro input shape and operator parsing
-
 Release judgement:
 
 - credible for `v0.10.0`
-- not yet at full compile-time parity
-- gap is explicit and should be treated as follow-up work rather than hidden
+- the shared public `pipe` / `rpn` / `lisp` showcase now lines up with the
+  other main tracks for the current examples
+- still not the final word on full compile-time parity, but no longer carrying
+  the visible `rpn` mismatch from the earlier review
 
 ## Makrell#
 
@@ -129,11 +117,8 @@ the release story.
 
 That said, compile-time parity is still not “done”.
 
-The main visible remaining gaps are:
+The main visible remaining gap is:
 
-- MakrellTS `rpn` behaviour is not yet aligned with MakrellPy / Makrell#
-- MakrellTS `lisp` still uses a more explicit source-string path than the other
-  tracks
 - Makrell# still has a meaningful architectural gap between compile-time and
   runtime execution machinery
 
@@ -144,14 +129,12 @@ The honest `v0.10.0` position is:
 - compile-time Makrell is no longer obviously underpowered in the main tracks
 - the shared public macro story is real
 - parity is improved enough to be part of the release
-- some important remaining gaps are now explicit instead of accidental
+- the remaining important gaps are now more architectural than showcase-level
 
 ## Follow-up direction
 
 The next parity work after `v0.10.0` should probably focus on:
 
-- aligning MakrellTS macro input/parsing behaviour more closely with the Py and
-  `.NET` tracks where practical
 - continuing the Makrell# move away from a separate semantic engine for
   compile-time execution
 - keeping the shared `pipe` / `rpn` / `lisp` showcase runnable as a regression

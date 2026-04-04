@@ -28,6 +28,7 @@ const examples = [
     title: "N-body browser simulation",
     summary: "A larger browser-facing MakrellTS example with animation state, physics, and canvas drawing.",
     entryPath: "examples/nbody-browser/app.mrts",
+    hostHtmlPath: "examples/nbody-browser/index.html",
     runtime: "browser",
     tags: ["browser", "simulation", "canvas"],
   },
@@ -36,6 +37,7 @@ const examples = [
 const payload = examples.map((example) => ({
   ...example,
   source: readFileSync(join(projectRoot, example.entryPath), "utf8"),
+  hostHtml: example.hostHtmlPath ? readFileSync(join(projectRoot, example.hostHtmlPath), "utf8") : undefined,
 }));
 
 const output = `export interface MakrellPlaygroundExample {
@@ -46,6 +48,7 @@ const output = `export interface MakrellPlaygroundExample {
   runtime: "cli" | "browser";
   tags: string[];
   source: string;
+  hostHtml?: string;
 }
 
 export const makrellPlaygroundExamples: MakrellPlaygroundExample[] = ${JSON.stringify(payload, null, 2)};\n`;

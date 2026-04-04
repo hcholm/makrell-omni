@@ -67,6 +67,10 @@ textarea {
   font: inherit;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 .pg-app {
   min-height: 100vh;
   display: flex;
@@ -159,6 +163,11 @@ textarea {
   color: var(--pg-text-soft);
 }
 
+.pg-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
 .pg-theme-toggle {
   padding: 4px;
   background: color-mix(in oklab, var(--pg-surface-panel) 86%, transparent);
@@ -192,7 +201,12 @@ textarea {
   flex: 1;
 }
 
+.pg-shell--drawer-closed {
+  grid-template-columns: 180px minmax(0, 1fr);
+}
+
 .pg-sidebar {
+  grid-column: 1;
   background: var(--pg-surface-panel);
   padding: 16px 16px 18px;
   display: flex;
@@ -267,6 +281,7 @@ textarea {
 }
 
 .pg-drawer {
+  grid-column: 2;
   background: color-mix(in oklab, var(--pg-surface) 88%, var(--pg-surface-panel));
   display: flex;
   flex-direction: column;
@@ -297,10 +312,16 @@ textarea {
 }
 
 .pg-main {
+  grid-column: 3;
   min-width: 0;
   background: var(--pg-surface);
   display: flex;
   flex-direction: column;
+  min-height: 0;
+}
+
+.pg-shell--drawer-closed .pg-main {
+  grid-column: 2;
 }
 
 .pg-main__toolbar {
@@ -324,6 +345,7 @@ textarea {
 
 .pg-file-tab,
 .pg-status-pill,
+.pg-editor-tab,
 .pg-inspector__tab,
 .pg-tag {
   min-height: 32px;
@@ -337,6 +359,7 @@ textarea {
 }
 
 .pg-file-tab,
+.pg-editor-tab,
 .pg-inspector__tab {
   color: var(--pg-muted);
   background: var(--pg-surface-elevated);
@@ -344,6 +367,7 @@ textarea {
 }
 
 .pg-file-tab--active,
+.pg-editor-tab--active,
 .pg-inspector__tab--active {
   color: var(--pg-accent);
   background: var(--pg-surface);
@@ -359,13 +383,15 @@ textarea {
   min-width: 0;
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 300px);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  min-height: 0;
 }
 
 .pg-editor-pane {
   min-width: 0;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .pg-editor-head {
@@ -405,9 +431,15 @@ textarea {
 }
 
 .pg-editor-surface {
-  min-height: 0;
-  flex: 1;
-  margin-top: 14px;
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pg-editor-surface--active {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .pg-statusbar {
@@ -428,6 +460,79 @@ textarea {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  padding: 14px 14px 14px 0;
+}
+
+.pg-browser-stage {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  flex: 1;
+  padding: 0;
+}
+
+.pg-browser-stage__head,
+.pg-editor-tabs,
+.pg-browser-stage__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pg-browser-stage__head {
+  justify-content: space-between;
+  padding: 12px 12px 8px;
+}
+
+.pg-browser-stage__title {
+  margin-top: 4px;
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.pg-browser-stage__frame {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  height: auto;
+  border: 1px solid color-mix(in oklab, var(--pg-accent) 14%, var(--pg-outline));
+  border-radius: 14px;
+  background: #09101b;
+  box-shadow: var(--pg-shadow);
+}
+
+.pg-browser-stage__stats {
+  min-height: 34px;
+  padding: 8px 12px 12px;
+  border-radius: 0;
+  background: color-mix(in oklab, var(--pg-surface-panel) 80%, transparent);
+  color: var(--pg-text-soft);
+  font-family: var(--pg-font-mono);
+  font-size: 0.74rem;
+  line-height: 1.5;
+}
+
+.pg-editor-tabs {
+  padding: 0 16px;
+  min-height: 40px;
+}
+
+.pg-editor-tab {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.pg-editor-stack {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  margin-top: 8px;
 }
 
 .pg-inspector__tabs {
@@ -461,6 +566,14 @@ textarea {
 
 .pg-inspector__panel--active {
   display: block;
+}
+
+.pg-inspector__panel[data-inspector-panel="browser"] {
+  overflow: hidden;
+}
+
+.pg-inspector__panel--active[data-inspector-panel="browser"] {
+  display: flex;
 }
 
 .pg-footer {
@@ -572,6 +685,6 @@ textarea {
   }
 
   .pg-workbench {
-    grid-template-columns: minmax(0, 1fr) minmax(240px, 280px);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 }

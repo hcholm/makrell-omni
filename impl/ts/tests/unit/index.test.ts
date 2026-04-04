@@ -143,9 +143,6 @@ describe("MakrellTs MVP", () => {
 
       {def macro lisp [nodes]
         nodes = {regular nodes}
-        sourceNode = nodes@0
-        source = sourceNode.value
-        parsed = {parse source}
         {fun transform [n]
           {when {isinstance n RoundBrackets}
             ns = {regular n.nodes}
@@ -186,7 +183,7 @@ describe("MakrellTs MVP", () => {
           n
         }
 
-        {transform parsed@0}
+        {transform nodes@0}
       }
 
       double = [x] -> x * 2
@@ -199,12 +196,12 @@ describe("MakrellTs MVP", () => {
       rpnAddResult = {rpnAdd 4 9}
       lispAdd = [x y z] -> x + y + z
       lispSquare = [x] -> x * x
-      lispResult = {lisp "(lispAdd 6 35 11)"}
-      lispSumSquares = {lisp "(lispAdd (lispSquare 2) (lispSquare 3) (lispSquare 5))"}
+      lispResult = {lisp (lispAdd 6 35 11)}
+      lispSumSquares = {lisp (lispAdd (lispSquare 2) (lispSquare 3) (lispSquare 5))}
 
       [pipeResult rpnResult rpnAddResult lispResult lispSumSquares]
     `;
-    expect(run(src)).toEqual([64, 107, 13, 52, 38]);
+    expect(run(src)).toEqual([64, 41, 13, 52, 38]);
   });
 
   test("class + new with TS-style semantics baseline", () => {

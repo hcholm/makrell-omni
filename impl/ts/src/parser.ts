@@ -159,8 +159,9 @@ export function operatorParseNodes(nodes: Node[]): Node[] {
 
 function transform(n: Node): Node {
   if (n.kind === "curly" || n.kind === "round" || n.kind === "square" || n.kind === "sequence") {
-    const kids = operatorParseNodes(n.nodes);
-    return { ...n, nodes: kids, loc: n.loc } as Node;
+    const rawKids = n.nodes;
+    const kids = operatorParseNodes(rawKids);
+    return { ...n, nodes: kids, rawNodes: rawKids, loc: n.loc } as Node;
   }
   return n;
 }

@@ -314,18 +314,14 @@ function themeName(theme: "dark" | "light") {
   return theme === "light" ? "makrell-light" : "makrell-dark";
 }
 
-export async function createMakrellEditor(
+function createBaseEditor(
   root: HTMLElement,
   initialValue: string,
-  validateSource: ValidateSource,
-  onChange: ChangeHandler,
-): Promise<EditorController> {
-  ensureMonacoEnvironment();
-  registerLanguage();
-  registerSnippets();
+  language: string,
+): { model: monaco.editor.ITextModel; editor: monaco.editor.IStandaloneCodeEditor } {
   defineThemes();
 
-  const model = monaco.editor.createModel(initialValue, "makrell");
+  const model = monaco.editor.createModel(initialValue, language);
   const editor = monaco.editor.create(root, {
     automaticLayout: true,
     fontFamily: "JetBrains Mono, Fira Code, monospace",
@@ -354,6 +350,20 @@ export async function createMakrellEditor(
     editor.render(true);
   });
 
+  return { model, editor };
+}
+
+export async function createMakrellEditor(
+  root: HTMLElement,
+  initialValue: string,
+  validateSource: ValidateSource,
+  onChange: ChangeHandler,
+): Promise<EditorController> {
+  ensureMonacoEnvironment();
+  registerLanguage();
+  registerSnippets();
+  const { model, editor } = createBaseEditor(root, initialValue, "makrell");
+
   const applyDiagnostics = (nextDiagnostics: EditorDiagnostic[]) => {
     monaco.editor.setModelMarkers(
       model,
@@ -376,6 +386,45 @@ export async function createMakrellEditor(
       if (model.getValue() === value) return;
       model.setValue(value);
       applyDiagnostics(validateSource(value));
+    },
+    setTheme(theme: "dark" | "light") {
+      currentTheme = theme;
+      monaco.editor.setTheme(themeName(theme));
+    },
+    setDiagnostics(nextDiagnostics: EditorDiagnostic[]) {
+      applyDiagnostics(nextDiagnostics);
+    },
+  };
+}
+
+export async function createPlainEditor(
+  root: HTMLElement,
+  initialValue: string,
+  language: string,
+  onChange?: ChangeHandler,
+): Promise<EditorController> {
+  ensureMonacoEnvironment();
+  const { model, editor } = createBaseEditor(root, initialValue, language);
+
+  const applyDiagnostics = (nextDiagnostics: EditorDiagnostic[]) => {
+    monaco.editor.setModelMarkers(
+      model,
+      "makrell-playground-plain",
+      nextDiagnostics.map((diagnostic) => toMarker(model, diagnostic)),
+    );
+  };
+
+  if (onChange) {
+    editor.onDidChangeModelContent(() => {
+      onChange(model.getValue());
+    });
+  }
+
+  return {
+    getValue: () => model.getValue(),
+    setValue(value: string) {
+      if (model.getValue() === value) return;
+      model.setValue(value);
     },
     setTheme(theme: "dark" | "light") {
       currentTheme = theme;

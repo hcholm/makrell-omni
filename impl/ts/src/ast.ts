@@ -12,6 +12,7 @@ export type Node =
 export interface BaseNode {
   kind: string;
   loc?: SourceSpan;
+  rawNodes?: Node[];
 }
 
 export interface SourcePos {

@@ -24,16 +24,6 @@ as a reminder that the reference implementation can still host structural
 rewriting and language-embedding ideas rather than only focusing on typed
 output or browser tooling.
 
-The current TS ``lisp`` example is slightly more explicit than the MakrellPy
-version: it parses a Lisp-like source string and then transforms that parsed
-structure. That still shows the same family idea while staying within the
-current TS parser surface.
-
-The current TS ``rpn`` example is also worth reading with one caveat in mind:
-it is part of the shared public showcase, but it does not yet reproduce the
-exact MakrellPy / Makrell# result in every case. For ``v0.10.0``, that is a
-documented compile-time parity gap rather than a hidden difference.
-
 Recipe: duplicate an expression
 -------------------------------
 

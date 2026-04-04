@@ -114,7 +114,7 @@ function ctor(name: string): { __nodeCtor: string } {
 }
 
 function nodeCtorName(v: unknown): string | null {
-  if (!v || typeof v !== "object") return null;
+  if (!v || (typeof v !== "object" && typeof v !== "function")) return null;
   const n = (v as { __nodeCtor?: unknown }).__nodeCtor;
   return typeof n === "string" ? n : null;
 }

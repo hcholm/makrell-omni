@@ -45,7 +45,7 @@ export const docsByExample: Record<string, PlaygroundDocNote> = {
   },
   "nbody-browser": {
     title: "Browser-facing MakrellTS",
-    summary: "A larger example built for browser state, animation, and canvas drawing. The playground can inspect and compile it, but does not try to mount the full demo surface inline.",
+    summary: "A larger example built for browser state, animation, and canvas drawing. The playground now mounts a compact live canvas preview using the real MakrellTS browser runtime path.",
     prompts: [
       "Open Generated JS to see the browser-facing output shape.",
       "Change a parameter or helper function and recompile.",
@@ -57,8 +57,8 @@ export const docsByExample: Record<string, PlaygroundDocNote> = {
       { label: "MakrellTS tooling", href: `${base}/tooling.html` }
     ],
     notes: [
-      "The browser simulation itself still lives in the checked-in example app.",
-      "This playground keeps the run loop honest by not faking canvas integration."
+      "The preview uses the checked-in MakrellTS example source and real browser-runtime execution.",
+      "It is a compact playground host, not a full copy of the dedicated demo page."
     ]
   }
 };
