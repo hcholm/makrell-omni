@@ -29,6 +29,17 @@ That runs the current publish preflight across:
 
 After that succeeds, use the manual publish checklist below.
 
+Optional fresh-editor smoke pass:
+
+```bash
+node scripts/release/setup-fresh-vscode-smoke-env.mjs
+```
+
+That creates an isolated VS Code profile, installs the packaged `vscode-makrell`
+VSIX into a separate extensions directory, installs the packaged Makrell tools
+into temp locations, and prepares a sample workspace wired to those installed
+commands.
+
 ## Prerequisites
 
 Make sure these are available locally before publishing:
@@ -275,6 +286,19 @@ Manual checklist:
 - [ ] `bun run verify:release` succeeded
 - [ ] VSIX installed locally and smoke-checked
 - [ ] Marketplace publish command completed
+
+Optional stronger smoke check:
+
+```bash
+node scripts/release/setup-fresh-vscode-smoke-env.mjs --open
+```
+
+That opens VS Code in a separate fresh profile with:
+
+- the packaged Makrell extension installed from the built VSIX
+- packaged MakrellPy / MakrellTS / Makrell# / `makrell-family-lsp` commands
+- a sample workspace containing `.mrpy`, `.mrts`, `.mrsh`, `.mron`, `.mrml`,
+  and `.mrtd` files
 
 ## Suggested release order
 

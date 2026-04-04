@@ -1,6 +1,6 @@
 {
   "name": "makrellts",
-  "version": "0.1.0",
+  "version": "0.10.0",
   "description": "TypeScript implementation of the Makrell language family, including MakrellTS, browser tooling, and MRTD helpers.",
   "license": "MIT",
   "type": "module",

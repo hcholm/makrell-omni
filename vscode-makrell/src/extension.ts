@@ -3,7 +3,7 @@
 import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
-import { execFile } from "child_process";
+import { execFile, spawn } from "child_process";
 import { promisify } from "util";
 import {
     LanguageClient,
@@ -14,6 +14,11 @@ import {
 
 const execFileAsync = promisify(execFile);
 
+type CommandResult = {
+    stdout: string;
+    stderr: string;
+};
+
 let client: LanguageClient | undefined;
 let clientStarting = false;
 let logger: vscode.LogOutputChannel;
@@ -21,6 +26,54 @@ let mrTerminal: vscode.Terminal | null = null;
 let runTerminal: vscode.Terminal | null = null;
 let cliDiagnostics: vscode.DiagnosticCollection;
 let cliDiagnosticsWarningShown = false;
+
+function isWindowsBatchCommand(command: string): boolean {
+    if (os.platform() !== "win32") {
+        return false;
+    }
+
+    const extension = path.extname(command).toLowerCase();
+    return extension === ".cmd" || extension === ".bat";
+}
+
+async function runCommandCapture(command: string, args: string[], cwd?: string): Promise<CommandResult> {
+    if (!isWindowsBatchCommand(command)) {
+        return execFileAsync(command, args, { cwd }) as Promise<CommandResult>;
+    }
+
+    return await new Promise<CommandResult>((resolve, reject) => {
+        const child = spawn(command, args, {
+            cwd,
+            shell: true,
+            windowsHide: true,
+        });
+
+        let stdout = "";
+        let stderr = "";
+
+        child.stdout?.on("data", (chunk) => {
+            stdout += chunk.toString();
+        });
+        child.stderr?.on("data", (chunk) => {
+            stderr += chunk.toString();
+        });
+        child.on("error", (error) => {
+            reject(error);
+        });
+        child.on("close", (code) => {
+            if (code === 0) {
+                resolve({ stdout, stderr });
+                return;
+            }
+
+            const error = new Error(stderr.trim() || `Command failed with exit code ${code}`);
+            (error as any).code = code;
+            (error as any).stdout = stdout;
+            (error as any).stderr = stderr;
+            reject(error);
+        });
+    });
+}
 
 function getTerminalCommand(): string {
     switch (os.platform()) {
@@ -262,10 +315,10 @@ async function validateCliDiagnosticsDocument(document: vscode.TextDocument, sho
     const cwd = getWorkspaceCwd(document);
 
     try {
-        const { stdout, stderr } = await execFileAsync(
+        const { stdout, stderr } = await runCommandCapture(
             config.command,
             checkArgs,
-            { cwd },
+            cwd,
         );
 
         if (stderr?.trim()) {
@@ -366,7 +419,7 @@ async function emitCurrentMakrellTsFile() {
     const cwd = getWorkspaceCwd(document);
 
     try {
-        const { stdout, stderr } = await execFileAsync(command, [document.fileName, "--emit-js"], { cwd });
+        const { stdout, stderr } = await runCommandCapture(command, [document.fileName, "--emit-js"], cwd);
         if (stderr?.trim()) {
             logger.warn(stderr.trim());
         }
@@ -391,7 +444,7 @@ async function buildCurrentMakrellSharpFile() {
     const cwd = getWorkspaceCwd(document);
 
     try {
-        const { stdout, stderr } = await execFileAsync(command, ["build", document.fileName], { cwd });
+        const { stdout, stderr } = await runCommandCapture(command, ["build", document.fileName], cwd);
         if (stderr?.trim()) {
             logger.warn(stderr.trim());
         }
@@ -417,7 +470,7 @@ function getDefaultMakrellSharpAssemblyPath(document: vscode.TextDocument): stri
 async function buildMakrellSharpFile(document: vscode.TextDocument): Promise<string> {
     const command = getMakrellSharpCommand(document);
     const cwd = getWorkspaceCwd(document);
-    const { stdout, stderr } = await execFileAsync(command, ["build", document.fileName], { cwd });
+    const { stdout, stderr } = await runCommandCapture(command, ["build", document.fileName], cwd);
     if (stderr?.trim()) {
         logger.warn(stderr.trim());
     }
@@ -438,7 +491,7 @@ async function emitCSharpCurrentMakrellSharpFile() {
     const cwd = getWorkspaceCwd(document);
 
     try {
-        const { stdout, stderr } = await execFileAsync(command, ["emit-csharp", document.fileName], { cwd });
+        const { stdout, stderr } = await runCommandCapture(command, ["emit-csharp", document.fileName], cwd);
         if (stderr?.trim()) {
             logger.warn(stderr.trim());
         }
@@ -463,7 +516,7 @@ async function runBuiltAssemblyCurrentMakrellSharpFile() {
         const assemblyPath = await buildMakrellSharpFile(document);
         const command = getMakrellSharpCommand(document);
         const cwd = getWorkspaceCwd(document);
-        const { stdout, stderr } = await execFileAsync(command, ["run-assembly", assemblyPath], { cwd });
+        const { stdout, stderr } = await runCommandCapture(command, ["run-assembly", assemblyPath], cwd);
         if (stderr?.trim()) {
             logger.warn(stderr.trim());
         }
@@ -488,7 +541,7 @@ async function showMetaSourcesCurrentMakrellSharpFile() {
         const assemblyPath = await buildMakrellSharpFile(document);
         const command = getMakrellSharpCommand(document);
         const cwd = getWorkspaceCwd(document);
-        const { stdout, stderr } = await execFileAsync(command, ["meta-sources", assemblyPath], { cwd });
+        const { stdout, stderr } = await runCommandCapture(command, ["meta-sources", assemblyPath], cwd);
         if (stderr?.trim()) {
             logger.warn(stderr.trim());
         }
@@ -515,7 +568,7 @@ async function parseCurrentFamilyFormat(
     const cwd = getWorkspaceCwd(document);
 
     try {
-        const { stdout, stderr } = await execFileAsync(command, [parseCommand, document.fileName], { cwd });
+        const { stdout, stderr } = await runCommandCapture(command, [parseCommand, document.fileName], cwd);
         if (stderr?.trim()) {
             logger.warn(stderr.trim());
         }
@@ -684,7 +737,10 @@ async function startLangServer(showErrors = false) {
     const serverOptions: ServerOptions = {
         command,
         args,
-        options: cwd ? { cwd } : undefined,
+        options: {
+            ...(cwd ? { cwd } : {}),
+            ...(isWindowsBatchCommand(command) ? { shell: true, windowsHide: true } : {}),
+        },
     };
 
     client = new LanguageClient(

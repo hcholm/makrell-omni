@@ -2,7 +2,7 @@
     "name": "vscode-makrell",
     "displayName": "Makrell",
     "description": "VS Code support for the Makrell family: Makrell, MakrellPy, MakrellTS, Makrell#, MRON, MRML, and MRTD.",
-    "version": "0.8.0",
+    "version": "0.10.0",
     "publisher": "hcholm",
     "icon": "images/makrell.png",
     "engines": {
