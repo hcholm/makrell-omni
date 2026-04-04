@@ -41,6 +41,7 @@ Observed outputs:
 - Makrell#
   - `pipeResult = 64`
   - `rpnResult = 41`
+  - `rpnAddResult = 13`
   - `lispResult = 52`
   - `lispSumSquares = 38`
 

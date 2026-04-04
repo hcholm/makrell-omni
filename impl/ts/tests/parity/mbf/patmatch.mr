@@ -11,6 +11,14 @@
 ) "simple number"}
 
 {assert (
+    {match 3
+        2 "two"
+        3 "three"
+        5 "five"
+    } == "three"
+) "simple multi-arm"}
+
+{assert (
     {match "asd"
         "qwe" "qwe"
         _ "any"
@@ -19,11 +27,25 @@
 ) "wildcard order"}
 
 {assert (
+    {match []
+        [] "empty"
+        [_ _] "two"
+    } == "empty"
+) "empty list"}
+
+{assert (
     {match [2 3]
         [_ _] "two"
         _ "other"
     } == "two"
 ) "list"}
+
+{assert (
+    {match [2 3 5]
+        [2 3] "2 3"
+        [_ 3 | 5 _] "_ 3|5 _"
+    } == "_ 3|5 _"
+) "list/or complex"}
 
 {assert (
     {match 7
@@ -109,6 +131,13 @@
         _ false
     } == true
 ) "$r group"}
+
+{assert (
+    {match [2 3 5]
+        {$r a=2 b=3 c=5} true
+        _ false
+    } == true
+) "$r binding-compatible equals"}
 
 {assert (
     {match [[2 3] 7]

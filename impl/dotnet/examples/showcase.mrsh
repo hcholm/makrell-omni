@@ -112,6 +112,11 @@ pipeResult = {pipe 5 bumpFn squareFn}
 rpnResult = {rpn 2 3 * 5 7 * +}
 {Console.WriteLine {String.Concat "rpnResult = " rpnResult}}
 
+# The same postfix lowering can also build a callable lambda from raw syntax.
+rpnAdd = {rpn [x y] x y + ->}
+rpnAddResult = {rpnAdd 4 9}
+{Console.WriteLine {String.Concat "rpnAddResult = " rpnAddResult}}
+
 # `lisp` converts the Lisp-style form into standard Makrell# calls/operators.
 lispResult = {lisp (+ (* 2 3) (* 5 7) 11)}
 {Console.WriteLine {String.Concat "lispResult = " lispResult}}

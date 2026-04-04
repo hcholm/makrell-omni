@@ -42,6 +42,38 @@ public sealed class MakrellCompilerTests
     }
 
     [Fact]
+    public void Run_EvaluatesMatchExpression_WithExactStringLiteralPattern()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {match "asd"
+                "asd"
+                    "qwe"
+                _
+                    "other"}
+            """);
+
+        Assert.Equal("qwe", result);
+    }
+
+    [Fact]
+    public void Run_EvaluatesMatchExpression_WithWildcardOrder()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {match "asd"
+                "qwe"
+                    "qwe"
+                _
+                    "any"
+                "asd"
+                    "asd"}
+            """);
+
+        Assert.Equal("any", result);
+    }
+
+    [Fact]
     public void Run_EvaluatesMatchExpression_WithListPatterns()
     {
         var result = MakrellCompiler.Run(
@@ -56,6 +88,23 @@ public sealed class MakrellCompilerTests
             """);
 
         Assert.Equal("two", result);
+    }
+
+    [Fact]
+    public void Run_EvaluatesMatchExpression_WithExactListPattern()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {match [2 3]
+                []
+                    "empty"
+                [2 3]
+                    "2 3"
+                _
+                    "other"}
+            """);
+
+        Assert.Equal("2 3", result);
     }
 
     [Fact]
@@ -1562,16 +1611,19 @@ public sealed class MakrellCompilerTests
 
             pipeResult = {pipe 5 bumpFn squareFn}
             rpnResult = {rpn 2 3 * 5 7 * +}
+            rpnAdd = {rpn [x y] x y + ->}
+            rpnAddResult = {rpnAdd 4 9}
             lispResult = {lisp (+ (* 2 3) (* 5 7) 11)}
             lispSumSquares = {lisp (lispAdd3 (* 2 2) (* 3 3) (* 5 5))}
 
-            [pipeResult rpnResult lispResult lispSumSquares]
+            [pipeResult rpnResult rpnAddResult lispResult lispSumSquares]
             """));
 
         Assert.Collection(
             result,
             item => Assert.Equal(64, Convert.ToInt32(item)),
             item => Assert.Equal(41, Convert.ToInt32(item)),
+            item => Assert.Equal(13, Convert.ToInt32(item)),
             item => Assert.Equal(52, Convert.ToInt32(item)),
             item => Assert.Equal(38, Convert.ToInt32(item)));
     }
