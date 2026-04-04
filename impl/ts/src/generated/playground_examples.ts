@@ -42,7 +42,6 @@ export const makrellPlaygroundExamples: MakrellPlaygroundExample[] = [
     "title": "N-body browser simulation",
     "summary": "A larger browser-facing MakrellTS example with animation state, physics, and canvas drawing.",
     "entryPath": "examples/nbody-browser/app.mrts",
-    "hostHtmlPath": "examples/nbody-browser/index.html",
     "runtime": "browser",
     "tags": [
       "browser",

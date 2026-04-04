@@ -39,9 +39,6 @@ Suggested item format:
 - [ ] Write down the stronger `v0.10.0` rule that meta should use the same parser and compiler path where practical.
   - Source: release direction for near-full language experience in compile-time code
   - Target docs: `docs/v0.10.0-release-plan.md`, `docs/consolidation-plan.md`, possible architecture note
-- [ ] Plan the MakrellTS web playground for `v0.10.0` once the design profile exists.
-  - Source: desired browser-based playground with examples, docs, REPL, and editor
-  - Target docs: `docs/`, release notes, `makrell.dev/`, possible dedicated plan note
 - [ ] Pick and package the MakrellTS `v0.10.0` showcase examples.
   - Source: `impl/ts/examples/hello.mrts`, `impl/ts/examples/nbody-browser/`, `impl/ts/examples/browser-compile/`
   - Target docs: release notes, `impl/ts/README.md`, `makrell.dev/`, possible examples/showcase directory
@@ -57,10 +54,14 @@ Suggested item format:
 - [ ] Add editor-visible diagnostics/code markings for MakrellPy, MakrellTS, Makrell#, MRON, MRML, and MRTD.
   - Source: `v0.10.0` should provide compiler/format errors with in-editor markings across the three language tracks plus the three family data formats
   - Target docs: `vscode-makrell/`, `docs/editor-support-audit.md`, implementation docs, possible TS tooling plan
-- [ ] Write down the current debug-information/source-mapping story for MakrellPy, MakrellTS, and Makrell#.
-  - Source: `v0.10.0` should state clearly what exists today (PDBs, host sourcemaps, traceback filenames) and what is still missing (Makrell-aware source maps)
-  - Target docs: `docs/v0.10.0-release-plan.md`, release notes, implementation docs, possible tooling/debug note
 ## Completed
+
+- [x] Write down the current debug-information/source-mapping story for MakrellPy, MakrellTS, and Makrell#.
+  - Source: `v0.10.0` should state clearly what exists today (PDBs, host sourcemaps, traceback filenames) and what is still missing (Makrell-aware source maps)
+  - Target docs: `docs/debug-information-and-source-mapping.md`, `docs/v0.10.0-release-plan.md`, release notes
+- [x] Plan and implement the MakrellTS web playground for `v0.10.0`.
+  - Source: desired browser-based playground with examples, docs, REPL, and editor
+  - Target docs: standalone playground app under `playground/`, release notes, `makrell.dev/`, retained notes in `docs/playground-notes/`
 
 - [x] Write down the current format-conformance and release-smoke picture for `v0.10.0`.
   - Source: release checklist still needed an honest MRON/MRML/MRTD review plus a compact smoke suite

@@ -34,11 +34,14 @@ const examples = [
   },
 ];
 
-const payload = examples.map((example) => ({
-  ...example,
-  source: readFileSync(join(projectRoot, example.entryPath), "utf8"),
-  hostHtml: example.hostHtmlPath ? readFileSync(join(projectRoot, example.hostHtmlPath), "utf8") : undefined,
-}));
+const payload = examples.map((example) => {
+  const { hostHtmlPath, ...exportedExample } = example;
+  return {
+    ...exportedExample,
+    source: readFileSync(join(projectRoot, example.entryPath), "utf8"),
+    hostHtml: hostHtmlPath ? readFileSync(join(projectRoot, hostHtmlPath), "utf8") : undefined,
+  };
+});
 
 const output = `export interface MakrellPlaygroundExample {
   id: string;
