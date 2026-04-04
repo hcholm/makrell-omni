@@ -140,6 +140,7 @@ Start Here
 * :doc:`cookbook/index`
 * :doc:`tutorials/index`
 * :doc:`reference/index`
+* :doc:`odds-and-ends/index`
 
 Popular Paths
 -------------
@@ -201,3 +202,4 @@ Each implementation section explains what is available in that host today.
    cookbook/index
    tutorials/index
    reference/index
+   odds-and-ends/index

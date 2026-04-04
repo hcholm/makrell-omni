@@ -10,8 +10,9 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import readline from "node:readline";
 import { fileURLToPath } from "node:url";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "..", "..");
@@ -150,6 +151,110 @@ function findCodeCommand() {
   throw new Error("Unable to locate VS Code executable. Set VSCODE_EXE if needed.");
 }
 
+function resolveCodeGuiExecutable(codePath) {
+  if (!isWindows) {
+    return codePath;
+  }
+
+  const lower = codePath.toLowerCase();
+  if (lower.endsWith("\\code.exe")) {
+    return codePath;
+  }
+
+  if (lower.endsWith("\\bin\\code.cmd")) {
+    const guiPath = path.join(path.dirname(path.dirname(codePath)), "Code.exe");
+    if (existsSync(guiPath)) {
+      return guiPath;
+    }
+  }
+
+  return codePath;
+}
+
+function openVsCodeWindow(codePath, args) {
+  const guiExecutable = resolveCodeGuiExecutable(codePath);
+  console.log(`\n[open] ${guiExecutable} ${args.join(" ")}`);
+
+  if (isWindows) {
+    const child = spawn(guiExecutable, args, {
+      detached: true,
+      stdio: "ignore",
+      windowsHide: false,
+    });
+    child.unref();
+    return;
+  }
+
+  const child = spawn(guiExecutable, args, {
+    detached: true,
+    stdio: "ignore",
+  });
+  child.unref();
+}
+
+function openWindowsLauncher(launcherPath) {
+  console.log(`\n[open] Start-Process ${launcherPath}`);
+  const result = spawnSync("powershell.exe", [
+    "-NoProfile",
+    "-NonInteractive",
+    "-ExecutionPolicy",
+    "Bypass",
+    "-Command",
+    `Start-Process -FilePath ${quotePowerShellArg(launcherPath)}`,
+  ], {
+    stdio: "inherit",
+  });
+
+  if (result.status !== 0) {
+    throw new Error(`Failed to open launcher: ${launcherPath}`);
+  }
+}
+
+function getWindowsVsCodeUpdateProcesses() {
+  if (!isWindows) {
+    return [];
+  }
+
+  const result = spawnSync("powershell.exe", [
+    "-NoProfile",
+    "-NonInteractive",
+    "-ExecutionPolicy",
+    "Bypass",
+    "-Command",
+    "Get-Process | Where-Object { $_.ProcessName -like 'CodeSetup*' } | Select-Object -ExpandProperty ProcessName",
+  ], {
+    encoding: "utf8",
+  });
+
+  if (result.status !== 0) {
+    return [];
+  }
+
+  return result.stdout
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+async function waitForEnter(message) {
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    return;
+  }
+
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  try {
+    await new Promise((resolve) => {
+      rl.question(message, () => resolve());
+    });
+  } finally {
+    rl.close();
+  }
+}
+
 function toolExecutable(toolDir, commandName) {
   return isWindows
     ? path.join(toolDir, `${commandName}.exe`)
@@ -182,6 +287,7 @@ const familyLspVersion = readJson(path.join(familyLspDir, "package.json")).versi
 const dotnetCliVersion = parseDotnetCliVersion();
 const vscodeVersion = readJson(path.join(vscodeDir, "package.json")).version;
 const codeCommand = findCodeCommand();
+const codeGuiCommand = resolveCodeGuiExecutable(codeCommand);
 
 const tempRoot = mkdtempSync(path.join(tmpdir(), "makrell-vscode-smoke-"));
 const workspaceDir = path.join(tempRoot, "workspace");
@@ -214,6 +320,7 @@ console.log(`  Makrell Family LSP ${familyLspVersion}`);
 console.log(`  Makrell# CLI       ${dotnetCliVersion}`);
 console.log(`  VS Code extension  ${vscodeVersion}`);
 console.log(`  VS Code command    ${codeCommand}`);
+console.log(`  VS Code GUI        ${codeGuiCommand}`);
 console.log(`\n[temp] ${tempRoot}`);
 
 const tsNodeModulesExisted = existsSync(tsNodeModulesDir);
@@ -360,14 +467,16 @@ try {
 
   writeFileSync(
     path.join(tempRoot, "open-vscode.cmd"),
-    `@"${codeCommand}" --new-window --user-data-dir "${userDataDir}" --extensions-dir "${extensionsDir}" "${workspaceDir}"\r\n`,
+    `@start "" "${codeGuiCommand}" --new-window --user-data-dir "${userDataDir}" --extensions-dir "${extensionsDir}" "${workspaceDir}"\r\n`,
     "utf8",
   );
   writeFileSync(
     path.join(tempRoot, "open-vscode.ps1"),
-    `& "${codeCommand}" --new-window --user-data-dir "${userDataDir}" --extensions-dir "${extensionsDir}" "${workspaceDir}"\n`,
+    `Start-Process -FilePath "${codeGuiCommand}" -ArgumentList @("--new-window", "--user-data-dir", "${userDataDir}", "--extensions-dir", "${extensionsDir}", "${workspaceDir}")\n`,
     "utf8",
   );
+
+  const openVscodeCmdPath = path.join(tempRoot, "open-vscode.cmd");
 
   run(codeCommand, [
     "--install-extension",
@@ -401,17 +510,32 @@ try {
   console.log(installedExtensions);
 
   if (openAfterSetup) {
-    run(codeCommand, [
-      "--new-window",
-      "--user-data-dir",
-      userDataDir,
-      "--extensions-dir",
-      extensionsDir,
-      workspaceDir,
-    ], root);
+    const updateProcesses = getWindowsVsCodeUpdateProcesses();
+    if (updateProcesses.length > 0) {
+      throw new Error(
+        `VS Code appears to be updating (${updateProcesses.join(", ")}). Wait for the update to finish, then rerun the smoke script or the generated launcher.`,
+      );
+    }
+
+    if (isWindows) {
+      openWindowsLauncher(openVscodeCmdPath);
+    } else {
+      const openArgs = [
+        "--new-window",
+        "--user-data-dir",
+        userDataDir,
+        "--extensions-dir",
+        extensionsDir,
+        workspaceDir,
+      ];
+      openVsCodeWindow(codeCommand, openArgs);
+    }
+    console.log(`  Launched isolated VS Code window for: ${workspaceDir}`);
+    console.log(`  Fallback launcher: ${openVscodeCmdPath}`);
+    await waitForEnter("Press Enter after you have checked whether VS Code opened...");
   } else {
     console.log("\n[next]");
-    console.log(`  Open the isolated workspace with: ${path.join(tempRoot, "open-vscode.cmd")}`);
+    console.log(`  Open the isolated workspace with: ${openVscodeCmdPath}`);
   }
 } finally {
   if (!tsNodeModulesExisted && existsSync(tsNodeModulesDir)) {

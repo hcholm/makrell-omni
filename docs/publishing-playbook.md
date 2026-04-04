@@ -293,12 +293,16 @@ Optional stronger smoke check:
 node scripts/release/setup-fresh-vscode-smoke-env.mjs --open
 ```
 
-That opens VS Code in a separate fresh profile with:
+That launches VS Code in a separate fresh profile with:
 
 - the packaged Makrell extension installed from the built VSIX
 - packaged MakrellPy / MakrellTS / Makrell# / `makrell-family-lsp` commands
 - a sample workspace containing `.mrpy`, `.mrts`, `.mrsh`, `.mron`, `.mrml`,
   and `.mrtd` files
+
+If VS Code still does not appear, the script prints the temp environment root
+and writes `open-vscode.cmd` / `open-vscode.ps1` launchers there, which can be
+run directly.
 
 ## Suggested release order
 

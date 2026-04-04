@@ -54,7 +54,18 @@ body {
   max-width: 100%;
 }
 
-@media (min-width: 67em) {
+@media (min-width: 67em) and (max-width: 89.99em) {
+  .page {
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  }
+
+  .toc-drawer,
+  .toc-sticky {
+    display: none;
+  }
+}
+
+@media (min-width: 90em) {
   .page {
     grid-template-columns: var(--sidebar-width) minmax(0, 1fr) minmax(14rem, 18rem);
   }
@@ -183,6 +194,19 @@ body {
   margin-bottom: 0.48rem;
 }
 
+.content p,
+.content li,
+.content dd,
+.content dt,
+.content blockquote,
+.content table,
+.content h1,
+.content h2,
+.content h3 {
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
 .content li {
   margin: 0.1rem 0;
 }
@@ -195,11 +219,15 @@ body {
 .content pre {
   padding: 0.58rem 0.78rem;
   font-size: 0.84rem;
+  overflow-x: auto;
+  max-width: 100%;
 }
 
 .content div.highlight,
 .content .highlight {
   margin: 0.45rem 0 0.7rem;
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 .content img[alt="Makrell"] {
@@ -1886,6 +1914,31 @@ html[data-theme="dark"] .playground-hero-copy .rubric {
 }
 
 @media (max-width: 52rem) {
+  .page,
+  .main .content,
+  .content,
+  .bd-main .bd-content,
+  .bd-main .bd-content .bd-article-container,
+  .bd-main .bd-content .bd-article,
+  .bd-main .bd-content .bd-content__inner {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .bd-main .bd-content .bd-article-container,
+  .bd-main .bd-content .bd-content__inner {
+    padding-left: 0.9rem;
+    padding-right: 0.9rem;
+    box-sizing: border-box;
+  }
+
+  .content table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
   .playground-callout {
     flex-direction: column;
     align-items: flex-start;

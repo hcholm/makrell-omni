@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(wc -l /c/eget/2026/Makrell/src/impl/ts/src/*.ts)",
-      "Bash(wc -l /c/eget/2026/Makrell/src/impl/py/makrell/makrellpy/*.py)"
+      "Bash(wc -l /c/eget/2026/Makrell/src/impl/py/makrell/makrellpy/*.py)",
+      "Bash(python -m sphinx source build)"
     ]
   }
 }
