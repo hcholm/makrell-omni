@@ -4,7 +4,7 @@ This is a from-scratch static site generator attempt based on `vision.md`.
 
 ## What it includes
 
-- Makrell CLI entrypoint: `erbuild.mr`
+- Makrell CLI entrypoint: `erbuild.mrpy`
 - Hierarchical sections/pages from `site.mron`
 - Override chain: site defaults -> section values -> page values
 - Mixed page format `.mr`:
@@ -20,5 +20,5 @@ From `src/impl/py/examples/sitegen`:
 
 ```bash
 $env:PYTHONPATH='c:\eget\2026\Makrell\src\impl\py'
-python -m makrell.cli erbuild.mr
+python -m makrell.cli erbuild.mrpy
 ```

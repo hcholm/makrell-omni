@@ -9,5 +9,5 @@ Page front matter can override both.
 
 ## Commands
 
-- python -m makrell.cli erbuild.mr build
-- python -m makrell.cli erbuild.mr watch
+- python -m makrell.cli erbuild.mrpy build
+- python -m makrell.cli erbuild.mrpy watch

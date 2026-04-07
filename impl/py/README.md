@@ -117,21 +117,21 @@ MakrellPy also has Python-shaped extensions such as:
 
 Checked-in examples:
 
-- `examples/makrellpy/coroutines.mr`
-- `examples/makrellpy/async_for.mr`
-- `examples/makrellpy/async_with.mr`
+- `examples/makrellpy/coroutines.mrpy`
+- `examples/makrellpy/async_for.mrpy`
+- `examples/makrellpy/async_with.mrpy`
 
 Run the coroutine example from `impl/py/`:
 
 ```bash
-makrellpy examples/makrellpy/coroutines.mr
+makrellpy examples/makrellpy/coroutines.mrpy
 ```
 
 ### Macro showcase
 
 One of the nicest current MakrellPy showcase examples is:
 
-- `examples/macros/showcase.mr`
+- `examples/macros/showcase.mrpy`
 
 It collects three small macros that are worth surfacing for `v0.10.0`:
 
@@ -145,11 +145,11 @@ It collects three small macros that are worth surfacing for `v0.10.0`:
 Run it:
 
 ```bash
-makrellpy examples/macros/showcase.mr
+makrellpy examples/macros/showcase.mrpy
 ```
 
 ```bash
-makrellpy check examples/macros/showcase.mr --json
+makrellpy check examples/macros/showcase.mrpy --json
 ```
 
 These are good examples not because they are large, but because they show three
