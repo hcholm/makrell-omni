@@ -13,7 +13,7 @@
         src = "{" + {{"".join parts}.strip} + "}"
         importer = {CurlyBrackets [{Identifier "__import__"} {quote "makrell.mrml"}]}
         mod = {BinOp importer "." {Identifier "mrml"}}
-        callee = {BinOp mod "." {Identifier "render_src_to_xml"}}
+        callee = {BinOp mod "." {Identifier "render_src_to_html_fast"}}
         {CurlyBrackets [callee {quote {unquote src}} {Identifier "true"} {CurlyBrackets [{Identifier "globals"}]} {CurlyBrackets [{Identifier "locals"}]}]}
     }
 

@@ -1,4 +1,4 @@
-from makrell.mrml import render_node_to_xml, render_src_to_xml
+from makrell.mrml import render_node_to_xml, render_src_to_xml, render_src_to_html_fast
 from makrell.makrellpy.compiler import eval_src
 
 
@@ -77,3 +77,8 @@ def test_render_src_to_xml_uses_caller_scope_in_attributes():
     {render_src_to_xml "{nav {a [href={$ href}] {$ label}}}"}
     """)
     assert xml == '<nav><a href="/hello">Open</a></nav>'
+
+
+def test_render_src_to_html_fast_does_not_self_close_non_void_tags():
+    html = render_src_to_html_fast('{div {span [class="icon"]} {p Hello}}')
+    assert html == '<div><span class="icon"></span> <p>Hello</p></div>'
