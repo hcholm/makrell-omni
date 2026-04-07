@@ -35,38 +35,30 @@
         {while i < {len ns} - 1
             pattern = ns@i
             retval = ns@(i+1)
-            tb = {make_test_main {quote tv} pattern}
+            tb = {make_test_main testval pattern}
             test_node = tb@0
             bindings = tb@1
             {cases.append [test_node retval]}
             i = i + 2
         }
 
-        # list of test functions and return values as nodes
-        cases_node = {SquareBrackets
-            {map
-                case -> {SquareBrackets [
-                        {BinOp {SquareBrackets [{Identifier "tv"}]} "->" case@0}
-                        case@1
-                ]}
-                cases
-            } | list
+        {fun build_match_expr [cases idx]
+            {when idx >= {len cases}
+                {return {quote null}}}
+            case = cases@idx
+            test_node = case@0
+            retval_node = case@1
+            next_idx = idx + 1
+            rest_node = {build_match_expr cases next_idx}
+            {CurlyBrackets [
+                {Identifier "if"}
+                test_node
+                retval_node
+                rest_node
+            ]}
         }
 
-        n = {quote 
-            {tv -> {do
-                cases = {$ cases_node}
-                {for case cases
-                    f = case@0
-                    is_match = {f tv}
-                    {when is_match
-                        r = case@1
-                        {return r}
-                    }
-                }
-            } {$ testval}}
-        }
-        n
+        {build_match_expr cases 0}
     }
 }
 
@@ -86,11 +78,11 @@
         can_handle = n -> {isinstance n Number}
 
         make_test = [testval pattern next] -> [{quote
-            {do
-                {when {not {isinstance {$ testval} int}}
-                    {return false}}
-                {$ testval} == {$ pattern} 
-            }
+            (
+                {isinstance {$ testval} int}
+                &&
+                {$ testval} == {$ pattern}
+            )
         } []]
 
         ["int_pattype" can_handle make_test]
@@ -100,11 +92,11 @@
         can_handle = n -> {isinstance n String}
 
         make_test = [testval pattern next] -> [{quote
-            {do
-                {when {not {isinstance {$ testval} str}}
-                    {return false}}
-                {$ testval} == {$ pattern} 
-            }
+            (
+                {isinstance {$ testval} str}
+                &&
+                {$ testval} == {$ pattern}
+            )
         } []]
 
         ["string_pattype" can_handle make_test]
@@ -115,9 +107,7 @@
             && {isinstance pattern.right Identifier}
 
         make_test = [testval pattern next] -> [{quote
-            {do
-                {isinstance {$ testval} {$ pattern.right}}
-            }
+            {isinstance {$ testval} {$ pattern.right}}
         } []]
 
         ["type_pattype" can_handle make_test]
@@ -163,13 +153,13 @@
                 subtests = {quote (({$ subtests}) && ({$ subtest}))}
             }
             test = {quote
-                {do
-                    {when {not {isinstance {$ testval} list}}
-                        {return false}}
-                    {when {len {$ testval}} != {$ len_pattern}
-                        {return false}}
+                (
+                    {isinstance {$ testval} list}
+                    &&
+                    {len {$ testval}} == {$ len_pattern}
+                    &&
                     {$ subtests}
-                }
+                )
             }
             [test []]
         }

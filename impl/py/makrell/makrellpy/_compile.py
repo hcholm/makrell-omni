@@ -85,7 +85,7 @@ def compile_mr(n: Node, cc: CompilerContext) -> py.AST | list[py.AST] | None:
         if not cc.running_in_meta:
             meta_callable = resolve_meta_head(opp_n0)
             if callable(meta_callable):
-                result = meta_callable(reg_nodes[1:])
+                result = meta_callable(nodes[1:])
                 if isinstance(result, Node):
                     return c(result)
                 return [c(n) for n in regular(result)]

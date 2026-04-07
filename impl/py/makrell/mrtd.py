@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime
+import inspect
 from typing import Any
 
 from makrell.ast import Comment, Identifier, LPar, Node, Number, Operator, RPar, String, Whitespace
@@ -48,6 +49,15 @@ def parse_src(src: str, profiles: list[str] | tuple[str, ...] | set[str] | None 
         for row_index, tokens in enumerate(row_tokens[1:])
     ]
     return MrtdDocument(columns, rows)
+
+
+def render_src(
+    src: str,
+    profiles: list[str] | tuple[str, ...] | set[str] | None = None,
+    globs: dict | None = None,
+    locs: dict | None = None,
+) -> MrtdDocument:
+    return parse_src(src, profiles)
 
 
 def read_records(

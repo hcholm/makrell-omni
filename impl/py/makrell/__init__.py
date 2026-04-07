@@ -55,12 +55,23 @@ class MakrellFinder():
                         return importlib.machinery.ModuleSpec(
                             fullname, MakrellLoader(fullname, mr_init),
                             origin=entry_path, is_package=True)
+                    mrpy_init = os.path.join(entry_path, '__init__.mrpy')
+                    if os.path.exists(mrpy_init):
+                        return importlib.machinery.ModuleSpec(
+                            fullname, MakrellLoader(fullname, mrpy_init),
+                            origin=entry_path, is_package=True)
                     py_init = os.path.join(entry_path, '__init__.py')
                     if os.path.exists(py_init):
                         return importlib.machinery.ModuleSpec(
                             fullname, MakrellLoader(fullname, py_init),
                             origin=py_init)
                 filename = entry_path + '.mr'
+                if os.path.exists(filename):
+                    ms = importlib.machinery.ModuleSpec(
+                        fullname, MakrellLoader(fullname, filename),
+                        origin=filename)
+                    return ms
+                filename = entry_path + '.mrpy'
                 if os.path.exists(filename):
                     ms = importlib.machinery.ModuleSpec(
                         fullname, MakrellLoader(fullname, filename),

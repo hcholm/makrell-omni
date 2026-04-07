@@ -1,4 +1,5 @@
 import xml.etree.ElementTree as ET
+import inspect
 from makrell.ast import BinOp, CurlyBrackets, Identifier, Node, Number, RoundBrackets, SquareBrackets, String
 from makrell.makrellpy.compiler import eval_nodes
 from makrell.baseformat import src_to_baseformat, operator_parse
@@ -75,6 +76,29 @@ def parse_element(n: Node, parent: ET.Element | None = None, allow_exec: bool = 
             else:
                 elem.text = text
 
+    def append_runtime_value(value):
+        nonlocal tail_holder
+        if value is None:
+            return
+        if isinstance(value, ET.Element):
+            elem.append(value)
+            tail_holder = value
+            return
+        if isinstance(value, CurlyBrackets):
+            tail_holder = parse_element(value, elem, allow_exec, globs, locs)
+            return
+        if isinstance(value, list | tuple):
+            for item in value:
+                append_runtime_value(item)
+            return
+        if isinstance(value, Identifier | String | Number | RoundBrackets | SquareBrackets):
+            append_text(node_str(value))
+            return
+        if isinstance(value, Node):
+            append_text(str(value))
+            return
+        append_text(str(value))
+
     while reader.has_more:
         next = reader.read()
 
@@ -82,7 +106,7 @@ def parse_element(n: Node, parent: ET.Element | None = None, allow_exec: bool = 
             if allow_exec and len(next.nodes) >= 1 and get_identifier(next.nodes[0], "$"):
                 ns = regular(next.nodes[1:])
                 r = eval_nodes(operator_parse(ns)[0], None, globals() | globs, locals() | locs)
-                append_text(str(r))
+                append_runtime_value(r)
             else:
                 tail_holder = parse_element(next, elem, allow_exec, globs, locs)
         else:
@@ -110,3 +134,49 @@ def parse(src: str, allow_exec: bool = False) -> ET.Element:
 def parse_to_xml(src: str, allow_exec: bool = False) -> str:
     elem = parse(src, allow_exec)
     return ET.tostring(elem, encoding="unicode")
+
+
+def render_src_to_element(src: str, allow_exec: bool = True,
+                          globs: dict | None = None, locs: dict | None = None) -> ET.Element:
+    if globs is None or locs is None:
+        frame = inspect.currentframe()
+        assert frame is not None
+        caller = frame.f_back
+        assert caller is not None
+        if globs is None:
+            globs = caller.f_globals
+        if locs is None:
+            locs = caller.f_locals
+    bp = regular(src_to_baseformat(src))
+    return parse_element(bp[0], None, allow_exec, globs or {}, locs or {})
+
+
+def render_src_to_xml(src: str, allow_exec: bool = True,
+                      globs: dict | None = None, locs: dict | None = None) -> str:
+    elem = render_src_to_element(src, allow_exec, globs, locs)
+    return ET.tostring(elem, encoding="unicode")
+
+
+def parse_node(node: Node, allow_exec: bool = False,
+               globs: dict | None = None, locs: dict | None = None) -> ET.Element:
+    return parse_element(node, None, allow_exec, globs or {}, locs or {})
+
+
+def parse_node_to_xml(node: Node, allow_exec: bool = False,
+                      globs: dict | None = None, locs: dict | None = None) -> str:
+    elem = parse_node(node, allow_exec, globs, locs)
+    return ET.tostring(elem, encoding="unicode")
+
+
+def render_node_to_xml(node: Node, allow_exec: bool = True,
+                       globs: dict | None = None, locs: dict | None = None) -> str:
+    if globs is None or locs is None:
+        frame = inspect.currentframe()
+        assert frame is not None
+        caller = frame.f_back
+        assert caller is not None
+        if globs is None:
+            globs = caller.f_globals
+        if locs is None:
+            locs = caller.f_locals
+    return parse_node_to_xml(node, allow_exec, globs, locs)
