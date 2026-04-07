@@ -38,6 +38,20 @@ class MronObject:
 rx_int = re.compile(r'^-?\d+$')
 
 
+def to_plain_dict(m: dict[str, Any]) -> dict[str, Any]:
+    return {k: to_plain(v) for k, v in m.items()}
+
+
+def to_plain(v: Any) -> Any:
+    if hasattr(v, "_data"):
+        return to_plain_dict(v._data)
+    if isinstance(v, dict):
+        return to_plain_dict(v)
+    if isinstance(v, list):
+        return [to_plain(item) for item in v]
+    return v
+
+
 def parse_token(n: Node, allow_exec: bool = False,
                 globs: dict | None = None, locs: dict | None = None) -> Any:
     if isinstance(n, Identifier):
@@ -98,6 +112,15 @@ def parse_file(path: str, allow_exec: bool = False) -> MronObject | Any:
     with open(path, encoding='utf-8') as f:
         src = f.read()
         return parse_src(src, allow_exec)
+
+
+def read_src(text: str, allow_exec: bool = False,
+             globs: dict | None = None, locs: dict | None = None) -> Any:
+    return to_plain(parse_src(text, allow_exec, globs, locs))
+
+
+def read_file(path: str, allow_exec: bool = False) -> Any:
+    return to_plain(parse_file(path, allow_exec))
 
 
 def render_src(text: str, allow_exec: bool = True,

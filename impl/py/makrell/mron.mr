@@ -1,4 +1,4 @@
-{import makrell._mron_py@[parse_nodes parse_src parse_file]}
+{import makrell._mron_py@[parse_nodes parse_src parse_file read_src read_file]}
 
 {def macro mron [ns]
     {parse_nodes (regular ns)}
