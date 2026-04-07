@@ -265,6 +265,41 @@ public sealed class MakrellCompilerTests
     }
 
     [Fact]
+    public void Run_EvaluatesMatchExpression_KeepingFunctionLocalScopeInBranchValue()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {fun choose [path]
+                {match path
+                    "/"
+                        path
+                    _
+                        "other"}}
+            {choose "/"}
+            """);
+
+        Assert.Equal("/", result);
+    }
+
+    [Fact]
+    public void Run_EvaluatesMatchExpression_KeepingFunctionLocalScopeInBranchExpression()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {fun choose [path]
+                prefix = "seen:"
+                {match path
+                    "/health"
+                        prefix + path
+                    _
+                        "other"}}
+            {choose "/health"}
+            """);
+
+        Assert.Equal("seen:/health", result);
+    }
+
+    [Fact]
     public void Run_EvaluatesMatchExpression_WithGuardedClauseBlockBody()
     {
         var result = MakrellCompiler.Run(

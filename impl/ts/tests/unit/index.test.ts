@@ -318,6 +318,37 @@ describe("MakrellTs MVP", () => {
     expect(run(`{match 2 3}`)).toBe(false);
   });
 
+  test("match branch values keep function local scope", () => {
+    const src = `
+      {fun choose [path]
+        {match path
+          "/"
+            path
+          _
+            "other"
+        }
+      }
+      {choose "/"}
+    `;
+    expect(run(src)).toBe("/");
+  });
+
+  test("match branch expressions keep function locals", () => {
+    const src = `
+      {fun choose [path]
+        prefix = "seen:"
+        {match path
+          "/health"
+            prefix + path
+          _
+            "other"
+        }
+      }
+      {choose "/health"}
+    `;
+    expect(run(src)).toBe("seen:/health");
+  });
+
   test("$r regular patterns", () => {
     const src = `
       {match [2 3 3 5]
