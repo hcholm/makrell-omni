@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Reflection;
 using System.Collections;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using MakrellSharp.Ast;
@@ -217,6 +218,17 @@ public static class MakrellCompilerRuntime
     {
         ArgumentNullException.ThrowIfNull(target);
 
+        if (index is Range range)
+        {
+            return target switch
+            {
+                string sliceText => SliceString(sliceText, range),
+                Array sliceArray => SliceArray(sliceArray, range),
+                IList sliceList => SliceList(sliceList, range),
+                _ => throw new InvalidOperationException($"Value of type '{target.GetType().FullName}' does not support range slicing."),
+            };
+        }
+
         if (target is string text)
         {
             var stringIndex = NormalizeIntIndex(text.Length, index);
@@ -261,6 +273,16 @@ public static class MakrellCompilerRuntime
     {
         ArgumentNullException.ThrowIfNull(target);
 
+        if (index is Range range)
+        {
+            return target switch
+            {
+                Array rangeArray => SetArrayRange(rangeArray, range, value),
+                IList rangeList => SetListRange(rangeList, range, value),
+                _ => throw new InvalidOperationException($"Value of type '{target.GetType().FullName}' does not support range assignment."),
+            };
+        }
+
         if (target is Array array)
         {
             var arrayIndex = NormalizeIntIndex(array.Length, index);
@@ -298,6 +320,102 @@ public static class MakrellCompilerRuntime
         }
 
         throw new InvalidOperationException($"Value of type '{targetType.FullName}' is not index-assignable.");
+    }
+
+    private static string SliceString(string text, Range range)
+    {
+        var (start, length) = range.GetOffsetAndLength(text.Length);
+        return text.Substring(start, length);
+    }
+
+    private static object?[] SliceArray(Array array, Range range)
+    {
+        var (start, length) = range.GetOffsetAndLength(array.Length);
+        var result = new object?[length];
+        for (var i = 0; i < length; i += 1)
+        {
+            result[i] = array.GetValue(start + i);
+        }
+
+        return result;
+    }
+
+    private static object?[] SliceList(IList list, Range range)
+    {
+        var (start, length) = range.GetOffsetAndLength(list.Count);
+        var result = new object?[length];
+        for (var i = 0; i < length; i += 1)
+        {
+            result[i] = list[start + i];
+        }
+
+        return result;
+    }
+
+    private static object? SetArrayRange(Array array, Range range, object? value)
+    {
+        var (start, length) = range.GetOffsetAndLength(array.Length);
+        var replacement = EnumerateReplacementValues(value).ToArray();
+        if (replacement.Length != length)
+        {
+            throw new InvalidOperationException("Range assignment to arrays currently requires replacement length to match slice length.");
+        }
+
+        var elementType = array.GetType().GetElementType() ?? typeof(object);
+        for (var i = 0; i < replacement.Length; i += 1)
+        {
+            array.SetValue(ConvertValue(replacement[i], elementType), start + i);
+        }
+
+        return value;
+    }
+
+    private static object? SetListRange(IList list, Range range, object? value)
+    {
+        var (start, length) = range.GetOffsetAndLength(list.Count);
+        var replacement = EnumerateReplacementValues(value).ToList();
+        var elementType = list.GetType().IsGenericType
+            ? list.GetType().GetGenericArguments()[0]
+            : typeof(object);
+
+        for (var i = 0; i < length; i += 1)
+        {
+            list.RemoveAt(start);
+        }
+
+        for (var i = 0; i < replacement.Count; i += 1)
+        {
+            list.Insert(start + i, ConvertValue(replacement[i], elementType));
+        }
+
+        return value;
+    }
+
+    private static IEnumerable<object?> EnumerateReplacementValues(object? value)
+    {
+        if (value is null)
+        {
+            yield return null;
+            yield break;
+        }
+
+        if (value is string)
+        {
+            yield return value;
+            yield break;
+        }
+
+        if (value is IEnumerable enumerable)
+        {
+            foreach (var item in enumerable)
+            {
+                yield return item;
+            }
+
+            yield break;
+        }
+
+        yield return value;
     }
 
     public static object?[] Map(object? values, object? mapper)

@@ -106,6 +106,25 @@ b = a + 3
   _ "other"}
 ```
 
+Runtime indexing and slicing:
+
+```mbf
+items = [1 2 3 4]
+middle = items @ (1 .. 3)
+items @ (1 .. 3) = [8 9]
+
+doc = {}
+doc @ "title" = "MakrellTS"
+
+[middle items doc @ "title"]
+```
+
+Current MakrellTS runtime surface:
+- `x @ i` works for arrays, strings, and JS property/index access
+- `x @ (a .. b)` works for arrays and strings
+- `x @ (a .. b) = values` currently works for arrays
+- negative array/string indexes work through `@`
+
 ### TypeScript-oriented semantics
 
 ```mbf

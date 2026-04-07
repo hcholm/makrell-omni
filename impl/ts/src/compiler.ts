@@ -510,8 +510,11 @@ function compileExpr(n: Node, ctx: Ctx): string {
       return compileCurly(n, ctx);
     case "binop": {
       if (n.op === "=") {
-        const lhs = compileAssignLeft(n.left, ctx);
         const rhs = compileExpr(n.right, ctx);
+        if (n.left.kind === "binop" && n.left.op === "@") {
+          return `(__mr_set_index(${compileExpr(n.left.left, ctx)}, ${compileExpr(n.left.right, ctx)}, ${rhs}))`;
+        }
+        const lhs = compileAssignLeft(n.left, ctx);
         return `(${lhs} = ${rhs})`;
       }
       if (n.op === "|") return compilePipe(n.left, n.right, ctx);
@@ -528,6 +531,8 @@ function compileExpr(n: Node, ctx: Ctx): string {
         }
         return `((${args.join(", ")}) => (${compileExpr(n.right, ctx)}))`;
       }
+      if (n.op === "@") return `__mr_index(${compileExpr(n.left, ctx)}, ${compileExpr(n.right, ctx)})`;
+      if (n.op === "..") return `__mr_slice(${compileExpr(n.left, ctx)}, ${compileExpr(n.right, ctx)})`;
       if (n.op === ".") return `${compileExpr(n.left, ctx)}.${compileExpr(n.right, ctx)}`;
       if (n.op === ":") return compileExpr(n.left, ctx);
       return `(${compileExpr(n.left, ctx)} ${n.op} ${compileExpr(n.right, ctx)})`;
@@ -646,7 +651,8 @@ export function compileToJs(src: string, options: CompileOptions = {}): string {
   };
 
   const body = compileBlock(nodes, ctx, true);
-  return topLevelAsync ? `(async () => {\n${body}\n})()` : `(() => {\n${body}\n})()`;
+  const prelude = emitRuntimePrelude();
+  return topLevelAsync ? `(async () => {\n${prelude}\n${body}\n})()` : `(() => {\n${prelude}\n${body}\n})()`;
 }
 
 export function compileToTs(src: string, options: CompileOptions = {}): string {
@@ -664,7 +670,64 @@ export function compileToTs(src: string, options: CompileOptions = {}): string {
     emitTarget: "ts",
   };
   const body = compileBlock(nodes, ctx, true);
-  return topLevelAsync ? `(async () => {\n${body}\n})()` : `(() => {\n${body}\n})()`;
+  const prelude = emitRuntimePrelude();
+  return topLevelAsync ? `(async () => {\n${prelude}\n${body}\n})()` : `(() => {\n${prelude}\n${body}\n})()`;
+}
+
+function emitRuntimePrelude(): string {
+  return `
+const __mr_is_slice = (value) => value && typeof value === "object" && value.__mr_kind === "slice";
+const __mr_slice = (start, end) => ({ __mr_kind: "slice", start, end });
+const __mr_normalise_index = (length, index) => {
+  let value = Number(index);
+  if (!Number.isInteger(value)) throw new Error("MakrellTS index must be an integer.");
+  if (value < 0) value += length;
+  if (value < 0 || value >= length) throw new RangeError(\`MakrellTS index \${value} out of range for length \${length}.\`);
+  return value;
+};
+const __mr_normalise_slice_bound = (length, bound, fallback) => {
+  if (bound == null) return fallback;
+  let value = Number(bound);
+  if (!Number.isInteger(value)) throw new Error("MakrellTS slice bound must be an integer.");
+  if (value < 0) value += length;
+  if (value < 0) value = 0;
+  if (value > length) value = length;
+  return value;
+};
+const __mr_slice_bounds = (length, spec) => {
+  const start = __mr_normalise_slice_bound(length, spec.start, 0);
+  const end = __mr_normalise_slice_bound(length, spec.end, length);
+  return end < start ? [start, start] : [start, end];
+};
+const __mr_index = (target, index) => {
+  if (__mr_is_slice(index)) {
+    if (typeof target === "string" || Array.isArray(target)) {
+      const [start, end] = __mr_slice_bounds(target.length, index);
+      return target.slice(start, end);
+    }
+    throw new Error("MakrellTS slice access currently supports strings and arrays.");
+  }
+  if (typeof target === "string" || Array.isArray(target)) {
+    return target[__mr_normalise_index(target.length, index)];
+  }
+  return target[index];
+};
+const __mr_set_index = (target, index, value) => {
+  if (__mr_is_slice(index)) {
+    if (!Array.isArray(target)) throw new Error("MakrellTS slice assignment currently supports arrays.");
+    const [start, end] = __mr_slice_bounds(target.length, index);
+    const replacement = Array.isArray(value) ? value : [value];
+    target.splice(start, end - start, ...replacement);
+    return value;
+  }
+  if (Array.isArray(target)) {
+    target[__mr_normalise_index(target.length, index)] = value;
+    return value;
+  }
+  if (target == null) throw new Error("MakrellTS cannot assign through @ on null.");
+  target[index] = value;
+  return value;
+};`.trim();
 }
 
 export function compileToDts(src: string): string {

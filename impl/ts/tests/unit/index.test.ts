@@ -232,6 +232,26 @@ describe("MakrellTs MVP", () => {
     expect(run(src)).toBe(5);
   });
 
+  test("@ supports runtime indexing, dict-style access, and slice assignment", () => {
+    const src = `
+      items = [1 2 3 4]
+      middle = items @ (1 .. 3)
+      items @ (1 .. 3) = [8 9]
+      obj = {Object.fromEntries [["name" "before"]]}
+      obj @ "name" = "MakrellTS"
+      [middle items obj @ "name"]
+    `;
+    expect(run(src)).toEqual([[2, 3], [1, 8, 9, 4], "MakrellTS"]);
+  });
+
+  test("@ supports negative indexing on arrays and strings", () => {
+    const src = `
+      items = [1 2 3]
+      [items @ (0 - 1) "abc" @ (0 - 2)]
+    `;
+    expect(run(src)).toEqual([3, "b"]);
+  });
+
   test("compile diagnostics include source position", () => {
     const src = `
       a =

@@ -1,3 +1,4 @@
+using System.Linq;
 using MakrellSharp.Ast;
 
 namespace MakrellSharp.Compiler.Tests;
@@ -135,6 +136,39 @@ public sealed class MakrellCompilerTests
             """);
 
         Assert.Equal(5, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesIndexAssignment_ForDictionaries()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            {import System.Collections@[Hashtable]}
+            items = {new Hashtable []}
+            items @ "a" = 7
+            items @ "a"
+            """);
+
+        Assert.Equal(7, Convert.ToInt32(result));
+    }
+
+    [Fact]
+    public void Run_EvaluatesSliceIndexing_AndSliceAssignment()
+    {
+        var result = MakrellCompiler.Run(
+            """
+            items = {new (list int) [1 2 3 4]}
+            middle = items @ (1 .. 3)
+            items @ (1 .. 3) = [8 9]
+            [middle items]
+            """);
+
+        var outer = Assert.IsType<object?[]>(result);
+        var middle = Assert.IsType<object?[]>(outer[0]);
+        var updated = Assert.IsAssignableFrom<System.Collections.IEnumerable>(outer[1]);
+
+        Assert.Equal([2, 3], middle.Select(Convert.ToInt32).ToArray());
+        Assert.Equal([1, 8, 9, 4], updated.Cast<object?>().Select(Convert.ToInt32).ToArray());
     }
 
     [Fact]

@@ -85,6 +85,13 @@ In addition to standard arithmetic/comparison/logical operators, MakrellPy defin
 - `=`: assignment
 - `~=` / `!~=`: pattern match / negated pattern match
 
+Operator semantics:
+- `x @ i` indexes lists, tuples, strings, dictionaries, and other Python `__getitem__` targets
+- `x @ i = z` assigns through Python `__setitem__` when available
+- `x @ (a .. b)` performs slice access
+- `x @ (a .. b) = values` performs slice assignment when the target supports it
+- `a .. b` is the slice helper used with `@`; implementations SHOULD treat it as a slice/range operand rather than a standalone numeric range value
+
 ## 7. User-defined Operators
 
 `{def operator OP PRECEDENCE [rightassoc] BODY}` MUST:

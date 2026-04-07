@@ -347,6 +347,19 @@ items @ 1 = "c"
 items @ 1
 ```
 
+```makrell
+items = {new (list int) [1 2 3 4]}
+middle = items @ (1 .. 3)
+items @ (1 .. 3) = [8 9]
+[middle items]
+```
+
+Current Makrell# runtime surface:
+- `x @ i` works for strings, arrays, lists, dictionaries, and CLR indexers
+- `x @ (a .. b)` works for strings, arrays, and lists
+- `x @ (a .. b) = values` works for arrays and lists
+- array slice assignment currently requires the replacement to have the same length as the slice
+
 ## Macro and meta notes
 
 Macros receive original nodes, including whitespace nodes. Whitespace-insensitive macros should call `regular` explicitly.

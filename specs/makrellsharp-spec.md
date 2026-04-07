@@ -102,10 +102,13 @@ Operator semantics:
 - `{+ 2}` partially applies the operator with its left operand fixed
 - arithmetic, comparison, logical, and indexing operators can be used through operator-function values
 - `x @ i` indexes sequences, strings, dictionaries, CLR indexers, and arrays
+- `x @ (a .. b)` performs slice access on strings, arrays, and lists
 - `x.y` is CLR member/property access
 - `x = y` assigns to identifiers
 - `x.y = z` assigns to writable CLR members/properties
 - `x @ i = z` assigns through runtime index support
+- `x @ (a .. b) = values` assigns through range support on arrays and lists
+  - array range assignment currently requires replacement length to match the slice length
 
 ## 6.1 Pattern Matching
 

@@ -48,6 +48,15 @@ def test_array() -> None:
     run("[2 3 [\"æ\" null] false]", [2, 3, ["æ", None], False])
 
 
+def test_indexing_and_slices() -> None:
+    run('items = ["a" "b" "c"]\nitems @ 1', "b")
+    run('items = {dict "a" 1 "b" 2}\nitems @ "b"', 2)
+    run("items = [1 2 3]\nitems @ 1 = 9\nitems", [1, 9, 3])
+    run('items = {dict "a" 1 "b" 2}\nitems @ "a" = 7\nitems @ "a"', 7)
+    run("items = [1 2 3 4]\nitems @ (1 .. 3)", [2, 3])
+    run("items = [1 2 3 4]\nitems @ (1 .. 3) = [8 9]\nitems", [1, 8, 9, 4])
+
+
 def test_arithmetic() -> None:
     run("2 + 3", 5)
     run("2 - 3", -1)
