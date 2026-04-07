@@ -66,3 +66,14 @@ def test_render_src_to_xml_uses_caller_scope():
     {render_src_to_xml "{section {h1 {$ title}}}"}
     """)
     assert xml == "<section><h1>Scoped title</h1></section>"
+
+
+def test_render_src_to_xml_uses_caller_scope_in_attributes():
+    xml = eval_src("""
+    {import makrell.mrml@[render_src_to_xml]}
+
+    href = "/hello"
+    label = "Open"
+    {render_src_to_xml "{nav {a [href={$ href}] {$ label}}}"}
+    """)
+    assert xml == '<nav><a href="/hello">Open</a></nav>'

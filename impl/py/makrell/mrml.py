@@ -53,7 +53,7 @@ def parse_element(n: Node, parent: ET.Element | None = None, allow_exec: bool = 
                 if allow_exec and len(ar.nodes) >= 1 and get_identifier(ar.nodes[0], "$"):
                     ns = regular(ar.nodes[1:])
                     # print(f"exec attr ns: {ns}")
-                    value = str(eval_nodes(operator_parse(ns)[0]))
+                    value = str(eval_nodes(operator_parse(ns)[0], None, globals() | globs, locals() | locs))
                 else:
                     raise Exception("Expected attribute value")
             else:
@@ -87,7 +87,7 @@ def parse_element(n: Node, parent: ET.Element | None = None, allow_exec: bool = 
         if isinstance(value, CurlyBrackets):
             tail_holder = parse_element(value, elem, allow_exec, globs, locs)
             return
-        if isinstance(value, list | tuple):
+        if isinstance(value, (list, tuple)):
             for item in value:
                 append_runtime_value(item)
             return
@@ -101,6 +101,10 @@ def parse_element(n: Node, parent: ET.Element | None = None, allow_exec: bool = 
 
     while reader.has_more:
         next = reader.read()
+
+        if isinstance(next, (list, tuple)):
+            append_runtime_value(next)
+            continue
 
         if isinstance(next, CurlyBrackets):
             if allow_exec and len(next.nodes) >= 1 and get_identifier(next.nodes[0], "$"):
@@ -142,6 +146,8 @@ def render_src_to_element(src: str, allow_exec: bool = True,
         frame = inspect.currentframe()
         assert frame is not None
         caller = frame.f_back
+        while caller is not None and caller.f_globals.get("__name__") == __name__:
+            caller = caller.f_back
         assert caller is not None
         if globs is None:
             globs = caller.f_globals

@@ -41,13 +41,17 @@ class MakrellFinder():
 
     def find_spec(self, fullname, path, target=None):
         if path is None:
-            path = []
-        if not isinstance(path, list):
+            path = list(sys.path)
+        elif not isinstance(path, list):
             path = [path]
-        path.append(os.getcwd())
+        else:
+            path = list(path)
+        if os.getcwd() not in path:
+            path.append(os.getcwd())
         here_dir = os.path.dirname(os.path.abspath(__file__))
         root_dir = os.path.join(here_dir, "..")
-        path.append(root_dir)
+        if root_dir not in path:
+            path.append(root_dir)
 
         for entry in path:
             if os.path.isdir(entry):

@@ -12,7 +12,11 @@ if (!existsSync(distSrcDir)) {
 }
 
 for (const name of ["index.js", "index.js.map", "cli.js", "cli.js.map", "editor_assets.js", "editor_assets.js.map", "playground.js", "playground.js.map"]) {
-  cpSync(path.join(distSrcDir, name), path.join(distDir, name), { force: true });
+  const from = path.join(distSrcDir, name);
+  const to = path.join(distDir, name);
+  if (existsSync(from)) {
+    cpSync(from, to, { force: true });
+  }
 }
 
 mkdirSync(path.join(distDir, "scripts"), { recursive: true });
