@@ -61,3 +61,10 @@ def test_check_command_reports_diagnostics_for_invalid_if_form(tmp_path: Path):
     assert "Invalid if form" in first["message"]
     assert first["range"] is not None
     assert first["range"]["start"]["line"] == 1
+
+
+def test_version_uses_makrellpy_name():
+    result = run_cli("--version")
+
+    assert result.returncode == 0
+    assert result.stdout.startswith("MakrellPy: ")

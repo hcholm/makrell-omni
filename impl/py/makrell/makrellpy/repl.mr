@@ -1,10 +1,11 @@
 {import cmd}
+{import makrell}
 {import makrell.makrellpy.compiler@[eval_src]}
 {import makrell.parsing@[Diagnostics]}
 {import makrell.baseformat@[src_to_baseformat]}
 
 {fun run []
-    {print "Makrell 0.9.1"}
+    {print "MakrellPy " + makrell.__version__}
     
     globals_ = {dict}
     locals_ = {dict}

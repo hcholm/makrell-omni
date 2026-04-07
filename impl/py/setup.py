@@ -22,6 +22,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'makrellpy=makrell.cli:main',
+            'makrellpy-langserver=makrell.langserver:main',
             'makrell=makrell.cli:main',
             'makrell-langserver=makrell.langserver:main',
         ],

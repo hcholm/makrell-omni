@@ -19,8 +19,9 @@ import makrell
 
 
 def print_help():
-    print("usage: makrell [-h] [-m] [-c CODE] [FILE]")
-    print("       makrell check FILE [--json]")
+    print("usage: makrellpy [-h] [-m] [-c CODE] [FILE]")
+    print("       makrellpy check FILE [--json]")
+    print("       legacy aliases: makrell, makrell-langserver")
 
 
 def _node_range(node):
@@ -131,7 +132,7 @@ def main():
         return
 
     if args[0] == "-v" or args[0] == "--version":
-        print(f"Makrell: {makrell.__version__}")
+        print(f"MakrellPy: {makrell.__version__}")
         return
 
     if args[0] == "check" and len(args) in [2, 3]:

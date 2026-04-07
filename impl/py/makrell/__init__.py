@@ -3,9 +3,15 @@ import importlib.machinery
 import os
 import sys
 import makrell.makrellpy.compiler as mrpy_compiler
-from importlib.metadata import version
+from importlib.metadata import PackageNotFoundError, version
 
-__version__ = version("makrell")
+try:
+    __version__ = version("makrell")
+except PackageNotFoundError:
+    try:
+        __version__ = version("makrellpy")
+    except PackageNotFoundError:
+        __version__ = "0+unknown"
 
 class MakrellLoader(importlib.abc.SourceLoader):
 

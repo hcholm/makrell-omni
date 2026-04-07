@@ -24,8 +24,8 @@ Package smoke check from a built artefact:
 python -m build
 python -m venv .pack-smoke
 .pack-smoke\Scripts\python.exe -m pip install <wheel-file-from-dist>
-.pack-smoke\Scripts\makrell.exe --help
-.pack-smoke\Scripts\makrell-langserver.exe --help
+.pack-smoke\Scripts\makrellpy.exe --help
+.pack-smoke\Scripts\makrellpy-langserver.exe --help
 ```
 
 ### Run tests
@@ -38,7 +38,7 @@ python -m pytest
 ### MakrellPy REPL usage
 
 ```bash
-makrell
+makrellpy
 > 2 + 3
 5
 > [2 3 5] | sum
@@ -48,7 +48,7 @@ makrell
 ### Run a MakrellPy script
 
 ```bash
-makrell myscript.mrpy
+makrellpy myscript.mrpy
 ```
 
 ## MakrellPy by example
@@ -124,7 +124,7 @@ Checked-in examples:
 Run the coroutine example from `impl/py/`:
 
 ```bash
-makrell examples/makrellpy/coroutines.mr
+makrellpy examples/makrellpy/coroutines.mr
 ```
 
 ### Macro showcase
@@ -145,11 +145,11 @@ It collects three small macros that are worth surfacing for `v0.10.0`:
 Run it:
 
 ```bash
-makrell examples/macros/showcase.mr
+makrellpy examples/macros/showcase.mr
 ```
 
 ```bash
-makrell check examples/macros/showcase.mr --json
+makrellpy check examples/macros/showcase.mr --json
 ```
 
 These are good examples not because they are large, but because they show three
