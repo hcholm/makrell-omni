@@ -111,17 +111,21 @@ Runtime indexing and slicing:
 ```mbf
 items = [1 2 3 4]
 middle = items @ (1 .. 3)
+prefix = items @ (_ .. 2)
+suffix = items @ (2 .. _)
+whole = items @ (_ .. _)
 items @ (1 .. 3) = [8 9]
 
 doc = {}
 doc @ "title" = "MakrellTS"
 
-[middle items doc @ "title"]
+[middle prefix suffix whole items doc @ "title"]
 ```
 
 Current MakrellTS runtime surface:
 - `x @ i` works for arrays, strings, and JS property/index access
 - `x @ (a .. b)` works for arrays and strings
+- `_ .. b`, `a .. _`, and `_ .. _` leave slice bounds open
 - `x @ (a .. b) = values` currently works for arrays
 - negative array/string indexes work through `@`
 

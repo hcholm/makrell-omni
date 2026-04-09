@@ -100,6 +100,23 @@ See `examples/` and `tests/` for:
 - Python interoperability
 - editor/LSP support
 
+### Indexing and slicing
+
+```mbf
+items = [1 2 3 4]
+middle = items @ (1 .. 3)
+prefix = items @ (_ .. 2)
+suffix = items @ (2 .. _)
+whole = items @ (_ .. _)
+```
+
+Current MakrellPy slice surface:
+
+- `x @ i` uses ordinary Python indexing/subscript semantics
+- `x @ (a .. b)` performs slice access
+- `_ .. b`, `a .. _`, and `_ .. _` leave slice bounds open
+- `x @ (a .. b) = values` uses Python slice assignment when the target supports it
+
 ### Async/await
 
 MakrellPy is still the strongest current reference for the broader Makrell

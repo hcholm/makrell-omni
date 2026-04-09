@@ -236,12 +236,31 @@ describe("MakrellTs MVP", () => {
     const src = `
       items = [1 2 3 4]
       middle = items @ (1 .. 3)
+      prefix = items @ (_ .. 2)
+      suffix = items @ (2 .. _)
+      whole = items @ (_ .. _)
       items @ (1 .. 3) = [8 9]
+      prefixed = [1 2 3 4]
+      prefixed @ (_ .. 2) = [7 8]
+      suffixed = [1 2 3 4]
+      suffixed @ (2 .. _) = [7 8]
+      replaced = [1 2 3 4]
+      replaced @ (_ .. _) = [7 8]
       obj = {Object.fromEntries [["name" "before"]]}
       obj @ "name" = "MakrellTS"
-      [middle items obj @ "name"]
+      [middle prefix suffix whole items prefixed suffixed replaced obj @ "name"]
     `;
-    expect(run(src)).toEqual([[2, 3], [1, 8, 9, 4], "MakrellTS"]);
+    expect(run(src)).toEqual([
+      [2, 3],
+      [1, 2],
+      [3, 4],
+      [1, 2, 3, 4],
+      [1, 8, 9, 4],
+      [7, 8, 3, 4],
+      [1, 2, 7, 8],
+      [7, 8],
+      "MakrellTS",
+    ]);
   });
 
   test("@ supports negative indexing on arrays and strings", () => {

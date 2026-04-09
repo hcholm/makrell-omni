@@ -350,13 +350,17 @@ items @ 1
 ```makrell
 items = {new (list int) [1 2 3 4]}
 middle = items @ (1 .. 3)
+prefix = items @ (_ .. 2)
+suffix = items @ (2 .. _)
+whole = items @ (_ .. _)
 items @ (1 .. 3) = [8 9]
-[middle items]
+[middle prefix suffix whole items]
 ```
 
 Current Makrell# runtime surface:
 - `x @ i` works for strings, arrays, lists, dictionaries, and CLR indexers
 - `x @ (a .. b)` works for strings, arrays, and lists
+- `_ .. b`, `a .. _`, and `_ .. _` leave slice bounds open
 - `x @ (a .. b) = values` works for arrays and lists
 - array slice assignment currently requires the replacement to have the same length as the slice
 

@@ -91,6 +91,7 @@ Operator semantics:
 - `x @ (a .. b)` performs slice access
 - `x @ (a .. b) = values` performs slice assignment when the target supports it
 - `a .. b` is the slice helper used with `@`; implementations SHOULD treat it as a slice/range operand rather than a standalone numeric range value
+- `_ .. b` leaves the start bound open, `a .. _` leaves the end bound open, and `_ .. _` means the full slice
 
 ## 7. User-defined Operators
 

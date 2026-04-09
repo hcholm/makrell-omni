@@ -3,10 +3,8 @@
 {def macro pipe [ns]
     ns = {regular ns}
     p = ns@0
-    i = 1
-    {while i < {len ns}
-        p = {quote {unquote p} | {unquote ns@i}}
-        i = i + 1
+    {for n ns@(1.._)
+        p = {quote {unquote p} | {unquote n}}
     }
     p
 }
@@ -44,21 +42,14 @@
 
             {when {isinstance head Operator}
                 a = {transform ns@1}
-                i = 2
-                {while i < {len ns}
-                    b = {transform ns@i}
+                {for part ns@(2.._)
+                    b = {transform part}
                     a = {BinOp a head.value b}
-                    i = i + 1
                 }
                 {return a}
             }
 
-            args = []
-            i = 1
-            {while i < {len ns}
-                {args.append {transform ns@i}}
-                i = i + 1
-            }
+            args = ns@(1.._) | {map transform _} | list
             {return {CurlyBrackets [{transform head}] + args}}
         }
 
@@ -79,20 +70,20 @@ double = [x] -> x * 2
 bump = [x] -> x + 3
 mul = [x y] -> x * y
 
-pipe_result = {pipe 5 bump double {mul 4 _}}
+pipe_result = {pipe 5 bump double {mul 4 _}}  # ((5 + 3) * 2) * 4 = 64
 {print "pipe_result =" pipe_result}
 
-rpn_result = {rpn 2 3 * 5 7 * +}
+rpn_result = {rpn 2 3 * 5 7 * +}  # 2 * 3 + 5 * 7 = 41
 {print "rpn_result =" rpn_result}
 
 rpn_add = {rpn [x y] x y + ->}
-rpn_add_result = {rpn_add 4 9}
+rpn_add_result = {rpn_add 4 9}  # 4 + 9 = 13
 {print "rpn_add_result =" rpn_add_result}
 
-lisp_result = {lisp (+ (* 2 3) (* 5 7) 11)}
+lisp_result = {lisp (+ (* 2 3) (* 5 7) 11)}  # 2 * 3 + 5 * 7 + 11 = 52
 {print "lisp_result =" lisp_result}
 
-lisp_sum_squares = {lisp (sum (map (-> [x] (* x x)) [2 3 5]))}
+lisp_sum_squares = {lisp (sum (map (-> [x] (* x x)) [2 3 5]))}  # 2 * 2 + 3 * 3 + 5 * 5 = 38
 {print "lisp_sum_squares =" lisp_sum_squares}
 
 [pipe_result rpn_result rpn_add_result lisp_result lisp_sum_squares]

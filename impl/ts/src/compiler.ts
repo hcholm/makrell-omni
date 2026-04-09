@@ -491,6 +491,11 @@ function compilePipe(left: Node, right: Node, ctx: Ctx): string {
   return `${compileExpr(right, ctx)}(${leftExpr})`;
 }
 
+function compileSliceBound(n: Node, ctx: Ctx): string {
+  if (n.kind === "identifier" && n.value === "_") return "null";
+  return compileExpr(n, ctx);
+}
+
 function compileExpr(n: Node, ctx: Ctx): string {
   switch (n.kind) {
     case "identifier":
@@ -532,7 +537,7 @@ function compileExpr(n: Node, ctx: Ctx): string {
         return `((${args.join(", ")}) => (${compileExpr(n.right, ctx)}))`;
       }
       if (n.op === "@") return `__mr_index(${compileExpr(n.left, ctx)}, ${compileExpr(n.right, ctx)})`;
-      if (n.op === "..") return `__mr_slice(${compileExpr(n.left, ctx)}, ${compileExpr(n.right, ctx)})`;
+      if (n.op === "..") return `__mr_slice(${compileSliceBound(n.left, ctx)}, ${compileSliceBound(n.right, ctx)})`;
       if (n.op === ".") return `${compileExpr(n.left, ctx)}.${compileExpr(n.right, ctx)}`;
       if (n.op === ":") return compileExpr(n.left, ctx);
       return `(${compileExpr(n.left, ctx)} ${n.op} ${compileExpr(n.right, ctx)})`;

@@ -24,6 +24,11 @@ def compile_binop(n: BinOp, cc: CompilerContext, compile_mr) -> py.AST | list[py
                 transfer_pos(n, pa)
         return pa  # type: ignore
 
+    def c_slice_bound(n: Node) -> py.expr | None:
+        if get_identifier(n, "_"):
+            return None
+        return c(n)
+
     def mr_binop(left: Node, op: str, right: Node) -> py.AST | list[py.AST] | None:
 
         if op in cc.meta.symbols:
@@ -56,14 +61,13 @@ def compile_binop(n: BinOp, cc: CompilerContext, compile_mr) -> py.AST | list[py
             case "@":
                 right = deparen(right)
                 if get_binop(right, ".."):
-                    slice = c(right)
-                    s = pb.subscript_ld(c(left), pb.slice(slice))
+                    s = pb.subscript_ld(c(left), c(right))
                 else:
                     s = pb.subscript_ld(c(left), c(right))
                 return s
             
             case "..":
-                return pb.slice(c(left), c(right))
+                return pb.slice(c_slice_bound(left), c_slice_bound(right))
             
             case ".":
                 return py.Attribute(c(left), right.value, py.Load())

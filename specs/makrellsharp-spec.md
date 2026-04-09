@@ -103,6 +103,7 @@ Operator semantics:
 - arithmetic, comparison, logical, and indexing operators can be used through operator-function values
 - `x @ i` indexes sequences, strings, dictionaries, CLR indexers, and arrays
 - `x @ (a .. b)` performs slice access on strings, arrays, and lists
+- `x @ (_ .. b)`, `x @ (a .. _)`, and `x @ (_ .. _)` leave the corresponding slice bounds open
 - `x.y` is CLR member/property access
 - `x = y` assigns to identifiers
 - `x.y = z` assigns to writable CLR members/properties

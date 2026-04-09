@@ -159,16 +159,37 @@ public sealed class MakrellCompilerTests
             """
             items = {new (list int) [1 2 3 4]}
             middle = items @ (1 .. 3)
+            prefix = items @ (_ .. 2)
+            suffix = items @ (2 .. _)
+            whole = items @ (_ .. _)
             items @ (1 .. 3) = [8 9]
-            [middle items]
+            prefixed = {new (list int) [1 2 3 4]}
+            prefixed @ (_ .. 2) = [7 8]
+            suffixed = {new (list int) [1 2 3 4]}
+            suffixed @ (2 .. _) = [7 8]
+            replaced = {new (list int) [1 2 3 4]}
+            replaced @ (_ .. _) = [7 8]
+            [middle prefix suffix whole items prefixed suffixed replaced]
             """);
 
         var outer = Assert.IsType<object?[]>(result);
         var middle = Assert.IsType<object?[]>(outer[0]);
-        var updated = Assert.IsAssignableFrom<System.Collections.IEnumerable>(outer[1]);
+        var prefix = Assert.IsType<object?[]>(outer[1]);
+        var suffix = Assert.IsType<object?[]>(outer[2]);
+        var whole = Assert.IsType<object?[]>(outer[3]);
+        var updated = Assert.IsAssignableFrom<System.Collections.IEnumerable>(outer[4]);
+        var prefixed = Assert.IsAssignableFrom<System.Collections.IEnumerable>(outer[5]);
+        var suffixed = Assert.IsAssignableFrom<System.Collections.IEnumerable>(outer[6]);
+        var replaced = Assert.IsAssignableFrom<System.Collections.IEnumerable>(outer[7]);
 
         Assert.Equal([2, 3], middle.Select(Convert.ToInt32).ToArray());
+        Assert.Equal([1, 2], prefix.Select(Convert.ToInt32).ToArray());
+        Assert.Equal([3, 4], suffix.Select(Convert.ToInt32).ToArray());
+        Assert.Equal([1, 2, 3, 4], whole.Select(Convert.ToInt32).ToArray());
         Assert.Equal([1, 8, 9, 4], updated.Cast<object?>().Select(Convert.ToInt32).ToArray());
+        Assert.Equal([7, 8, 3, 4], prefixed.Cast<object?>().Select(Convert.ToInt32).ToArray());
+        Assert.Equal([1, 2, 7, 8], suffixed.Cast<object?>().Select(Convert.ToInt32).ToArray());
+        Assert.Equal([7, 8], replaced.Cast<object?>().Select(Convert.ToInt32).ToArray());
     }
 
     [Fact]

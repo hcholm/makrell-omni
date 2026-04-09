@@ -54,7 +54,13 @@ def test_indexing_and_slices() -> None:
     run("items = [1 2 3]\nitems @ 1 = 9\nitems", [1, 9, 3])
     run('items = {dict "a" 1 "b" 2}\nitems @ "a" = 7\nitems @ "a"', 7)
     run("items = [1 2 3 4]\nitems @ (1 .. 3)", [2, 3])
+    run("items = [1 2 3 4]\nitems @ (_ .. 2)", [1, 2])
+    run("items = [1 2 3 4]\nitems @ (2 .. _)", [3, 4])
+    run("items = [1 2 3 4]\nitems @ (_ .. _)", [1, 2, 3, 4])
     run("items = [1 2 3 4]\nitems @ (1 .. 3) = [8 9]\nitems", [1, 8, 9, 4])
+    run("items = [1 2 3 4]\nitems @ (_ .. 2) = [8 9]\nitems", [8, 9, 3, 4])
+    run("items = [1 2 3 4]\nitems @ (2 .. _) = [8 9]\nitems", [1, 2, 8, 9])
+    run("items = [1 2 3 4]\nitems @ (_ .. _) = [8 9]\nitems", [8, 9])
 
 
 def test_arithmetic() -> None:

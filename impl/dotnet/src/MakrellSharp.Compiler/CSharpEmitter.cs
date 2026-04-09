@@ -707,6 +707,11 @@ internal static class CSharpEmitter
             return $"MakrellSharp.Compiler.MakrellCompilerRuntime.Index({EmitExpression(binOp.Left, state)}, {EmitExpression(binOp.Right, state)})";
         }
 
+        if (binOp.Operator == "..")
+        {
+            return EmitSlice(binOp, state);
+        }
+
         if (binOp.Operator == "~=")
         {
             return $"MakrellSharp.Compiler.MakrellCompilerRuntime.PatternMatches({EmitExpression(binOp.Left, state)}, {EmitPatternNode(binOp.Right, state)})";
@@ -729,6 +734,32 @@ internal static class CSharpEmitter
 
         return $"({EmitExpression(binOp.Left, state)} {binOp.Operator} {EmitExpression(binOp.Right, state)})";
     }
+
+    private static string EmitSlice(BinOpNode binOp, EmitterState state)
+    {
+        var openStart = IsOpenSliceBound(binOp.Left);
+        var openEnd = IsOpenSliceBound(binOp.Right);
+
+        if (openStart && openEnd)
+        {
+            return "Range.All";
+        }
+
+        if (openStart)
+        {
+            return $"(..{EmitExpression(binOp.Right, state)})";
+        }
+
+        if (openEnd)
+        {
+            return $"({EmitExpression(binOp.Left, state)}..)";
+        }
+
+        return $"({EmitExpression(binOp.Left, state)} .. {EmitExpression(binOp.Right, state)})";
+    }
+
+    private static bool IsOpenSliceBound(Node node) =>
+        node is IdentifierNode { Value: "_" };
 
     private static string EmitPipe(Node left, Node right, EmitterState state)
     {
