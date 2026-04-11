@@ -56,3 +56,16 @@ name:string age:int
 Ada 32
 ''');
 ```
+
+## Install
+
+For the `v0.10.0` Git tag from GitHub:
+
+```yaml
+dependencies:
+  makrell_formats:
+    git:
+      url: https://github.com/hcholm/makrell-omni.git
+      ref: v0.10.0
+      path: src/impl/dart
+```

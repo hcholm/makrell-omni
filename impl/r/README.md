@@ -21,3 +21,11 @@ Current status:
 - deterministic XML-style MRML serialisation
 - basic MRTD type support: `string`, `int`, `float`, `bool`
 - explicit shared `basic suffix profile` support for MRON and MRTD via `apply_basic_suffix_profile(...)` as a post-L1 conversion layer
+
+## Install
+
+For the `v0.10.0` Git tag from GitHub:
+
+```r
+remotes::install_github("hcholm/makrell-omni", ref = "v0.10.0", subdir = "src/impl/r")
+```

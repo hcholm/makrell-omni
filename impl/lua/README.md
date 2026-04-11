@@ -23,3 +23,11 @@ Current status:
 - data-format support is intentionally capped at MBF level 1 today
 - operator tokens are preserved so hyphenated barewords are rejected rather than misread as identifiers
 - explicit shared `basic suffix profile` support for MRON and MRTD as a post-L1 conversion layer
+
+## Install
+
+For the `v0.10.0` Git tag from GitHub:
+
+```bash
+luarocks install https://raw.githubusercontent.com/hcholm/makrell-omni/v0.10.0/src/impl/lua/makrell-formats-dev-1.rockspec
+```

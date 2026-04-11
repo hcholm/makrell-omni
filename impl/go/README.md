@@ -29,3 +29,11 @@ Current public model types:
 - `ParseMrmlString(...)` returns `MrmlElement`
 - `ParseMrtdString(...)` returns `MrtdDocument`
 - `ApplyBasicSuffixProfile(...)` exposes the shared suffix conversion layer directly for reuse by other format/language code
+
+## Install
+
+For the `v0.10.0` Git tag from GitHub:
+
+```bash
+go get github.com/makrell/makrell-go/formats@v0.10.0
+```

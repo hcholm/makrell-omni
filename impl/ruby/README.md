@@ -23,3 +23,11 @@ Current status:
 - data-format support is intentionally capped at MBF level 1 today
 - operator tokens are preserved so hyphenated barewords are rejected rather than misread as identifiers
 - explicit shared `basic suffix profile` support for MRON and MRTD as a post-L1 conversion layer
+
+## Install
+
+For the `v0.10.0` Git tag from GitHub:
+
+```ruby
+gem "makrell-formats", git: "https://github.com/hcholm/makrell-omni.git", tag: "v0.10.0", glob: "src/impl/ruby/*"
+```

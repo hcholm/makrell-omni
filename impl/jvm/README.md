@@ -44,6 +44,26 @@ The JVM track is set up for `v0.10.0` publication as:
 - artifact: `makrell-formats`
 - version: `0.10.0`
 
+## Install
+
+From GitHub Packages:
+
+```kotlin
+repositories {
+    maven {
+        url = uri("https://maven.pkg.github.com/hcholm/makrell-omni")
+        credentials {
+            username = project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_PACKAGES_USERNAME")
+            password = project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_PACKAGES_TOKEN")
+        }
+    }
+}
+
+dependencies {
+    implementation("dev.makrell:makrell-formats:0.10.0")
+}
+```
+
 For GitHub Packages publication, provide:
 
 - `GITHUB_PACKAGES_USERNAME`

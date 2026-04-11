@@ -20,10 +20,19 @@ Current status:
 - comments and identifier-as-string handling in MRON and MRTD
 - deterministic XML-style MRML serialisation
 - basic MRTD type support: `string`, `int`, `float`, `bool`
-- lightweight implementation intended as a portability baseline, not yet a full syntax-preserving MBF layer
+- explicit shared `basic suffix profile` support for MRON and MRTD via `apply_basic_suffix_profile(...)` as a post-L1 conversion layer
 
 Current public model types:
 
 - `mron::MronValue`
 - `mrml::MrmlElement`
 - `mrtd::MrtdDocument`
+
+## Install
+
+For the `v0.10.0` Git tag from GitHub:
+
+```toml
+[dependencies]
+makrell-formats = { git = "https://github.com/hcholm/makrell-omni.git", tag = "v0.10.0", package = "makrell-formats" }
+```

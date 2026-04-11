@@ -25,3 +25,11 @@ Current status:
 - deterministic XML-style MRML serialisation
 - basic MRTD type support: `string`, `int`, `float`, `bool`
 - explicit shared `basic suffix profile` support for MRON and MRTD as a post-L1 conversion layer
+
+## Install
+
+For the `v0.10.0` Git tag from GitHub:
+
+```bash
+cpanm https://github.com/hcholm/makrell-omni.git@v0.10.0#subdir=src/impl/perl
+```
