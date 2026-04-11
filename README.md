@@ -77,6 +77,7 @@ MRML:
 ## Start Here
 
 - Website: [makrell.dev](https://makrell.dev)
+- `v0.10.0` release page and downloadable package assets: [github.com/hcholm/makrell-omni/releases/tag/v0.10.0](https://github.com/hcholm/makrell-omni/releases/tag/v0.10.0)
 - Playground and browser-facing direction: [makrell.dev/playground/](https://makrell.dev/playground/)
 - VS Code/editor workflow: [`vscode-makrell/README.md`](vscode-makrell/README.md)
 - Specification index: [`specs/main-spec.md`](specs/main-spec.md)
