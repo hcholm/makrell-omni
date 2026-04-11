@@ -4,8 +4,6 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 
-pub const EXTENDED_SCALARS_PROFILE: &str = "extended-scalars";
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MrtdColumn {
     pub name: String,
@@ -27,18 +25,14 @@ pub enum MrtdValue {
 }
 
 pub fn parse_string(source: &str) -> Result<MrtdDocument, MakrellFormatError> {
-    let lines: Vec<&str> = source
-        .lines()
-        .map(str::trim)
-        .filter(|line| !line.is_empty() && !line.starts_with('#'))
-        .collect();
+    let lines = split_rows(source)?;
     if lines.is_empty() {
         return Ok(MrtdDocument {
             columns: Vec::new(),
             rows: Vec::new(),
         });
     }
-    let header_nodes = parse_nodes(lines[0])?;
+    let header_nodes = parse_nodes(&lines[0])?;
     let columns = header_nodes
         .iter()
         .map(|node| match node {
@@ -55,7 +49,7 @@ pub fn parse_string(source: &str) -> Result<MrtdDocument, MakrellFormatError> {
 
     let mut rows = Vec::new();
     for line in &lines[1..] {
-        let mut row_source = (*line).to_string();
+        let mut row_source = line.clone();
         if row_source.starts_with('(') && row_source.ends_with(')') {
             row_source = row_source[1..row_source.len() - 1].trim().to_string();
         }
@@ -70,6 +64,101 @@ pub fn parse_string(source: &str) -> Result<MrtdDocument, MakrellFormatError> {
         rows.push(row);
     }
     Ok(MrtdDocument { columns, rows })
+}
+
+fn split_rows(source: &str) -> Result<Vec<String>, MakrellFormatError> {
+    let mut lines = Vec::new();
+    let mut buffer = String::new();
+    let chars: Vec<char> = source.chars().collect();
+    let mut i = 0;
+    let mut in_string = false;
+    let mut escaping = false;
+    let mut in_line_comment = false;
+    let mut in_block_comment = false;
+
+    while i < chars.len() {
+        let ch = chars[i];
+        if in_line_comment {
+            if ch == '\n' {
+                in_line_comment = false;
+                let trimmed = buffer.trim();
+                if !trimmed.is_empty() {
+                    lines.push(trimmed.to_string());
+                }
+                buffer.clear();
+            }
+            i += 1;
+            continue;
+        }
+        if in_block_comment {
+            if ch == '*' && i + 1 < chars.len() && chars[i + 1] == '/' {
+                in_block_comment = false;
+                i += 2;
+            } else {
+                i += 1;
+            }
+            continue;
+        }
+        if in_string {
+            buffer.push(ch);
+            if escaping {
+                escaping = false;
+            } else if ch == '\\' {
+                escaping = true;
+            } else if ch == '"' {
+                in_string = false;
+            }
+            i += 1;
+            continue;
+        }
+
+        if ch == '"' {
+            in_string = true;
+            buffer.push(ch);
+            i += 1;
+            continue;
+        }
+        if ch == '#' {
+            in_line_comment = true;
+            i += 1;
+            continue;
+        }
+        if ch == '/' && i + 1 < chars.len() && chars[i + 1] == '/' {
+            in_line_comment = true;
+            i += 2;
+            continue;
+        }
+        if ch == '/' && i + 1 < chars.len() && chars[i + 1] == '*' {
+            in_block_comment = true;
+            i += 2;
+            continue;
+        }
+        if ch == '\r' {
+            i += 1;
+            continue;
+        }
+        if ch == '\n' {
+            let trimmed = buffer.trim();
+            if !trimmed.is_empty() {
+                lines.push(trimmed.to_string());
+            }
+            buffer.clear();
+            i += 1;
+            continue;
+        }
+
+        buffer.push(ch);
+        i += 1;
+    }
+
+    if in_block_comment {
+        return Err(MakrellFormatError::new("Unterminated block comment"));
+    }
+    let trimmed = buffer.trim();
+    if !trimmed.is_empty() {
+        lines.push(trimmed.to_string());
+    }
+    Ok(lines)
 }
 
 pub fn parse_file(path: impl AsRef<Path>) -> Result<MrtdDocument, MakrellFormatError> {

@@ -56,6 +56,17 @@ fn tokenize(source: &str) -> Result<Vec<Token>, MakrellFormatError> {
             }
             continue;
         }
+        if ch == '/' && i + 1 < chars.len() && chars[i + 1] == '*' {
+            i += 2;
+            while i + 1 < chars.len() && !(chars[i] == '*' && chars[i + 1] == '/') {
+                i += 1;
+            }
+            if i + 1 >= chars.len() {
+                return Err(MakrellFormatError::new("Unterminated block comment"));
+            }
+            i += 2;
+            continue;
+        }
         if ch == '-' && i + 1 < chars.len() && chars[i + 1].is_ascii_digit() {
             let start = i;
             i += 1;
@@ -64,7 +75,7 @@ fn tokenize(source: &str) -> Result<Vec<Token>, MakrellFormatError> {
                 if c.is_whitespace() || c == ',' || c == '#' || "{}[]()=\"".contains(c) {
                     break;
                 }
-                if c == '/' && i + 1 < chars.len() && chars[i + 1] == '/' {
+                if c == '/' && i + 1 < chars.len() && (chars[i + 1] == '/' || chars[i + 1] == '*') {
                     break;
                 }
                 i += 1;
@@ -161,7 +172,7 @@ fn tokenize(source: &str) -> Result<Vec<Token>, MakrellFormatError> {
             if c.is_whitespace() || c == ',' || c == '#' || "{}[]()=\"-".contains(c) {
                 break;
             }
-            if c == '/' && i + 1 < chars.len() && chars[i + 1] == '/' {
+            if c == '/' && i + 1 < chars.len() && (chars[i + 1] == '/' || chars[i + 1] == '*') {
                 break;
             }
             i += 1;

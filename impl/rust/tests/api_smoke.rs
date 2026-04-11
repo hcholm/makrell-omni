@@ -57,11 +57,18 @@ fn mrtd_parses_shared_fixture_and_identifier_strings() {
         ]))
     );
 
+    let block_comment_mron = mron::parse_file(fixture_path("conformance/mron/block-comments.mron")).unwrap();
+    assert_eq!(block_comment_mron, conformance_mron);
+
     let doc = mrtd::parse_file(fixture_path("conformance/mrtd/untyped-headers.mrtd")).unwrap();
     assert_eq!(doc.rows[0][1], MrtdValue::String("active".into()));
     assert_eq!(doc.rows[1][2], MrtdValue::String("review".into()));
     assert_eq!(doc.columns[1].r#type, None);
     assert_eq!(doc.columns[2].r#type, None);
+
+    let block_comment_doc = mrtd::parse_file(fixture_path("conformance/mrtd/block-comments.mrtd")).unwrap();
+    assert_eq!(block_comment_doc.rows[0][1], MrtdValue::String("active".into()));
+    assert_eq!(block_comment_doc.rows[1][1], MrtdValue::String("inactive".into()));
 }
 
 #[test]

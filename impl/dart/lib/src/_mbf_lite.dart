@@ -67,6 +67,7 @@ List<MbfLiteToken> tokenizeMbfLite(String source) {
     return char.trim().isEmpty ||
         char == "#" ||
         char == "," ||
+        char == "/" ||
         char == "{" ||
         char == "}" ||
         char == "[" ||
@@ -90,6 +91,18 @@ List<MbfLiteToken> tokenizeMbfLite(String source) {
       while (index < source.length && source[index] != "\n") {
         index += 1;
       }
+      continue;
+    }
+
+    if (char == "/" && index + 1 < source.length && source[index + 1] == "*") {
+      index += 2;
+      while (index + 1 < source.length && !(source[index] == "*" && source[index + 1] == "/")) {
+        index += 1;
+      }
+      if (index + 1 >= source.length) {
+        throw MakrellFormatException("Unterminated block comment.");
+      }
+      index += 2;
       continue;
     }
 
@@ -249,11 +262,7 @@ Object? _parseStringToken(MbfLiteToken token, {Set<String> profiles = const {}})
   final value = token.stringValue ?? "";
   if (token.suffix.isEmpty) return value;
   if (token.suffix == "dt") return DateTime.parse(value);
-  if (!profiles.contains("extended-scalars")) {
-    throw MakrellFormatException("Unsupported string suffix '${token.suffix}'.");
-  }
   return switch (token.suffix) {
-    "dt" => DateTime.parse(value),
     "bin" => int.parse(value, radix: 2),
     "oct" => int.parse(value, radix: 8),
     "hex" => int.parse(value, radix: 16),
@@ -283,9 +292,6 @@ Object _parseNumberToken(MbfLiteToken token, {Set<String> profiles = const {}}) 
 
   if (!factors.containsKey(suffix)) {
     throw MakrellFormatException("Unsupported numeric suffix '$suffix'.");
-  }
-  if (!profiles.contains("extended-scalars")) {
-    throw MakrellFormatException("Numeric suffix '$suffix' requires the 'extended-scalars' profile.");
   }
   return (baseValue as num) * factors[suffix]!;
 }

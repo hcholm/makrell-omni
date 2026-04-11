@@ -43,7 +43,7 @@ It is meant to answer:
 | MRON | active | available in Py and .NET, evolving in TS |
 | MRML | active | available in Py and .NET, evolving in TS |
 | MRTD | active | available across Py, TS, and .NET |
-| MRTD profiles | evolving | `extended-scalars` is the first shared profile experiment |
+| MBF L0/L1 data-format conformance | active | shared conformance now covers comments, operator boundaries, base scalar suffixes, malformed groups, and untyped MRTD headers across the stronger tracks |
 | VS Code extension | active | being refreshed for the current family |
 | Shared editor assets | active | shared grammar/snippets/language config now exist |
 | MakrellTS playground | evolving | live direction and browser-host groundwork exist |

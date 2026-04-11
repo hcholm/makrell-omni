@@ -35,6 +35,16 @@ local function consume_line_comment(source, index)
   return index
 end
 
+local function consume_block_comment(source, index)
+  while index < #source do
+    if source:sub(index, index + 1) == "*/" then
+      return index + 2
+    end
+    index = index + 1
+  end
+  error("Unterminated block comment")
+end
+
 local function read_number(source, index)
   local finish = index
   if source:sub(finish, finish) == "-" then
@@ -108,6 +118,8 @@ function M.tokenize_mbf_level0(source)
       index = index + 1
     elseif char == "/" and next_char == "/" then
       index = consume_line_comment(source, index + 2)
+    elseif char == "/" and next_char == "*" then
+      index = consume_block_comment(source, index + 2)
     elseif char == "#" then
       index = consume_line_comment(source, index + 1)
     elseif (char == "-" and is_digit(next_char)) or is_digit(char) then
@@ -136,6 +148,83 @@ function M.tokenize_mbf_level0(source)
     end
   end
   return tokens
+end
+
+local function split_mrtd_lines(source)
+  local lines = {}
+  local buffer = {}
+  local index = 1
+  local in_string = false
+  local escaping = false
+  local in_line_comment = false
+  local in_block_comment = false
+
+  while index <= #source do
+    local char = source:sub(index, index)
+    local next_char = source:sub(index + 1, index + 1)
+    if in_line_comment then
+      if char == "\n" then
+        in_line_comment = false
+        local trimmed = table.concat(buffer):match("^%s*(.-)%s*$")
+        if trimmed ~= "" then
+          table.insert(lines, trimmed)
+        end
+        buffer = {}
+      end
+      index = index + 1
+    elseif in_block_comment then
+      if char == "*" and next_char == "/" then
+        in_block_comment = false
+        index = index + 2
+      else
+        index = index + 1
+      end
+    elseif in_string then
+      table.insert(buffer, char)
+      if escaping then
+        escaping = false
+      elseif char == "\\" then
+        escaping = true
+      elseif char == '"' then
+        in_string = false
+      end
+      index = index + 1
+    elseif char == '"' then
+      in_string = true
+      table.insert(buffer, char)
+      index = index + 1
+    elseif char == "/" and next_char == "/" then
+      in_line_comment = true
+      index = index + 2
+    elseif char == "/" and next_char == "*" then
+      in_block_comment = true
+      index = index + 2
+    elseif char == "#" then
+      in_line_comment = true
+      index = index + 1
+    elseif char == "\r" then
+      index = index + 1
+    elseif char == "\n" then
+      local trimmed = table.concat(buffer):match("^%s*(.-)%s*$")
+      if trimmed ~= "" then
+        table.insert(lines, trimmed)
+      end
+      buffer = {}
+      index = index + 1
+    else
+      table.insert(buffer, char)
+      index = index + 1
+    end
+  end
+
+  if in_block_comment then
+    error("Unterminated block comment")
+  end
+  local trimmed = table.concat(buffer):match("^%s*(.-)%s*$")
+  if trimmed ~= "" then
+    table.insert(lines, trimmed)
+  end
+  return lines
 end
 
 local parse_node
@@ -423,13 +512,7 @@ local function mrtd_cell(value)
 end
 
 function M.parse_mrtd_string(source)
-  local lines = {}
-  for line in source:gmatch("[^\r\n]+") do
-    local trimmed = line:match("^%s*(.-)%s*$")
-    if trimmed ~= "" and trimmed:sub(1, 1) ~= "#" then
-      table.insert(lines, trimmed)
-    end
-  end
+  local lines = split_mrtd_lines(source)
   if #lines == 0 then
     return { columns = {}, rows = {}, records = {} }
   end

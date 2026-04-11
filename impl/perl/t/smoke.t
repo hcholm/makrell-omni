@@ -39,6 +39,10 @@ my $conformance_mron = parse_mron_string(read_fixture('conformance/mron', 'comme
 is($conformance_mron->{name}, 'Makrell', 'Conformance MRON name');
 is($conformance_mron->{features}[1], 'typed_scalars', 'Conformance MRON identifier array item');
 
+my $block_comment_mron = parse_mron_string(read_fixture('conformance/mron', 'block-comments.mron'));
+is($block_comment_mron->{name}, 'Makrell', 'Block-comment MRON name');
+is($block_comment_mron->{features}[1], 'typed_scalars', 'Block-comment MRON identifier array item');
+
 my $negative_mron = parse_mron_string(read_fixture('conformance/mron', 'negative-numbers.mron'));
 is($negative_mron->{offset}, -2, 'Conformance MRON negative scalar');
 is($negative_mron->{temps}[0], -1, 'Conformance MRON negative array item');
@@ -51,6 +55,10 @@ ok(!defined $idtable->{columns}[2]{type}, 'MRTD second untyped header stays unty
 my $negative_table = parse_mrtd_string(read_fixture('conformance/mrtd', 'negative-numbers.mrtd'));
 is($negative_table->{records}[0]{delta}, -2, 'Conformance MRTD negative int');
 is($negative_table->{records}[0]{ratio}, -3.5, 'Conformance MRTD negative float');
+
+my $block_comment_table = parse_mrtd_string(read_fixture('conformance/mrtd', 'block-comments.mrtd'));
+is($block_comment_table->{records}[0]{status}, 'active', 'Block-comment MRTD first row');
+is($block_comment_table->{records}[1]{note}, 'review', 'Block-comment MRTD second row');
 
 my $out = write_mrtd_string({
     columns => [

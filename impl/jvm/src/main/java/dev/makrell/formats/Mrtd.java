@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -13,8 +15,6 @@ import java.util.Map;
 import java.util.Set;
 
 public final class Mrtd {
-    public static final String EXTENDED_SCALARS_PROFILE = "extended-scalars";
-
     private Mrtd() {
     }
 
@@ -140,8 +140,11 @@ public final class Mrtd {
         if (!"scalar".equals(node.kind)) {
             throw new MakrellFormatException("MRTD cells must be scalar values.");
         }
-        Object scalar = convertScalar(node.text, node.quoted, profiles);
-        String actualType = type == null ? "string" : type;
+        Object scalar = convertScalar(node.text, node.quoted, node.suffix);
+        if (type == null) {
+            return scalar;
+        }
+        String actualType = type;
         switch (actualType) {
             case "string":
                 return String.valueOf(scalar);
@@ -165,9 +168,22 @@ public final class Mrtd {
         }
     }
 
-    private static Object convertScalar(String text, boolean quoted, Set<String> profiles) {
+    private static Object convertScalar(String text, boolean quoted, String suffix) {
         if (quoted) {
-            return text;
+            switch (suffix) {
+                case "":
+                    return text;
+                case "dt":
+                    return tryParseDateTime(text);
+                case "bin":
+                    return Integer.parseInt(text, 2);
+                case "oct":
+                    return Integer.parseInt(text, 8);
+                case "hex":
+                    return Integer.parseInt(text, 16);
+                default:
+                    throw new MakrellFormatException("Unsupported MRTD string suffix '" + suffix + "'.");
+            }
         }
         if ("true".equals(text)) {
             return Boolean.TRUE;
@@ -175,14 +191,26 @@ public final class Mrtd {
         if ("false".equals(text)) {
             return Boolean.FALSE;
         }
-        if (text.matches("-?\\d+")) {
-            return Integer.valueOf(text);
+        String numericSuffix = "";
+        String numericBody = text;
+        int suffixStart = text.length();
+        while (suffixStart > 0) {
+            char current = text.charAt(suffixStart - 1);
+            if (!Character.isLetter(current) && current != '_') {
+                break;
+            }
+            suffixStart -= 1;
         }
-        if (text.matches("-?\\d+\\.\\d+")) {
-            return Double.valueOf(text);
+        if (suffixStart < text.length() && suffixStart > 0 && Character.isDigit(text.charAt(suffixStart - 1))) {
+            numericSuffix = text.substring(suffixStart);
+            numericBody = text.substring(0, suffixStart);
         }
-        if (profiles.contains(EXTENDED_SCALARS_PROFILE) && text.matches("-?\\d+(\\.\\d+)?k")) {
-            return Double.valueOf(text.substring(0, text.length() - 1)) * 1000.0;
+
+        if (numericBody.matches("-?\\d+")) {
+            return convertIntegerWithSuffix(Long.parseLong(numericBody), numericSuffix);
+        }
+        if (numericBody.matches("-?\\d+(\\.\\d+)?([eE][-+]?\\d+)?")) {
+            return convertFloatWithSuffix(Double.parseDouble(numericBody), numericSuffix);
         }
         return text;
     }
@@ -245,11 +273,84 @@ public final class Mrtd {
         if (value == null) {
             return "null";
         }
+        if (value instanceof LocalDate || value instanceof OffsetDateTime) {
+            return "\"" + value + "\"dt";
+        }
         if (value instanceof Boolean || value instanceof Number) {
             return String.valueOf(value);
         }
         String text = String.valueOf(value);
         return text.matches("[A-Za-z_][A-Za-z0-9_]*") ? text : "\"" + text.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
+    }
+
+    private static Object tryParseDateTime(String text) {
+        try {
+            return OffsetDateTime.parse(text);
+        } catch (RuntimeException ignored) {
+        }
+        try {
+            return LocalDate.parse(text);
+        } catch (RuntimeException ignored) {
+        }
+        return text;
+    }
+
+    private static Object convertIntegerWithSuffix(long value, String suffix) {
+        switch (suffix) {
+            case "":
+                return value;
+            case "k":
+                return value * 1_000L;
+            case "M":
+                return value * 1_000_000L;
+            case "G":
+                return value * 1_000_000_000L;
+            case "T":
+                return value * 1_000_000_000_000L;
+            case "P":
+                return value * 1_000_000_000_000_000L;
+            case "E":
+                return value * 1_000_000_000_000_000_000L;
+            case "e":
+                return Math.E * value;
+            case "tau":
+                return Math.PI * 2d * value;
+            case "deg":
+                return Math.PI * value / 180d;
+            case "pi":
+                return Math.PI * value;
+            default:
+                throw new MakrellFormatException("Unsupported MRTD number suffix '" + suffix + "'.");
+        }
+    }
+
+    private static Object convertFloatWithSuffix(double value, String suffix) {
+        switch (suffix) {
+            case "":
+                return value;
+            case "k":
+                return value * 1_000d;
+            case "M":
+                return value * 1_000_000d;
+            case "G":
+                return value * 1_000_000_000d;
+            case "T":
+                return value * 1_000_000_000_000d;
+            case "P":
+                return value * 1_000_000_000_000_000d;
+            case "E":
+                return value * 1_000_000_000_000_000_000d;
+            case "e":
+                return Math.E * value;
+            case "tau":
+                return Math.PI * 2d * value;
+            case "deg":
+                return Math.PI * value / 180d;
+            case "pi":
+                return Math.PI * value;
+            default:
+                throw new MakrellFormatException("Unsupported MRTD number suffix '" + suffix + "'.");
+        }
     }
 
     private static String quoteName(String value) {

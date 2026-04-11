@@ -40,6 +40,15 @@ assertSame(
     Mron::parseFile(fixturePath('conformance/mron/comments-and-identifiers.mron')),
 );
 
+assertSame(
+    [
+        'name' => 'Makrell',
+        'features' => ['comments', 'typed_scalars'],
+        'stable' => false,
+    ],
+    Mron::parseFile(fixturePath('conformance/mron/block-comments.mron')),
+);
+
 $mrml = Mrml::parseFile(fixturePath('mrml/sample.mrml'));
 assertSame('page', $mrml['name']);
 assertSame(['lang' => 'en'], $mrml['attributes']);
@@ -67,6 +76,15 @@ assertSame('active', $identifierDoc['records'][0]['status']);
 assertSame('review', $identifierDoc['records'][1]['note']);
 assertSame(['name' => 'status'], $identifierDoc['columns'][1]);
 assertSame(['name' => 'note'], $identifierDoc['columns'][2]);
+
+$blockCommentDoc = Mrtd::parseFile(fixturePath('conformance/mrtd/block-comments.mrtd'));
+assertSame(
+    [
+        ['name' => 'Ada', 'status' => 'active', 'note' => 'draft'],
+        ['name' => 'Ben', 'status' => 'inactive', 'note' => 'review'],
+    ],
+    $blockCommentDoc['records'],
+);
 
 assertSame(
     "name:string age:int active:bool\nAda 32 true\nBen 41 false",

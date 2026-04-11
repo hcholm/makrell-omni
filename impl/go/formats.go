@@ -88,13 +88,9 @@ func WriteMrmlString(value any) (string, error) {
 }
 
 func ParseMrtdString(source string) (MrtdDocument, error) {
-	lines := make([]string, 0)
-	for _, raw := range strings.Split(strings.ReplaceAll(source, "\r\n", "\n"), "\n") {
-		trimmed := strings.TrimSpace(raw)
-		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
-			continue
-		}
-		lines = append(lines, trimmed)
+	lines, err := splitMrtdLines(source)
+	if err != nil {
+		return MrtdDocument{}, err
 	}
 	if len(lines) == 0 {
 		return MrtdDocument{}, nil
@@ -534,6 +530,17 @@ func tokeniseMiniMbf(source string) ([]token, error) {
 			}
 			continue
 		}
+		if ch == '/' && i+1 < len(source) && source[i+1] == '*' {
+			i += 2
+			for i+1 < len(source) && !(source[i] == '*' && source[i+1] == '/') {
+				i++
+			}
+			if i+1 >= len(source) {
+				return nil, fmt.Errorf("unterminated block comment")
+			}
+			i += 2
+			continue
+		}
 		if ch == '-' && i+1 < len(source) && source[i+1] >= '0' && source[i+1] <= '9' {
 			start := i
 			i++
@@ -542,7 +549,7 @@ func tokeniseMiniMbf(source string) ([]token, error) {
 				if c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == ',' || c == '#' || strings.ContainsRune("{}[]()=\"", rune(c)) {
 					break
 				}
-				if c == '/' && i+1 < len(source) && source[i+1] == '/' {
+				if c == '/' && i+1 < len(source) && (source[i+1] == '/' || source[i+1] == '*') {
 					break
 				}
 				i++
@@ -597,7 +604,7 @@ func tokeniseMiniMbf(source string) ([]token, error) {
 			if c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == ',' || c == '#' || strings.ContainsRune("{}[]()=\"-", rune(c)) {
 				break
 			}
-			if c == '/' && i+1 < len(source) && source[i+1] == '/' {
+			if c == '/' && i+1 < len(source) && (source[i+1] == '/' || source[i+1] == '*') {
 				break
 			}
 			i++
@@ -608,6 +615,98 @@ func tokeniseMiniMbf(source string) ([]token, error) {
 		tokens = append(tokens, token{kind: "scalar", text: source[start:i]})
 	}
 	return tokens, nil
+}
+
+func splitMrtdLines(source string) ([]string, error) {
+	lines := make([]string, 0)
+	var builder strings.Builder
+	inString := false
+	escaping := false
+	inLineComment := false
+	inBlockComment := false
+	normalised := strings.ReplaceAll(source, "\r\n", "\n")
+
+	for i := 0; i < len(normalised); i++ {
+		ch := normalised[i]
+		if inLineComment {
+			if ch == '\n' {
+				inLineComment = false
+				trimmed := strings.TrimSpace(builder.String())
+				if trimmed != "" {
+					lines = append(lines, trimmed)
+				}
+				builder.Reset()
+			}
+			continue
+		}
+		if inBlockComment {
+			if ch == '*' && i+1 < len(normalised) && normalised[i+1] == '/' {
+				inBlockComment = false
+				i++
+			}
+			continue
+		}
+		if inString {
+			builder.WriteByte(ch)
+			if escaping {
+				escaping = false
+				continue
+			}
+			if ch == '\\' {
+				escaping = true
+				continue
+			}
+			if ch == '"' {
+				inString = false
+			}
+			continue
+		}
+
+		if ch == '"' {
+			inString = true
+			builder.WriteByte(ch)
+			continue
+		}
+		if ch == '#' {
+			inLineComment = true
+			continue
+		}
+		if ch == '/' && i+1 < len(normalised) {
+			next := normalised[i+1]
+			if next == '/' {
+				inLineComment = true
+				i++
+				continue
+			}
+			if next == '*' {
+				inBlockComment = true
+				i++
+				continue
+			}
+		}
+		if ch == '\n' {
+			trimmed := strings.TrimSpace(builder.String())
+			if trimmed != "" {
+				lines = append(lines, trimmed)
+			}
+			builder.Reset()
+			continue
+		}
+
+		builder.WriteByte(ch)
+	}
+
+	if inBlockComment {
+		return nil, fmt.Errorf("unterminated block comment")
+	}
+	if inString {
+		return nil, fmt.Errorf("unterminated string")
+	}
+	trimmed := strings.TrimSpace(builder.String())
+	if trimmed != "" {
+		lines = append(lines, trimmed)
+	}
+	return lines, nil
 }
 
 func escapeXML(value string) string {

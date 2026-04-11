@@ -59,17 +59,39 @@ void main() {
       expect(doc.columns[2].type, isNull);
     });
 
-    test("supports extended scalar profile", () {
+    test("supports shared block comment conformance fixture", () {
+      final doc = Mrtd.parseFile(fixturePath("conformance/mrtd/block-comments.mrtd"));
+
+      expect(doc.records, [
+        {"name": "Ada", "status": "active", "note": "draft"},
+        {"name": "Ben", "status": "inactive", "note": "review"},
+      ]);
+    });
+
+    test("supports suffixes without a profile", () {
       final doc = Mrtd.parseString(
         '''
         when bonus:float
         "2026-04-11"dt 3k
         ''',
-        profiles: {Mrtd.extendedScalarsProfile},
       );
 
       expect(doc.rows.single.cells[0], DateTime.parse("2026-04-11"));
       expect(doc.rows.single.cells[1], 3000.0);
+    });
+
+    test("supports shared base suffix conformance fixture", () {
+      final doc = Mrtd.parseFile(fixturePath("conformance/mrtd/base-suffixes.mrtd"));
+
+      expect(doc.records.single["when"], DateTime.parse("2026-04-11"));
+      expect(doc.records.single["bits"], 10);
+      expect(doc.records.single["octal"], 15);
+      expect(doc.records.single["mask"], 255);
+      expect(doc.records.single["bonus"], 3000.0);
+      expect(doc.records.single["scale"], 2000000.0);
+      expect(doc.records.single["turn"], closeTo(3.141592653589793, 1e-12));
+      expect(doc.records.single["angle"], closeTo(3.141592653589793, 1e-12));
+      expect(doc.records.single["half"], closeTo(1.5707963267948966, 1e-12));
     });
 
     test("rejects unsupported types", () {

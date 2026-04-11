@@ -52,6 +52,17 @@ std::vector<Token> tokenize(const std::string& source) {
             }
             continue;
         }
+        if (ch == '/' && i + 1 < source.size() && source[i + 1] == '*') {
+            i += 2;
+            while (i + 1 < source.size() && !(source[i] == '*' && source[i + 1] == '/')) {
+                ++i;
+            }
+            if (i + 1 >= source.size()) {
+                throw std::runtime_error("Unterminated block comment");
+            }
+            i += 2;
+            continue;
+        }
         if (ch == '-' && i + 1 < source.size() && std::isdigit(static_cast<unsigned char>(source[i + 1]))) {
             std::size_t start = i++;
             while (i < source.size()) {
@@ -60,7 +71,7 @@ std::vector<Token> tokenize(const std::string& source) {
                     std::string("{}[]()=\"").find(c) != std::string::npos) {
                     break;
                 }
-                if (c == '/' && i + 1 < source.size() && source[i + 1] == '/') {
+                if (c == '/' && i + 1 < source.size() && (source[i + 1] == '/' || source[i + 1] == '*')) {
                     break;
                 }
                 ++i;
@@ -113,7 +124,7 @@ std::vector<Token> tokenize(const std::string& source) {
                 std::string("{}[]()=\"-").find(c) != std::string::npos) {
                 break;
             }
-            if (c == '/' && i + 1 < source.size() && source[i + 1] == '/') {
+            if (c == '/' && i + 1 < source.size() && (source[i + 1] == '/' || source[i + 1] == '*')) {
                 break;
             }
             ++i;

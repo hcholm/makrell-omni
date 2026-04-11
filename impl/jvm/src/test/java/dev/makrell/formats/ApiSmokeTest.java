@@ -56,6 +56,13 @@ public final class ApiSmokeTest {
         assertEquals("Makrell", conformanceMron.get("name"));
         assertEquals(List.of("comments", "typed_scalars"), conformanceMron.get("features"));
 
+        @SuppressWarnings("unchecked")
+        Map<String, Object> blockCommentMron = (Map<String, Object>) Mron.parseFile(
+            fixturePath("conformance/mron/block-comments.mron").toString()
+        );
+        assertEquals("Makrell", blockCommentMron.get("name"));
+        assertEquals(List.of("comments", "typed_scalars"), blockCommentMron.get("features"));
+
         MrtdDocument doc = Mrtd.parseFile(
             fixturePath("conformance/mrtd/untyped-headers.mrtd").toString()
         );
@@ -70,6 +77,44 @@ public final class ApiSmokeTest {
             ),
             doc.getRecords()
         );
+
+        MrtdDocument blockCommentMrtd = Mrtd.parseFile(
+            fixturePath("conformance/mrtd/block-comments.mrtd").toString()
+        );
+        assertEquals(
+            List.of(
+                Map.of("name", "Ada", "status", "active", "note", "draft"),
+                Map.of("name", "Ben", "status", "inactive", "note", "review")
+            ),
+            blockCommentMrtd.getRecords()
+        );
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> suffixMron = (Map<String, Object>) Mron.parseFile(
+            fixturePath("conformance/mron/base-suffixes.mron").toString()
+        );
+        assertEquals("2026-04-11", suffixMron.get("when").toString());
+        assertEquals(10, ((Number) suffixMron.get("bits")).intValue());
+        assertEquals(15, ((Number) suffixMron.get("octal")).intValue());
+        assertEquals(255, ((Number) suffixMron.get("mask")).intValue());
+        assertEquals(3000, ((Number) suffixMron.get("bonus")).intValue());
+        assertEquals(2_000_000, ((Number) suffixMron.get("scale")).intValue());
+        assertEquals(Math.PI, (Double) suffixMron.get("turn"), 1e-12);
+        assertEquals(Math.PI, (Double) suffixMron.get("angle"), 1e-12);
+        assertEquals(Math.PI / 2d, (Double) suffixMron.get("half"), 1e-12);
+
+        MrtdDocument suffixMrtd = Mrtd.parseFile(
+            fixturePath("conformance/mrtd/base-suffixes.mrtd").toString()
+        );
+        assertEquals("2026-04-11", suffixMrtd.getRecords().get(0).get("when").toString());
+        assertEquals(10, ((Number) suffixMrtd.getRecords().get(0).get("bits")).intValue());
+        assertEquals(15, ((Number) suffixMrtd.getRecords().get(0).get("octal")).intValue());
+        assertEquals(255, ((Number) suffixMrtd.getRecords().get(0).get("mask")).intValue());
+        assertEquals(3000d, ((Number) suffixMrtd.getRecords().get(0).get("bonus")).doubleValue(), 1e-12);
+        assertEquals(2_000_000d, ((Number) suffixMrtd.getRecords().get(0).get("scale")).doubleValue(), 1e-12);
+        assertEquals(Math.PI, ((Number) suffixMrtd.getRecords().get(0).get("turn")).doubleValue(), 1e-12);
+        assertEquals(Math.PI, ((Number) suffixMrtd.getRecords().get(0).get("angle")).doubleValue(), 1e-12);
+        assertEquals(Math.PI / 2d, ((Number) suffixMrtd.getRecords().get(0).get("half")).doubleValue(), 1e-12);
     }
 
     @Test

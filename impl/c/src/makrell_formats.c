@@ -93,12 +93,19 @@ static token* tokenize(const char* source, size_t* out_count) {
             while (source[i] != 0 && source[i] != '\n') ++i;
             continue;
         }
+        if (ch == '/' && source[i + 1] == '*') {
+            i += 2;
+            while (source[i] != 0 && !(source[i] == '*' && source[i + 1] == '/')) ++i;
+            if (source[i] == 0) return NULL;
+            i += 2;
+            continue;
+        }
         if (ch == '-' && isdigit((unsigned char) source[i + 1])) {
             size_t start = i++;
             while (source[i] != 0) {
                 char c = source[i];
                 if (isspace((unsigned char) c) || c == ',' || c == '#' || strchr("{}[]()=\"", c) != NULL) break;
-                if (c == '/' && source[i + 1] == '/') break;
+                if (c == '/' && (source[i + 1] == '/' || source[i + 1] == '*')) break;
                 ++i;
             }
             token_push(&tokens, &count, (token){"scalar", (char*) malloc(i - start + 1), 0});
@@ -142,7 +149,7 @@ static token* tokenize(const char* source, size_t* out_count) {
             while (source[i] != 0) {
                 char c = source[i];
                 if (isspace((unsigned char) c) || c == ',' || c == '#' || strchr("{}[]()=\"-", c) != NULL) break;
-                if (c == '/' && source[i + 1] == '/') break;
+                if (c == '/' && (source[i + 1] == '/' || source[i + 1] == '*')) break;
                 ++i;
             }
             token_push(&tokens, &count, (token){"scalar", (char*) malloc(i - start + 1), 0});

@@ -28,6 +28,10 @@ local conformance_mron = mf.parse_mron_string(read_all(fixture("conformance/mron
 assert(conformance_mron.name == "Makrell", "Conformance MRON name failed")
 assert(conformance_mron.features[2] == "typed_scalars", "Conformance MRON identifier array failed")
 
+local block_comment_mron = mf.parse_mron_string(read_all(fixture("conformance/mron", "block-comments.mron")))
+assert(block_comment_mron.name == "Makrell", "Block-comment MRON name failed")
+assert(block_comment_mron.features[2] == "typed_scalars", "Block-comment MRON identifier array failed")
+
 local negative_mron = mf.parse_mron_string(read_all(fixture("conformance/mron", "negative-numbers.mron")))
 assert(negative_mron.offset == -2, "Conformance MRON negative scalar failed")
 assert(negative_mron.temps[1] == -1, "Conformance MRON negative array failed")
@@ -39,6 +43,10 @@ assert(id_table.columns[2].type == nil and id_table.columns[3].type == nil, "MRT
 local negative_table = mf.parse_mrtd_string(read_all(fixture("conformance/mrtd", "negative-numbers.mrtd")))
 assert(negative_table.records[1].delta == -2, "Conformance MRTD negative int failed")
 assert(negative_table.records[1].ratio == -3.5, "Conformance MRTD negative float failed")
+
+local block_comment_table = mf.parse_mrtd_string(read_all(fixture("conformance/mrtd", "block-comments.mrtd")))
+assert(block_comment_table.records[1].status == "active", "Block-comment MRTD first row failed")
+assert(block_comment_table.records[2].note == "review", "Block-comment MRTD second row failed")
 
 local out = mf.write_mrtd_string({
   columns = {

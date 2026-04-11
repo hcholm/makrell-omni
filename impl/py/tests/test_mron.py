@@ -1,5 +1,9 @@
 from datetime import datetime
+from pathlib import Path
 from makrell.mron import parse_src
+
+
+FIXTURES = Path(__file__).resolve().parents[3] / "shared" / "format-fixtures"
 
 
 def test_empty():
@@ -179,3 +183,27 @@ def test_hyphenated_barewords_are_not_identifiers():
         assert False
     except Exception:
         assert True
+
+
+def test_block_comments_are_supported_in_shared_conformance_fixture():
+    src = (FIXTURES / "conformance" / "mron" / "block-comments.mron").read_text(encoding="utf-8")
+    actual = parse_src(src)
+    assert actual == {
+        "name": "Makrell",
+        "features": ["comments", "typed_scalars"],
+        "stable": False,
+    }
+
+
+def test_base_suffixes_are_supported_in_shared_conformance_fixture():
+    src = (FIXTURES / "conformance" / "mron" / "base-suffixes.mron").read_text(encoding="utf-8")
+    actual = parse_src(src)
+    assert actual["when"] == datetime.fromisoformat("2026-04-11")
+    assert actual["bits"] == 10
+    assert actual["octal"] == 15
+    assert actual["mask"] == 255
+    assert actual["bonus"] == 3000
+    assert actual["scale"] == 2_000_000
+    assert abs(actual["turn"] - 3.141592653589793) < 1e-12
+    assert abs(actual["angle"] - 3.141592653589793) < 1e-12
+    assert abs(actual["half"] - 1.5707963267948966) < 1e-12

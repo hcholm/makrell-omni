@@ -21,6 +21,7 @@ Those cases are now used by multiple SDK tracks to check:
 - identifier versus operator boundaries
 - comments at the data-format level
 - negative number handling
+- base scalar suffix handling
 - untyped MRTD header preservation
 - malformed bracket rejection
 - shared rejection behaviour for invalid MBF level 0/1 input

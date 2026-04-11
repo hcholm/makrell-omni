@@ -34,7 +34,6 @@ class MrtdDocument {
 }
 
 class Mrtd {
-  static const String extendedScalarsProfile = "extended-scalars";
   static const Set<String> _declaredTypes = {"int", "float", "bool", "string"};
 
   static MrtdDocument parseString(String source, {Set<String> profiles = const {}}) {
@@ -137,6 +136,7 @@ class Mrtd {
     var inString = false;
     var escaped = false;
     var inComment = false;
+    var index = 0;
 
     void flush() {
       final line = current.toString().trim();
@@ -146,8 +146,8 @@ class Mrtd {
       current = StringBuffer();
     }
 
-    for (final rune in source.runes) {
-      final char = String.fromCharCode(rune);
+    while (index < source.length) {
+      final char = source[index];
       if (inComment) {
         if (char == "\n") {
           inComment = false;
@@ -157,6 +157,7 @@ class Mrtd {
             current.write(char);
           }
         }
+        index += 1;
         continue;
       }
 
@@ -169,33 +170,51 @@ class Mrtd {
         } else if (char == "\"") {
           inString = false;
         }
+        index += 1;
         continue;
       }
 
       if (char == "#") {
         inComment = true;
+        index += 1;
+        continue;
+      }
+      if (char == "/" && index + 1 < source.length && source[index + 1] == "*") {
+        index += 2;
+        while (index + 1 < source.length && !(source[index] == "*" && source[index + 1] == "/")) {
+          index += 1;
+        }
+        if (index + 1 >= source.length) {
+          throw MakrellFormatException("Unterminated block comment.");
+        }
+        index += 2;
         continue;
       }
       if (char == "\"") {
         inString = true;
         current.write(char);
+        index += 1;
         continue;
       }
       if (char == "(" || char == "[" || char == "{") {
         depth += 1;
         current.write(char);
+        index += 1;
         continue;
       }
       if (char == ")" || char == "]" || char == "}") {
         depth -= 1;
         current.write(char);
+        index += 1;
         continue;
       }
       if (char == "\n" && depth == 0) {
         flush();
+        index += 1;
         continue;
       }
       current.write(char);
+      index += 1;
     }
     flush();
     return result;
@@ -373,9 +392,6 @@ class Mrtd {
 
   static String _formatScalar(Object? value, {required Set<String> profiles}) {
     if (value is DateTime) {
-      if (!profiles.contains(extendedScalarsProfile)) {
-        throw MakrellFormatException("MRTD Date values require the 'extended-scalars' profile.");
-      }
       return '"${value.toIso8601String()}"dt';
     }
     if (value == null || value is bool || value is num || value is String) {

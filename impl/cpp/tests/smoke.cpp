@@ -1,6 +1,7 @@
 #include "makrell_formats.hpp"
 
 #include <cassert>
+#include <fstream>
 #include <filesystem>
 #include <iostream>
 
@@ -12,6 +13,13 @@ static std::string fixture(const std::string& group, const std::string& file) {
     return (std::filesystem::path("..") / ".." / "shared" / "format-fixtures" / group / file).string();
 }
 
+static std::string read_fixture(const std::string& group, const std::string& file) {
+    std::ifstream input(fixture(group, file));
+    std::ostringstream buffer;
+    buffer << input.rdbuf();
+    return buffer.str();
+}
+
 int main() {
     auto mron = parse_mron_file(fixture("mron", "sample.mron"));
     auto object = std::get<MronObject>(mron.value);
@@ -21,6 +29,10 @@ int main() {
     auto iddoc = parse_mron_string("title Makrell tags [alpha beta gamma] nested { kind article status draft }");
     auto idobj = std::get<MronObject>(iddoc.value);
     assert(std::get<std::string>(idobj["title"].value) == "Makrell");
+
+    auto block_comment_mron = parse_mron_string(read_fixture("conformance/mron", "block-comments.mron"));
+    auto block_comment_obj = std::get<MronObject>(block_comment_mron.value);
+    assert(std::get<std::string>(block_comment_obj["name"].value) == "Makrell");
 
     auto mrml = parse_mrml_file(fixture("mrml", "sample.mrml"));
     assert(mrml.name == "page");
@@ -34,6 +46,10 @@ int main() {
     auto idtable = parse_mrtd_string("name:string status note\nAda active draft\nBen inactive review");
     assert(std::get<std::string>(idtable.records[0]["status"]) == "active");
     assert(std::get<std::string>(idtable.records[1]["note"]) == "review");
+
+    auto block_comment_mrtd = parse_mrtd_string(read_fixture("conformance/mrtd", "block-comments.mrtd"));
+    assert(std::get<std::string>(block_comment_mrtd.records[0]["status"]) == "active");
+    assert(std::get<std::string>(block_comment_mrtd.records[1]["note"]) == "review");
 
     MrtdDocument doc{
         {{"name", "string"}, {"age", "int"}, {"active", "bool"}},

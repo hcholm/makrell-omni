@@ -71,6 +71,17 @@ final class MiniMbf
                 }
                 continue;
             }
+            if ($ch === '/' && ($source[$i + 1] ?? '') === '*') {
+                $i += 2;
+                while ($i + 1 < $length && !($source[$i] === '*' && $source[$i + 1] === '/')) {
+                    $i++;
+                }
+                if ($i + 1 >= $length) {
+                    throw new MakrellFormatException('Unterminated block comment.');
+                }
+                $i += 2;
+                continue;
+            }
             if ($ch === '-' && ctype_digit($source[$i + 1] ?? '')) {
                 $start = $i++;
                 while ($i < $length) {
@@ -78,7 +89,7 @@ final class MiniMbf
                     if (ctype_space($c) || $c === ',' || $c === '#' || str_contains('{}[]()="', $c)) {
                         break;
                     }
-                    if ($c === '/' && ($source[$i + 1] ?? '') === '/') {
+                    if ($c === '/' && in_array(($source[$i + 1] ?? ''), ['/', '*'], true)) {
                         break;
                     }
                     $i++;
@@ -127,7 +138,7 @@ final class MiniMbf
                 if (ctype_space($c) || $c === ',' || $c === '#' || str_contains('{}[]()="-', $c)) {
                     break;
                 }
-                if ($c === '/' && ($source[$i + 1] ?? '') === '/') {
+                if ($c === '/' && in_array(($source[$i + 1] ?? ''), ['/', '*'], true)) {
                     break;
                 }
                 $i++;

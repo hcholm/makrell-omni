@@ -191,23 +191,9 @@ In the MRTD core, plain scalar values are:
 
 - identifiers may represent ordinary strings
 - `true` and `false` represent booleans
-- numbers follow MBF number parsing without suffix extensions
+- numbers follow MBF number parsing with the shared MRTD suffix surface described below
 
-Suffix portability in MRTD should be read through the general Makrell portability model:
-
-- `[Core]` Portable MRTD files should not rely on suffix extensions unless those suffixes are later promoted into a shared core subset.
-- `[Profile]` A language or format profile MAY define additional suffixes for MRTD if it documents them explicitly.
-- `[Application]` Controlled environments MAY allow custom suffixes in MRTD data files, but those files are not portable by default.
-- `[Core]` If a parser is operating in a portable/core mode, unsupported suffixes SHOULD be rejected.
-
-### Draft profile experiment: `extended-scalars`
-
-As a first concrete profile experiment, implementations may expose an
-`extended-scalars` profile for MRTD.
-
-This profile is not part of MRTD core. It is a named profile-level extension.
-
-Suggested profile surface:
+The current MRTD base scalar surface includes these suffixes:
 
 - string suffixes:
   - `dt`
@@ -226,36 +212,15 @@ Suggested profile surface:
   - `deg`
   - `pi`
 
-Implementations that support this profile should:
+Portable MRTD implementations SHOULD support this set directly as part of MRTD
+core rather than behind a named profile.
 
-- reject these suffixes in core mode
-- accept them only when the profile is explicitly enabled
-- document clearly that the resulting files are profile-specific rather than core-portable
+If an implementation does not have a natural host type for a suffixed scalar, it
+MAY expose a source-level representation that preserves both the scalar value and
+the suffix. It MUST NOT silently discard the suffix.
 
-### Multiple active profiles
-
-MRTD profiles are intended to compose as a set.
-
-An implementation may therefore enable more than one profile at the same time,
-for example:
-
-- `extended-scalars`
-- `gis-data`
-
-When more than one profile is active:
-
-- the enabled feature set is the additive union of the active profiles
-- profiles should not silently redefine the same construct with different meanings
-- conflicting profile definitions should be treated as an error or rejected by configuration
-
-This means profile activation is not a single compatibility mode. It is a set of
-named extensions layered on top of the MRTD core.
-
-For the current draft, implementations should prefer:
-
-- explicit profile names
-- explicit parser or runtime configuration
-- core mode as the default when no profile is enabled
+Unsupported suffixes SHOULD be rejected unless an application-specific extension
+explicitly permits them.
 
 Examples:
 

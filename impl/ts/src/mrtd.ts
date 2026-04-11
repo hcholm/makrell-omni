@@ -1,6 +1,4 @@
 export type MrtdScalarType = "int" | "float" | "bool" | "string";
-export type MrtdProfile = "extended-scalars";
-
 export interface MrtdColumn {
   name: string;
   type?: MrtdScalarType;
@@ -17,7 +15,7 @@ export interface MrtdDocument {
 }
 
 export interface MrtdOptions {
-  profiles?: readonly MrtdProfile[];
+  profiles?: readonly string[];
 }
 
 const declaredTypes = new Set<MrtdScalarType>(["int", "float", "bool", "string"]);
@@ -144,6 +142,7 @@ function splitRootRows(source: string): string[] {
   let inString = false;
   let escaped = false;
   let inComment = false;
+  let inBlockComment = false;
 
   const flush = (): void => {
     const trimmed = current.trim();
@@ -168,6 +167,14 @@ function splitRootRows(source: string): string[] {
       continue;
     }
 
+    if (inBlockComment) {
+      if (ch === "*" && source[index + 1] === "/") {
+        inBlockComment = false;
+        index += 1;
+      }
+      continue;
+    }
+
     if (inString) {
       current += ch;
       if (escaped) {
@@ -182,6 +189,12 @@ function splitRootRows(source: string): string[] {
 
     if (ch === "#") {
       inComment = true;
+      continue;
+    }
+
+    if (ch === "/" && source[index + 1] === "*") {
+      inBlockComment = true;
+      index += 1;
       continue;
     }
 
@@ -373,9 +386,6 @@ function parseScalar(cell: string, options: MrtdOptions): unknown {
     if (!suffix) {
       return text;
     }
-    if (!hasProfile(options, "extended-scalars")) {
-      throw new Error(`MRTD string suffix '${suffix}' requires the 'extended-scalars' profile.`);
-    }
     if (suffix === "dt") {
       return new Date(text);
     }
@@ -398,9 +408,6 @@ function parseScalar(cell: string, options: MrtdOptions): unknown {
     if (!suffix) {
       return parsed;
     }
-    if (!hasProfile(options, "extended-scalars")) {
-      throw new Error(`MRTD number suffix '${suffix}' requires the 'extended-scalars' profile.`);
-    }
     const factor = numericSuffixFactors[suffix];
     if (factor !== undefined) {
       return parsed * factor;
@@ -409,7 +416,7 @@ function parseScalar(cell: string, options: MrtdOptions): unknown {
       return parsed * Math.E;
     }
     if (suffix === "tau") {
-      return parsed * Math.TAU;
+      return parsed * Math.PI * 2;
     }
     if (suffix === "deg") {
       return parsed * Math.PI / 180;
@@ -545,9 +552,6 @@ function formatScalar(value: unknown, options: MrtdOptions): string {
   }
 
   if (value instanceof Date) {
-    if (!hasProfile(options, "extended-scalars")) {
-      throw new Error("MRTD Date values require the 'extended-scalars' profile.");
-    }
     return `"${value.toISOString()}"dt`;
   }
 
@@ -579,10 +583,6 @@ function formatIdentifierOrString(value: string): string {
 
 function unescapeString(value: string): string {
   return value.replace(/\\(["\\])/g, "$1");
-}
-
-function hasProfile(options: MrtdOptions, profile: MrtdProfile): boolean {
-  return options.profiles?.includes(profile) ?? false;
 }
 
 function formatHeaderCell(name: string, type: MrtdScalarType | undefined): string {

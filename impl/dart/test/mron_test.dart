@@ -48,6 +48,14 @@ void main() {
       expect(doc["stable"], false);
     });
 
+    test("supports shared block comment conformance fixture", () {
+      final doc = Mron.parseFile(fixturePath("conformance/mron/block-comments.mron")) as Map<String, Object?>;
+
+      expect(doc["name"], "Makrell");
+      expect(doc["features"], ["comments", "typed_scalars"]);
+      expect(doc["stable"], false);
+    });
+
     test("supports comments in object roots", () {
       final doc = Mron.parseString('''
         # comment
@@ -59,17 +67,30 @@ void main() {
       expect(doc, {"name": "Makrell", "stable": false});
     });
 
-    test("supports extended scalar profile for string and number suffixes", () {
+    test("supports suffixes without a profile", () {
       final doc = Mron.parseString(
         '''
         born "2026-04-11"dt
         size 3k
         ''',
-        profiles: {"extended-scalars"},
       ) as Map<String, Object?>;
 
       expect(doc["born"], DateTime.parse("2026-04-11"));
       expect(doc["size"], 3000.0);
+    });
+
+    test("supports shared base suffix conformance fixture", () {
+      final doc = Mron.parseFile(fixturePath("conformance/mron/base-suffixes.mron")) as Map<String, Object?>;
+
+      expect(doc["when"], DateTime.parse("2026-04-11"));
+      expect(doc["bits"], 10);
+      expect(doc["octal"], 15);
+      expect(doc["mask"], 255);
+      expect(doc["bonus"], 3000.0);
+      expect(doc["scale"], 2000000.0);
+      expect(doc["turn"], closeTo(3.141592653589793, 1e-12));
+      expect(doc["angle"], closeTo(3.141592653589793, 1e-12));
+      expect(doc["half"], closeTo(1.5707963267948966, 1e-12));
     });
 
     test("rejects odd root cardinality", () {

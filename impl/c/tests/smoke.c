@@ -54,6 +54,14 @@ int main(void) {
         mf_free_value(conformance_mron);
     }
 
+    {
+        char* text = read_fixture_text("conformance\\mron", "block-comments.mron");
+        mf_value* block_comment_mron = mf_parse_mron_string(text);
+        assert(block_comment_mron != NULL && block_comment_mron->kind == MF_OBJECT);
+        free(text);
+        mf_free_value(block_comment_mron);
+    }
+
     path = fixture("mrml", "sample.mrml");
     mf_mrml_element* mrml = mf_parse_mrml_file(path);
     free(path);
@@ -74,6 +82,14 @@ int main(void) {
         assert(untyped->columns[2].type == NULL);
         free(text);
         mf_free_mrtd_document(untyped);
+    }
+
+    {
+        char* text = read_fixture_text("conformance\\mrtd", "block-comments.mrtd");
+        mf_mrtd_document* block_comment_mrtd = mf_parse_mrtd_string(text);
+        assert(block_comment_mrtd != NULL);
+        free(text);
+        mf_free_mrtd_document(block_comment_mrtd);
     }
 
     {

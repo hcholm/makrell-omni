@@ -88,6 +88,14 @@ func TestParseMrtdFixtureAndIdentifiers(t *testing.T) {
 		t.Fatalf("unexpected MRON conformance value: %#v", conformanceMron)
 	}
 
+	blockCommentMron, err := ParseMronString(readFixture(t, "conformance/mron", "block-comments.mron"))
+	if err != nil {
+		t.Fatalf("ParseMronString block comment fixture failed: %v", err)
+	}
+	if !reflect.DeepEqual(expectedConformanceMron, blockCommentMron) {
+		t.Fatalf("unexpected block-comment MRON value: %#v", blockCommentMron)
+	}
+
 	negativeMron, err := ParseMronString(readFixture(t, "conformance/mron", "negative-numbers.mron"))
 	if err != nil {
 		t.Fatalf("ParseMronString negative fixture failed: %v", err)
@@ -121,6 +129,18 @@ func TestParseMrtdFixtureAndIdentifiers(t *testing.T) {
 	}
 	if !reflect.DeepEqual(expectedNegativeRecords, negativeTable.Records) {
 		t.Fatalf("unexpected negative MRTD records: %#v", negativeTable.Records)
+	}
+
+	blockCommentTable, err := ParseMrtdString(readFixture(t, "conformance/mrtd", "block-comments.mrtd"))
+	if err != nil {
+		t.Fatalf("ParseMrtdString block comment fixture failed: %v", err)
+	}
+	expectedBlockCommentRecords := []map[string]any{
+		{"name": "Ada", "status": "active", "note": "draft"},
+		{"name": "Ben", "status": "inactive", "note": "review"},
+	}
+	if !reflect.DeepEqual(expectedBlockCommentRecords, blockCommentTable.Records) {
+		t.Fatalf("unexpected block-comment MRTD records: %#v", blockCommentTable.Records)
 	}
 }
 

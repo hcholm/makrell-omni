@@ -32,6 +32,7 @@ sub tokenize_mbf_level0 {
         if ($source =~ /\G(?:\s+|,)/gc) { next; }
         if ($source =~ /\G\#.*?(?:\n|\z)/gc) { next; }
         if ($source =~ /\G\/\/.*?(?:\n|\z)/gc) { next; }
+        if ($source =~ /\G\/\*.*?\*\//gcs) { next; }
         if ($source =~ /\G(-?\d+(?:\.\d+)?)/gc) {
             push @tokens, { kind => 'number', text => $1, quoted => 0 };
             next;
@@ -181,7 +182,7 @@ sub _mrml_element {
 
 sub parse_mrtd_string {
     my ($source) = @_;
-    my @lines = grep { $_ ne '' && $_ !~ /^\#/ } map { s/^\s+|\s+$//gr } split /\r?\n/, $source;
+    my @lines = _split_mrtd_lines($source);
     return { columns => [], rows => [], records => [] } if !@lines;
     my @header_nodes = @{ parse_mbf_nodes($lines[0]) };
     my @columns = map {
@@ -204,6 +205,88 @@ sub parse_mrtd_string {
         push @records, \%record;
     }
     return { columns => \@columns, rows => \@rows, records => \@records };
+}
+
+sub _split_mrtd_lines {
+    my ($source) = @_;
+    my @lines;
+    my $buffer = '';
+    my $in_string = 0;
+    my $escaping = 0;
+    my $in_line_comment = 0;
+    my $in_block_comment = 0;
+    my @chars = split //, $source;
+
+    for (my $i = 0; $i < @chars; $i++) {
+        my $char = $chars[$i];
+        my $next = $chars[$i + 1] // '';
+        if ($in_line_comment) {
+            if ($char eq "\n") {
+                $in_line_comment = 0;
+                my $trimmed = $buffer;
+                $trimmed =~ s/^\s+|\s+$//g;
+                push @lines, $trimmed if $trimmed ne '';
+                $buffer = '';
+            }
+            next;
+        }
+        if ($in_block_comment) {
+            if ($char eq '*' && $next eq '/') {
+                $in_block_comment = 0;
+                $i++;
+            }
+            next;
+        }
+        if ($in_string) {
+            $buffer .= $char;
+            if ($escaping) {
+                $escaping = 0;
+            } elsif ($char eq '\\') {
+                $escaping = 1;
+            } elsif ($char eq '"') {
+                $in_string = 0;
+            }
+            next;
+        }
+
+        if ($char eq '"') {
+            $in_string = 1;
+            $buffer .= $char;
+            next;
+        }
+        if ($char eq '#') {
+            $in_line_comment = 1;
+            next;
+        }
+        if ($char eq '/' && $next eq '/') {
+            $in_line_comment = 1;
+            $i++;
+            next;
+        }
+        if ($char eq '/' && $next eq '*') {
+            $in_block_comment = 1;
+            $i++;
+            next;
+        }
+        if ($char eq "\r") {
+            next;
+        }
+        if ($char eq "\n") {
+            my $trimmed = $buffer;
+            $trimmed =~ s/^\s+|\s+$//g;
+            push @lines, $trimmed if $trimmed ne '';
+            $buffer = '';
+            next;
+        }
+
+        $buffer .= $char;
+    }
+
+    die "Unterminated block comment" if $in_block_comment;
+
+    $buffer =~ s/^\s+|\s+$//g;
+    push @lines, $buffer if $buffer ne '';
+    return @lines;
 }
 
 sub parse_mrtd_file {

@@ -20,6 +20,10 @@ conformance_mron <- parse_mron_string(read_fixture(file.path("conformance", "mro
 stopifnot(identical(conformance_mron$name, "Makrell"))
 stopifnot(identical(conformance_mron$features[[2]], "typed_scalars"))
 
+block_comment_mron <- parse_mron_string(read_fixture(file.path("conformance", "mron"), "block-comments.mron"))
+stopifnot(identical(block_comment_mron$name, "Makrell"))
+stopifnot(identical(block_comment_mron$features[[2]], "typed_scalars"))
+
 mrml <- parse_mrml_file(fixture_path("mrml", "sample.mrml"))
 stopifnot(identical(mrml$name, "page"))
 stopifnot(identical(mrml$attributes$lang, "en"))
@@ -34,6 +38,10 @@ stopifnot(identical(idtable$records[[1]]$status, "active"))
 stopifnot(identical(idtable$records[[2]]$note, "review"))
 stopifnot(is.null(idtable$columns[[2]]$type))
 stopifnot(is.null(idtable$columns[[3]]$type))
+
+block_comment_table <- parse_mrtd_string(read_fixture(file.path("conformance", "mrtd"), "block-comments.mrtd"))
+stopifnot(identical(block_comment_table$records[[1]]$status, "active"))
+stopifnot(identical(block_comment_table$records[[2]]$note, "review"))
 
 doc <- list(
   columns = list(

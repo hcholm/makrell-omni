@@ -1,0 +1,8 @@
+/* leading block comment */
+name Makrell
+features [
+    comments
+    /* middle block comment */
+    typed_scalars
+]
+stable false

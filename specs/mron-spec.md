@@ -51,12 +51,36 @@ For example, `trailing-commas` is not one MRON identifier value. It is
 operator-shaped input and MUST be rejected unless a higher-level syntax mode
 explicitly gives it meaning.
 
-### 5.1 Suffix portability
+### 5.1 Base suffix surface
 
-- `[Core]` A small shared family subset of scalar suffixes MAY be supported in portable MRON documents once defined centrally.
-- `[Profile]` MRON MAY define additional suffixes in its own profile if they are documented explicitly.
-- `[Application]` Controlled environments MAY allow custom suffixes, but such files are not portable unless the application or profile declares them.
-- `[Core]` Unsupported suffixes MUST raise an error unless a relevant profile or application context explicitly permits them.
+The current MRON base scalar surface includes these suffixes:
+
+- string suffixes:
+  - `dt`
+  - `bin`
+  - `oct`
+  - `hex`
+- number suffixes:
+  - `k`
+  - `M`
+  - `G`
+  - `T`
+  - `P`
+  - `E`
+  - `e`
+  - `tau`
+  - `deg`
+  - `pi`
+
+Portable MRON implementations SHOULD support this set directly as part of MRON
+core rather than behind a named profile.
+
+If an implementation does not have a natural host type for a suffixed scalar, it
+MAY expose a source-level representation that preserves both the scalar value and
+the suffix. It MUST NOT silently discard the suffix.
+
+Unsupported suffixes MUST raise an error unless an application-specific
+extension explicitly permits them.
 
 ## 6. Executable Embeds
 
@@ -78,7 +102,7 @@ Execution-enabled MRON parsing is unsafe for untrusted input and MUST be treated
 ## 9. Conformance Test Mapping
 
 - `impl/py/tests/test_mron.py`: root cardinality, object/list/scalar parsing, suffix conversion behavior, nested objects, execution embeds
-- `shared/format-fixtures/conformance/mron/`: shared MBF level 0/1 conformance cases for comments, identifier values, and operator-boundary rejection
+- `shared/format-fixtures/conformance/mron/`: shared MBF level 0/1 conformance cases for comments, identifier values, suffixes, and operator-boundary rejection
 
 ## 10. Known Limitations
 

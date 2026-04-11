@@ -17,21 +17,23 @@ public final class MiniMbf {
         public final String kind;
         public final String text;
         public final boolean quoted;
+        public final String suffix;
         public final List<Node> children;
 
-        private Node(String kind, String text, boolean quoted, List<Node> children) {
+        private Node(String kind, String text, boolean quoted, String suffix, List<Node> children) {
             this.kind = kind;
             this.text = text;
             this.quoted = quoted;
+            this.suffix = suffix;
             this.children = children;
         }
 
-        public static Node scalar(String text, boolean quoted) {
-            return new Node("scalar", text, quoted, null);
+        public static Node scalar(String text, boolean quoted, String suffix) {
+            return new Node("scalar", text, quoted, suffix, null);
         }
 
         public static Node group(String kind, List<Node> children) {
-            return new Node(kind, null, false, children);
+            return new Node(kind, null, false, "", children);
         }
     }
 
@@ -57,7 +59,7 @@ public final class MiniMbf {
             switch (token.kind) {
                 case "scalar":
                 case "=":
-                    return Node.scalar(token.text, token.quoted);
+                    return Node.scalar(token.text, token.quoted, token.suffix);
                 case "{":
                     return Node.group("brace", parseGroup("}"));
                 case "[":
@@ -109,6 +111,17 @@ public final class MiniMbf {
                 }
                 continue;
             }
+            if (ch == '/' && i + 1 < source.length() && source.charAt(i + 1) == '*') {
+                i += 2;
+                while (i + 1 < source.length() && !(source.charAt(i) == '*' && source.charAt(i + 1) == '/')) {
+                    i++;
+                }
+                if (i + 1 >= source.length()) {
+                    throw new MakrellFormatException("Unterminated block comment.");
+                }
+                i += 2;
+                continue;
+            }
             if (ch == '/' && i + 1 < source.length() && source.charAt(i + 1) == '/') {
                 i += 2;
                 while (i < source.length() && source.charAt(i) != '\n') {
@@ -128,16 +141,16 @@ public final class MiniMbf {
                     }
                     i++;
                 }
-                tokens.add(new Token("scalar", source.substring(start, i), false));
+                tokens.add(new Token("scalar", source.substring(start, i), false, ""));
                 continue;
             }
             if (ch == '-') {
-                tokens.add(new Token("-", "-", false));
+                tokens.add(new Token("-", "-", false, ""));
                 i++;
                 continue;
             }
             if ("{}[]()=".indexOf(ch) >= 0) {
-                tokens.add(new Token(String.valueOf(ch), String.valueOf(ch), false));
+                tokens.add(new Token(String.valueOf(ch), String.valueOf(ch), false, ""));
                 i++;
                 continue;
             }
@@ -178,13 +191,21 @@ public final class MiniMbf {
                     }
                     builder.append(c);
                 }
-                tokens.add(new Token("scalar", builder.toString(), true));
+                int suffixStart = i;
+                while (i < source.length()) {
+                    char suffixChar = source.charAt(i);
+                    if (!Character.isLetterOrDigit(suffixChar) && suffixChar != '_') {
+                        break;
+                    }
+                    i++;
+                }
+                tokens.add(new Token("scalar", builder.toString(), true, source.substring(suffixStart, i)));
                 continue;
             }
             int start = i;
             while (i < source.length()) {
                 char c = source.charAt(i);
-                if (Character.isWhitespace(c) || c == ',' || c == '#' || "{}[]()=\"-".indexOf(c) >= 0) {
+                if (Character.isWhitespace(c) || c == ',' || c == '#' || c == '/' || "{}[]()=\"-".indexOf(c) >= 0) {
                     break;
                 }
                 if (c == '/' && i + 1 < source.length() && source.charAt(i + 1) == '/') {
@@ -192,7 +213,7 @@ public final class MiniMbf {
                 }
                 i++;
             }
-            tokens.add(new Token("scalar", source.substring(start, i), false));
+            tokens.add(new Token("scalar", source.substring(start, i), false, ""));
         }
         return tokens;
     }
@@ -201,11 +222,13 @@ public final class MiniMbf {
         private final String kind;
         private final String text;
         private final boolean quoted;
+        private final String suffix;
 
-        private Token(String kind, String text, boolean quoted) {
+        private Token(String kind, String text, boolean quoted, String suffix) {
             this.kind = kind;
             this.text = text;
             this.quoted = quoted;
+            this.suffix = suffix;
         }
     }
 }

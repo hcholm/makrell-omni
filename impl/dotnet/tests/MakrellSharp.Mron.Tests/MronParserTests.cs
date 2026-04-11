@@ -1,4 +1,5 @@
 using MakrellSharp.Mron;
+using System.IO;
 
 namespace MakrellSharp.Mron.Tests;
 
@@ -144,5 +145,39 @@ public sealed class MronParserTests
             MronParser.ParseSource("a {$ 2 + 3}", new MronParseOptions { AllowExec = true }));
 
         Assert.Contains("not implemented yet", exception.Message);
+    }
+
+    [Fact]
+    public void ParseSource_AcceptsSharedBaseSuffixFixture()
+    {
+        using var document = MronParser.ParseSource(File.ReadAllText(FindFixture("conformance", "mron", "base-suffixes.mron")));
+        var root = document.RootElement;
+
+        Assert.Equal("2026-04-11T00:00:00", root.GetProperty("when").GetString());
+        Assert.Equal(10L, root.GetProperty("bits").GetInt64());
+        Assert.Equal(15L, root.GetProperty("octal").GetInt64());
+        Assert.Equal(255L, root.GetProperty("mask").GetInt64());
+        Assert.Equal(3000L, root.GetProperty("bonus").GetInt64());
+        Assert.Equal(2_000_000L, root.GetProperty("scale").GetInt64());
+        Assert.Equal(Math.PI, root.GetProperty("turn").GetDouble(), 12);
+        Assert.Equal(Math.PI, root.GetProperty("angle").GetDouble(), 12);
+        Assert.Equal(Math.PI / 2d, root.GetProperty("half").GetDouble(), 12);
+    }
+
+    private static string FindFixture(params string[] parts)
+    {
+        var current = new DirectoryInfo(AppContext.BaseDirectory);
+        while (current is not null)
+        {
+            var relative = Path.Combine("shared", "format-fixtures", Path.Combine(parts));
+            var candidate = Path.Combine(current.FullName, relative);
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
+            current = current.Parent;
+        }
+
+        throw new FileNotFoundException("Could not locate shared fixture.", Path.Combine(parts));
     }
 }

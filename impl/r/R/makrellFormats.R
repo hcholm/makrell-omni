@@ -17,6 +17,13 @@ tokenise_makrell <- function(source) {
       while (i <= n && substr(source, i, i) != "\n") i <- i + 1L
       next
     }
+    if (ch == "/" && i < n && substr(source, i + 1L, i + 1L) == "*") {
+      i <- i + 2L
+      while (i < n && substr(source, i, i + 1L) != "*/") i <- i + 1L
+      if (i >= n) stop("Unterminated block comment")
+      i <- i + 2L
+      next
+    }
     if (ch %in% c("{", "}", "[", "]", "(", ")", "=")) {
       tokens[[length(tokens) + 1L]] <- list(kind = ch, text = ch, quoted = FALSE)
       i <- i + 1L
@@ -59,7 +66,7 @@ tokenise_makrell <- function(source) {
     while (i <= n) {
       c <- substr(source, i, i)
     if (grepl("[[:space:],#]", c) || c %in% c("{", "}", "[", "]", "(", ")", "=", "\"", "-")) break
-      if (c == "/" && i < n && substr(source, i + 1L, i + 1L) == "/") break
+      if (c == "/" && i < n && substr(source, i + 1L, i + 1L) %in% c("/", "*")) break
       i <- i + 1L
     }
     tokens[[length(tokens) + 1L]] <- list(kind = "scalar", text = substr(source, start, i - 1L), quoted = FALSE)

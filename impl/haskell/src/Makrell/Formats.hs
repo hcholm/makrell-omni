@@ -133,6 +133,7 @@ tokenise (c:cs)
   | Char.isSpace c || c == ',' = tokenise cs
   | c == '#' = tokenise (dropWhile (/= '\n') cs)
   | c == '/' && startsWith '/' cs = tokenise (dropWhile (/= '\n') (drop 1 cs))
+  | c == '/' && startsWith '*' cs = tokenise (dropBlockComment (drop 1 cs))
   | c `elem` "{}[]()=" = Token [c] [c] False : tokenise cs
   | c == '-' && maybe False Char.isDigit (firstChar cs) =
       let (restNum, rest) = span (\x -> Char.isDigit x || x == '.') cs
@@ -141,6 +142,11 @@ tokenise (c:cs)
   | c == '"' = let (text, rest) = spanQuoted cs in Token "scalar" text True : tokenise rest
   | otherwise = let (text, rest) = span (\x -> not (Char.isSpace x) && notElem x "{}[]()=,#\"-") (c:cs)
                 in Token "scalar" text False : tokenise rest
+
+dropBlockComment :: String -> String
+dropBlockComment [] = error "Unterminated block comment"
+dropBlockComment ('*':'/':rest) = rest
+dropBlockComment (_:rest) = dropBlockComment rest
 
 spanQuoted :: String -> (String, String)
 spanQuoted = go []

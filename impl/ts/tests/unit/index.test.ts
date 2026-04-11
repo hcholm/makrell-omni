@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { rmSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import {
   clearPatternHooks,
   compile,
@@ -659,6 +660,16 @@ describe("MakrellTs MVP", () => {
     ]);
   });
 
+  test("parseMrtd supports shared block comment conformance fixture", () => {
+    const source = readFileSync(resolve(process.cwd(), "../../shared/format-fixtures/conformance/mrtd/block-comments.mrtd"), "utf8");
+    const document = parseMrtd(source);
+
+    expect(document.records).toEqual([
+      { name: "Ada", status: "active", note: "draft" },
+      { name: "Ben", status: "inactive", note: "review" },
+    ]);
+  });
+
   test("writeMrtdRecords writes typed header and rows", () => {
     const text = writeMrtdRecords([
       { name: "Ada", age: 32, active: true },
@@ -680,27 +691,35 @@ describe("MakrellTs MVP", () => {
     expect(text).toContain("1 Ada 13.5");
   });
 
-  test("parseMrtd rejects profile suffixes in core mode", () => {
-    expect(() => parseMrtd(`
-      when:string
-      "2026-04-03"dt
-    `)).toThrow(/extended-scalars/);
-  });
-
-  test("parseMrtd accepts extended scalar profile suffixes", () => {
+  test("parseMrtd accepts suffixes without a profile", () => {
     const document = parseMrtd(`
       when bonus:float
       "2026-04-03"dt 3k
-    `, { profiles: ["extended-scalars"] });
+    `);
 
     expect(document.records[0].when).toBeInstanceOf(Date);
     expect(document.records[0].bonus).toBe(3000);
   });
 
-  test("writeMrtdRecords writes Date values with extended scalar profile", () => {
+  test("parseMrtd accepts shared base suffix conformance fixture", () => {
+    const source = readFileSync(resolve(process.cwd(), "../../shared/format-fixtures/conformance/mrtd/base-suffixes.mrtd"), "utf8");
+    const document = parseMrtd(source);
+
+    expect(document.records[0].when).toBeInstanceOf(Date);
+    expect(document.records[0].bits).toBe(10);
+    expect(document.records[0].octal).toBe(15);
+    expect(document.records[0].mask).toBe(255);
+    expect(document.records[0].bonus).toBe(3000);
+    expect(document.records[0].scale).toBe(2_000_000);
+    expect(document.records[0].turn).toBeCloseTo(Math.PI);
+    expect(document.records[0].angle).toBeCloseTo(Math.PI);
+    expect(document.records[0].half).toBeCloseTo(Math.PI / 2);
+  });
+
+  test("writeMrtdRecords writes Date values without requiring a profile", () => {
     const text = writeMrtdRecords([
       { when: new Date("2026-04-03T00:00:00.000Z"), active: true },
-    ], { profiles: ["extended-scalars"] });
+    ]);
 
     expect(text).toContain('when active:bool');
     expect(text).toContain('"2026-04-03T00:00:00.000Z"dt true');

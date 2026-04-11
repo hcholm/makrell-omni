@@ -53,7 +53,7 @@ public final class Mron {
 
     private static Object convertNode(MiniMbf.Node node, Set<String> profiles) {
         if ("scalar".equals(node.kind)) {
-            return convertScalar(node.text, node.quoted, profiles);
+            return convertScalar(node.text, node.quoted, node.suffix);
         }
         if ("square".equals(node.kind)) {
             List<Object> values = new ArrayList<>();
@@ -80,12 +80,22 @@ public final class Mron {
         return result;
     }
 
-    private static Object convertScalar(String text, boolean quoted, Set<String> profiles) {
+    private static Object convertScalar(String text, boolean quoted, String suffix) {
         if (quoted) {
-            if (profiles.contains("extended-scalars") && text.endsWith("dt")) {
-                return tryParseDateTime(text.substring(0, text.length() - 2));
+            switch (suffix) {
+                case "":
+                    return text;
+                case "dt":
+                    return tryParseDateTime(text);
+                case "bin":
+                    return Integer.parseInt(text, 2);
+                case "oct":
+                    return Integer.parseInt(text, 8);
+                case "hex":
+                    return Integer.parseInt(text, 16);
+                default:
+                    throw new MakrellFormatException("Unsupported MRON string suffix '" + suffix + "'.");
             }
-            return text;
         }
         if ("null".equals(text)) {
             return null;
@@ -96,20 +106,90 @@ public final class Mron {
         if ("false".equals(text)) {
             return Boolean.FALSE;
         }
-        if (text.matches("-?\\d+")) {
+        String numericSuffix = "";
+        String numericBody = text;
+        int suffixStart = text.length();
+        while (suffixStart > 0) {
+            char current = text.charAt(suffixStart - 1);
+            if (!Character.isLetter(current) && current != '_') {
+                break;
+            }
+            suffixStart -= 1;
+        }
+        if (suffixStart < text.length() && suffixStart > 0 && Character.isDigit(text.charAt(suffixStart - 1))) {
+            numericSuffix = text.substring(suffixStart);
+            numericBody = text.substring(0, suffixStart);
+        }
+
+        if (numericBody.matches("-?\\d+")) {
             try {
-                return Integer.valueOf(text);
+                return convertIntegerWithSuffix(Integer.parseInt(numericBody), numericSuffix);
             } catch (NumberFormatException ex) {
-                return Long.valueOf(text);
+                return convertIntegerWithSuffix(Long.parseLong(numericBody), numericSuffix);
             }
         }
-        if (text.matches("-?\\d+\\.\\d+")) {
-            return Double.valueOf(text);
-        }
-        if (profiles.contains("extended-scalars") && text.matches("-?\\d+(\\.\\d+)?k")) {
-            return Double.valueOf(text.substring(0, text.length() - 1)) * 1000.0;
+        if (numericBody.matches("-?\\d+(\\.\\d+)?([eE][-+]?\\d+)?")) {
+            return convertFloatWithSuffix(Double.parseDouble(numericBody), numericSuffix);
         }
         return text;
+    }
+
+    private static Object convertIntegerWithSuffix(long value, String suffix) {
+        switch (suffix) {
+            case "":
+                return value;
+            case "k":
+                return value * 1_000L;
+            case "M":
+                return value * 1_000_000L;
+            case "G":
+                return value * 1_000_000_000L;
+            case "T":
+                return value * 1_000_000_000_000L;
+            case "P":
+                return value * 1_000_000_000_000_000L;
+            case "E":
+                return value * 1_000_000_000_000_000_000L;
+            case "e":
+                return Math.E * value;
+            case "tau":
+                return Math.PI * 2d * value;
+            case "deg":
+                return Math.PI * value / 180d;
+            case "pi":
+                return Math.PI * value;
+            default:
+                throw new MakrellFormatException("Unsupported MRON number suffix '" + suffix + "'.");
+        }
+    }
+
+    private static Object convertFloatWithSuffix(double value, String suffix) {
+        switch (suffix) {
+            case "":
+                return value;
+            case "k":
+                return value * 1_000d;
+            case "M":
+                return value * 1_000_000d;
+            case "G":
+                return value * 1_000_000_000d;
+            case "T":
+                return value * 1_000_000_000_000d;
+            case "P":
+                return value * 1_000_000_000_000_000d;
+            case "E":
+                return value * 1_000_000_000_000_000_000d;
+            case "e":
+                return Math.E * value;
+            case "tau":
+                return Math.PI * 2d * value;
+            case "deg":
+                return Math.PI * value / 180d;
+            case "pi":
+                return Math.PI * value;
+            default:
+                throw new MakrellFormatException("Unsupported MRON number suffix '" + suffix + "'.");
+        }
     }
 
     private static Object tryParseDateTime(String text) {

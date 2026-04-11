@@ -27,6 +27,10 @@ conformance_mron = Makrell::Formats.parse_mron_string(read_fixture("conformance/
 raise "Conformance MRON name failed" unless conformance_mron["name"] == "Makrell"
 raise "Conformance MRON identifier array failed" unless conformance_mron["features"][1] == "typed_scalars"
 
+block_comment_mron = Makrell::Formats.parse_mron_string(read_fixture("conformance/mron", "block-comments.mron"))
+raise "Block-comment MRON name failed" unless block_comment_mron["name"] == "Makrell"
+raise "Block-comment MRON identifier array failed" unless block_comment_mron["features"][1] == "typed_scalars"
+
 negative_mron = Makrell::Formats.parse_mron_string(read_fixture("conformance/mron", "negative-numbers.mron"))
 raise "Conformance MRON negative scalar failed" unless negative_mron["offset"] == -2
 raise "Conformance MRON negative array failed" unless negative_mron["temps"][0] == -1
@@ -38,6 +42,10 @@ raise "MRTD untyped header should stay untyped" unless id_table[:columns][1][:ty
 negative_table = Makrell::Formats.parse_mrtd_string(read_fixture("conformance/mrtd", "negative-numbers.mrtd"))
 raise "Conformance MRTD negative int failed" unless negative_table[:records].first["delta"] == -2
 raise "Conformance MRTD negative float failed" unless negative_table[:records].first["ratio"] == -3.5
+
+block_comment_table = Makrell::Formats.parse_mrtd_string(read_fixture("conformance/mrtd", "block-comments.mrtd"))
+raise "Block-comment MRTD first row failed" unless block_comment_table[:records].first["status"] == "active"
+raise "Block-comment MRTD second row failed" unless block_comment_table[:records][1]["note"] == "review"
 
 out = Makrell::Formats.write_mrtd_string(
   columns: [

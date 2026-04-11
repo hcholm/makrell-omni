@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using MakrellSharp.Mrtd;
+using System.IO;
 
 namespace MakrellSharp.Mrtd.Tests;
 
@@ -119,37 +120,51 @@ public sealed class MrtdParserTests
     }
 
     [Fact]
-    public void ParseSource_RejectsProfileSuffixesInCoreMode()
-    {
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            MrtdParser.ParseSource(
-                """
-                when:string
-                "2026-04-03"dt
-                """));
-
-        Assert.Contains(MrtdProfiles.ExtendedScalars, exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void ParseSource_AcceptsExtendedScalarProfileSuffixes()
+    public void ParseSource_AcceptsSuffixesWithoutAProfile()
     {
         var document = MrtdParser.ParseSource(
             """
             when bonus:float
             "2026-04-03"dt 3k
-            """,
-            new MrtdParseOptions
-            {
-                Profiles = new HashSet<string>(StringComparer.Ordinal)
-                {
-                    MrtdProfiles.ExtendedScalars,
-                },
-            });
+            """);
 
         Assert.Equal("when", document.Columns[0].Name);
         Assert.Null(document.Columns[0].Type);
         Assert.NotNull(document.Rows[0].Cells[0]);
         Assert.Equal(3000d, document.Rows[0].Cells[1]?.GetValue<double>());
+    }
+
+    [Fact]
+    public void ParseSource_AcceptsSharedBaseSuffixFixture()
+    {
+        var document = MrtdParser.ParseSource(File.ReadAllText(FindFixture("conformance", "mrtd", "base-suffixes.mrtd")));
+        var row = document.ToJsonRecords()[0]!.AsObject();
+
+        Assert.Equal(new DateTime(2026, 4, 11), row["when"]?.GetValue<DateTime>());
+        Assert.Equal("10", row["bits"]?.ToJsonString());
+        Assert.Equal("15", row["octal"]?.ToJsonString());
+        Assert.Equal("255", row["mask"]?.ToJsonString());
+        Assert.Equal("3000", row["bonus"]?.ToJsonString());
+        Assert.Equal("2000000", row["scale"]?.ToJsonString());
+        Assert.Equal(Math.PI, row["turn"]?.GetValue<double>() ?? 0d, 12);
+        Assert.Equal(Math.PI, row["angle"]?.GetValue<double>() ?? 0d, 12);
+        Assert.Equal(Math.PI / 2d, row["half"]?.GetValue<double>() ?? 0d, 12);
+    }
+
+    private static string FindFixture(params string[] parts)
+    {
+        var current = new DirectoryInfo(AppContext.BaseDirectory);
+        while (current is not null)
+        {
+            var relative = Path.Combine("shared", "format-fixtures", Path.Combine(parts));
+            var candidate = Path.Combine(current.FullName, relative);
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
+            current = current.Parent;
+        }
+
+        throw new FileNotFoundException("Could not locate shared fixture.", Path.Combine(parts));
     }
 }

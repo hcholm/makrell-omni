@@ -1,5 +1,9 @@
-from makrell.mrtd import parse_src, read_records, read_tuples, write_records, write_tuples
 from datetime import date
+from pathlib import Path
+from makrell.mrtd import parse_src, read_records, read_tuples, write_records, write_tuples
+
+
+FIXTURES = Path(__file__).resolve().parents[3] / "shared" / "format-fixtures"
 
 
 def test_parse_src_reads_simple_tabular_data():
@@ -117,31 +121,20 @@ def test_write_tuples_writes_tuple_rows_with_default_headers():
     assert "1 Ada 13.5" in text
 
 
-def test_parse_src_rejects_profile_suffixes_in_core_mode():
-    try:
-        parse_src("""
-        when:string
-        "2026-04-03"dt
-        """)
-        assert False
-    except ValueError as e:
-        assert "extended-scalars" in str(e)
-
-
-def test_parse_src_accepts_extended_scalar_profile_suffixes():
+def test_parse_src_accepts_suffixes_without_profile():
     doc = parse_src("""
     when bonus:float
     "2026-04-03"dt 3k
-    """, profiles=("extended-scalars",))
+    """)
 
     assert str(doc.records[0]["when"]).startswith("2026-04-03")
     assert doc.records[0]["bonus"] == 3000
 
 
-def test_write_records_writes_date_values_with_extended_scalar_profile():
+def test_write_records_writes_date_values_without_profile():
     text = write_records([
         {"when": date(2026, 4, 3), "active": True},
-    ], profiles=("extended-scalars",))
+    ])
 
     assert 'when active:bool' in text
     assert '"2026-04-03"dt true' in text
@@ -153,3 +146,28 @@ def test_parse_src_rejects_hyphenated_barewords():
         assert False
     except ValueError:
         assert True
+
+
+def test_parse_src_accepts_shared_block_comment_fixture():
+    src = (FIXTURES / "conformance" / "mrtd" / "block-comments.mrtd").read_text(encoding="utf-8")
+    doc = parse_src(src)
+
+    assert doc.records == [
+        {"name": "Ada", "status": "active", "note": "draft"},
+        {"name": "Ben", "status": "inactive", "note": "review"},
+    ]
+
+
+def test_parse_src_accepts_shared_base_suffix_fixture():
+    src = (FIXTURES / "conformance" / "mrtd" / "base-suffixes.mrtd").read_text(encoding="utf-8")
+    doc = parse_src(src)
+
+    assert str(doc.records[0]["when"]).startswith("2026-04-11")
+    assert doc.records[0]["bits"] == 10
+    assert doc.records[0]["octal"] == 15
+    assert doc.records[0]["mask"] == 255
+    assert doc.records[0]["bonus"] == 3000
+    assert doc.records[0]["scale"] == 2_000_000
+    assert abs(doc.records[0]["turn"] - 3.141592653589793) < 1e-12
+    assert abs(doc.records[0]["angle"] - 3.141592653589793) < 1e-12
+    assert abs(doc.records[0]["half"] - 1.5707963267948966) < 1e-12

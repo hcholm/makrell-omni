@@ -25,6 +25,10 @@ module Makrell
           i = consume_line_comment(source, i + 2)
           next
         end
+        if source[i, 2] == "/*"
+          i = consume_block_comment(source, i + 2)
+          next
+        end
         if char == "#"
           i = consume_line_comment(source, i + 1)
           next
@@ -146,7 +150,7 @@ module Makrell
     end
 
     def parse_mrtd_string(source)
-      lines = source.each_line.map(&:strip).reject { |line| line.empty? || line.start_with?("#") }
+      lines = split_mrtd_lines(source)
       return { columns: [], rows: [], records: [] } if lines.empty?
 
       header_nodes = parse_mbf_level1_nodes(lines.first)
@@ -336,6 +340,14 @@ module Makrell
       index
     end
 
+    def consume_block_comment(source, index)
+      while index + 1 < source.length
+        return index + 2 if source[index, 2] == "*/"
+        index += 1
+      end
+      raise "Unterminated block comment"
+    end
+
     def negative_number_start?(source, index)
       source[index] == "-" && index + 1 < source.length && digit?(source[index + 1])
     end
@@ -397,6 +409,93 @@ module Makrell
       finish = index
       finish += 1 while finish < source.length && !whitespace_or_comma?(source[finish]) && !"{}[]()".include?(source[finish])
       source[index...finish]
+    end
+
+    def split_mrtd_lines(source)
+      lines = []
+      buffer = +""
+      i = 0
+      in_string = false
+      escaping = false
+      in_line_comment = false
+      in_block_comment = false
+
+      while i < source.length
+        char = source[i]
+        if in_line_comment
+          if char == "\n"
+            in_line_comment = false
+            trimmed = buffer.strip
+            lines << trimmed unless trimmed.empty?
+            buffer = +""
+          end
+          i += 1
+          next
+        end
+        if in_block_comment
+          if source[i, 2] == "*/"
+            in_block_comment = false
+            i += 2
+          else
+            i += 1
+          end
+          next
+        end
+        if in_string
+          buffer << char
+          if escaping
+            escaping = false
+          elsif char == "\\"
+            escaping = true
+          elsif char == '"'
+            in_string = false
+          end
+          i += 1
+          next
+        end
+
+        if char == '"'
+          in_string = true
+          buffer << char
+          i += 1
+          next
+        end
+        if source[i, 2] == "//"
+          in_line_comment = true
+          i += 2
+          next
+        end
+        if source[i, 2] == "/*"
+          in_block_comment = true
+          i += 2
+          next
+        end
+        if char == "#"
+          in_line_comment = true
+          i += 1
+          next
+        end
+        if char == "\r"
+          i += 1
+          next
+        end
+        if char == "\n"
+          trimmed = buffer.strip
+          lines << trimmed unless trimmed.empty?
+          buffer = +""
+          i += 1
+          next
+        end
+
+        buffer << char
+        i += 1
+      end
+
+      raise "Unterminated block comment" if in_block_comment
+
+      trimmed = buffer.strip
+      lines << trimmed unless trimmed.empty?
+      lines
     end
   end
 end

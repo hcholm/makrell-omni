@@ -8,10 +8,7 @@ final class Mrtd
 {
     public static function parseString(string $source): array
     {
-        $lines = array_values(array_filter(
-            array_map(static fn (string $line): string => trim($line), preg_split('/\R/', $source) ?: []),
-            static fn (string $line): bool => $line !== '' && !str_starts_with($line, '#'),
-        ));
+        $lines = self::splitRows($source);
 
         if ($lines === []) {
             return ['columns' => [], 'rows' => [], 'records' => []];
@@ -130,5 +127,97 @@ final class Mrtd
     private static function quoteName(string $value): string
     {
         return preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $value) === 1 ? $value : '"' . addcslashes($value, "\\\"") . '"';
+    }
+
+    private static function splitRows(string $source): array
+    {
+        $lines = [];
+        $buffer = '';
+        $length = strlen($source);
+        $inString = false;
+        $escaping = false;
+        $inLineComment = false;
+        $inBlockComment = false;
+
+        for ($i = 0; $i < $length; $i++) {
+            $ch = $source[$i];
+
+            if ($inLineComment) {
+                if ($ch === "\n") {
+                    $inLineComment = false;
+                    $trimmed = trim($buffer);
+                    if ($trimmed !== '') {
+                        $lines[] = $trimmed;
+                    }
+                    $buffer = '';
+                }
+                continue;
+            }
+            if ($inBlockComment) {
+                if ($ch === '*' && ($source[$i + 1] ?? '') === '/') {
+                    $inBlockComment = false;
+                    $i++;
+                }
+                continue;
+            }
+            if ($inString) {
+                $buffer .= $ch;
+                if ($escaping) {
+                    $escaping = false;
+                    continue;
+                }
+                if ($ch === '\\') {
+                    $escaping = true;
+                    continue;
+                }
+                if ($ch === '"') {
+                    $inString = false;
+                }
+                continue;
+            }
+
+            if ($ch === '"') {
+                $inString = true;
+                $buffer .= $ch;
+                continue;
+            }
+            if ($ch === '#') {
+                $inLineComment = true;
+                continue;
+            }
+            if ($ch === '/' && ($source[$i + 1] ?? '') === '/') {
+                $inLineComment = true;
+                $i++;
+                continue;
+            }
+            if ($ch === '/' && ($source[$i + 1] ?? '') === '*') {
+                $inBlockComment = true;
+                $i++;
+                continue;
+            }
+            if ($ch === "\r") {
+                continue;
+            }
+            if ($ch === "\n") {
+                $trimmed = trim($buffer);
+                if ($trimmed !== '') {
+                    $lines[] = $trimmed;
+                }
+                $buffer = '';
+                continue;
+            }
+
+            $buffer .= $ch;
+        }
+
+        if ($inBlockComment) {
+            throw new MakrellFormatException('Unterminated block comment.');
+        }
+
+        $trimmed = trim($buffer);
+        if ($trimmed !== '') {
+            $lines[] = $trimmed;
+        }
+        return $lines;
     }
 }

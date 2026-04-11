@@ -31,12 +31,6 @@ internal static class MrtdScalarConverter
     private static object ConvertString(StringNode str, MrtdParseOptions options)
     {
         var unescaped = Unescape(str.Value);
-        if (!string.IsNullOrEmpty(str.Suffix) && !options.HasProfile(MrtdProfiles.ExtendedScalars))
-        {
-            throw new InvalidOperationException(
-                $"MRTD string suffix '{str.Suffix}' requires the '{MrtdProfiles.ExtendedScalars}' profile.");
-        }
-
         return str.Suffix switch
         {
             "" => unescaped,
@@ -50,12 +44,6 @@ internal static class MrtdScalarConverter
 
     private static object ConvertNumber(NumberNode number, MrtdParseOptions options)
     {
-        if (!string.IsNullOrEmpty(number.Suffix) && !options.HasProfile(MrtdProfiles.ExtendedScalars))
-        {
-            throw new InvalidOperationException(
-                $"MRTD number suffix '{number.Suffix}' requires the '{MrtdProfiles.ExtendedScalars}' profile.");
-        }
-
         if (IsInteger(number.Value))
         {
             var baseValue = long.Parse(number.Value, CultureInfo.InvariantCulture);
@@ -96,18 +84,12 @@ internal static class MrtdScalarConverter
 
     private static Exception UnsupportedStringSuffix(string suffix, MrtdParseOptions options)
     {
-        return options.HasProfile(MrtdProfiles.ExtendedScalars)
-            ? new InvalidOperationException($"Unsupported MRTD string suffix '{suffix}'.")
-            : new InvalidOperationException(
-                $"MRTD string suffix '{suffix}' requires the '{MrtdProfiles.ExtendedScalars}' profile.");
+        return new InvalidOperationException($"Unsupported MRTD string suffix '{suffix}'.");
     }
 
     private static Exception UnsupportedNumberSuffix(string suffix, MrtdParseOptions options)
     {
-        return options.HasProfile(MrtdProfiles.ExtendedScalars)
-            ? new InvalidOperationException($"Unsupported MRTD number suffix '{suffix}'.")
-            : new InvalidOperationException(
-                $"MRTD number suffix '{suffix}' requires the '{MrtdProfiles.ExtendedScalars}' profile.");
+        return new InvalidOperationException($"Unsupported MRTD number suffix '{suffix}'.");
     }
 
     private static bool IsInteger(string text)

@@ -11,9 +11,6 @@ from makrell.tokeniser import src_to_tokens
 
 
 DECLARED_TYPES = {"int", "float", "bool", "string"}
-EXTENDED_SCALARS_PROFILE = "extended-scalars"
-
-
 @dataclass(frozen=True)
 class MrtdColumn:
     name: str
@@ -316,16 +313,8 @@ def _parse_data_cell(tokens: list[Node], column: MrtdColumn, profiles: list[str]
 
 def _parse_scalar(token: Node, profiles: list[str] | tuple[str, ...] | set[str] | None) -> Any:
     if isinstance(token, String):
-        if token.suffix and not _has_profile(profiles, EXTENDED_SCALARS_PROFILE):
-            raise ValueError(
-                f"MRTD string suffix '{token.suffix}' requires the '{EXTENDED_SCALARS_PROFILE}' profile."
-            )
         return python_value(token)
     if isinstance(token, Number):
-        if token.suffix and not _has_profile(profiles, EXTENDED_SCALARS_PROFILE):
-            raise ValueError(
-                f"MRTD number suffix '{token.suffix}' requires the '{EXTENDED_SCALARS_PROFILE}' profile."
-            )
         return python_value(token)
     if isinstance(token, Identifier):
         if token.value == "true":
@@ -403,8 +392,6 @@ def _format_scalar(value: Any, profiles: list[str] | tuple[str, ...] | set[str] 
     if value is None:
         return "null"
     if isinstance(value, datetime | date):
-        if not _has_profile(profiles, EXTENDED_SCALARS_PROFILE):
-            raise ValueError(f"MRTD date values require the '{EXTENDED_SCALARS_PROFILE}' profile.")
         return f'"{value.isoformat()}"dt'
     if isinstance(value, bool):
         return "true" if value else "false"
@@ -427,12 +414,6 @@ def _is_identifier(value: str) -> bool:
     if not (value[0].isalpha() or value[0] in "_$"):
         return False
     return all(ch.isalnum() or ch in "_$" for ch in value[1:])
-
-
-def _has_profile(profiles: list[str] | tuple[str, ...] | set[str] | None, profile: str) -> bool:
-    return profiles is not None and profile in profiles
-
-
 def _format_header_cell(name: str, type_name: str | None) -> str:
     if type_name is None:
         return _format_identifier_or_string(name)

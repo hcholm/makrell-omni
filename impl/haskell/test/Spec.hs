@@ -22,6 +22,9 @@ main = do
   conformanceText <- readFixture "conformance\\mron" "comments-and-identifiers.mron"
   let MObject conformanceMron = parseMronString conformanceText
   assert (Map.lookup "name" conformanceMron == Just (MString "Makrell")) "Conformance MRON failed"
+  blockCommentText <- readFixture "conformance\\mron" "block-comments.mron"
+  let MObject blockCommentMron = parseMronString blockCommentText
+  assert (Map.lookup "name" blockCommentMron == Just (MString "Makrell")) "Block-comment MRON failed"
 
   let mrml = parseMrmlFile (fixture "mrml" "sample.mrml")
   assert (mrmlName mrml == "page") "MRML fixture failed"
@@ -33,6 +36,9 @@ main = do
   let idtable = parseMrtdString untypedText
   assert (lookup "status" (mrtdRecords idtable !! 0) == Just (TString "active")) "MRTD identifiers failed"
   assert (columnType (mrtdColumns idtable !! 1) == Nothing) "MRTD untyped header failed"
+  blockCommentMrtdText <- readFixture "conformance\\mrtd" "block-comments.mrtd"
+  let blockCommentTable = parseMrtdString blockCommentMrtdText
+  assert (lookup "status" (mrtdRecords blockCommentTable !! 0) == Just (TString "active")) "Block-comment MRTD failed"
 
   let doc = MrtdDocument [MrtdColumn "name" (Just "string"), MrtdColumn "age" (Just "int"), MrtdColumn "active" (Just "bool")] [[TString "Ada", TInt 32, TBool True]]
   assert (writeMrtdString doc == "name:string age:int active:bool\nAda 32 true") "MRTD writer failed"

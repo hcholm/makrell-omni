@@ -55,6 +55,12 @@ def to_plain(v: Any) -> Any:
 def parse_token(n: Node, allow_exec: bool = False,
                 globs: dict | None = None, locs: dict | None = None) -> Any:
     if isinstance(n, Identifier):
+        if n.value == "true":
+            return True
+        if n.value == "false":
+            return False
+        if n.value == "null":
+            return None
         return n.value
     elif isinstance(n, String):
         return python_value(n)

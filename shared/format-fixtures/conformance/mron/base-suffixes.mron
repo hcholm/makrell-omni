@@ -1,0 +1,9 @@
+when "2026-04-11"dt
+bits "1010"bin
+octal "17"oct
+mask "ff"hex
+bonus 3k
+scale 2M
+turn 0.5tau
+angle 180deg
+half 0.5pi
