@@ -10,3 +10,6 @@ impl/rust/Cargo.lock
 impl/c/build/
 impl/cpp/build/
 impl/haskell/.stack-work/
+
+.release-assets/
+impl/ruby/*.gem
