@@ -1,0 +1,4 @@
+mavenCentralUsername=your-central-username
+mavenCentralPassword=your-central-password
+signingInMemoryKey=your-armored-private-key
+signingInMemoryKeyPassword=your-signing-key-password
