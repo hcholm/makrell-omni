@@ -6,6 +6,8 @@ the Makrell monorepo:
 - MakrellPy
 - MakrellTS
 - Makrell Family LSP
+- Makrell Formats for Rust
+- Makrell Formats for Ruby
 - Makrell# libraries and CLI tool
 - `vscode-makrell`
 
@@ -24,6 +26,8 @@ That runs the current publish preflight across:
 - MakrellPy build plus fresh-venv smoke check
 - MakrellTS CI and package dry run
 - Makrell Family LSP build and package dry run
+- Makrell Formats for Rust package dry run
+- Makrell Formats for Ruby gem build
 - Makrell# pack plus local tool smoke check
 - `vscode-makrell` release verification and VSIX build
 
@@ -48,9 +52,13 @@ Make sure these are available locally before publishing:
 - Bun
 - .NET 8 SDK
 - Node.js
+- Cargo / Rust toolchain
+- Ruby + RubyGems
 - publish credentials for:
   - PyPI
   - npm
+  - crates.io
+  - RubyGems
   - NuGet
   - VS Code Marketplace
 
@@ -61,6 +69,10 @@ Recommended auth setup:
   - `TWINE_PASSWORD=<pypi token>`
 - npm / Bun:
   - npm auth already configured locally
+- crates.io:
+  - `CARGO_REGISTRY_TOKEN=<crates.io token>`
+- RubyGems:
+  - `GEM_HOST_API_KEY=<rubygems api key>`
 - NuGet:
   - `NUGET_API_KEY=<nuget api key>`
 - VS Code Marketplace:
@@ -79,6 +91,10 @@ Current bump points:
   - `impl/ts/package.json`
 - Makrell Family LSP:
   - `tooling/ts-family-language-server/package.json`
+- Makrell Formats for Rust:
+  - `impl/rust/Cargo.toml`
+- Makrell Formats for Ruby:
+  - `impl/ruby/makrell-formats.gemspec`
 - Makrell# libraries:
   - `impl/dotnet/Directory.Build.props`
 - Makrell# CLI tool:
@@ -193,6 +209,66 @@ Manual checklist:
 - [ ] `bun run pack:dry-run` looked correct
 - [ ] npm authentication is active
 - [ ] `bun publish --access public` completed
+
+## Makrell Formats for Rust
+
+Working directory:
+
+```bash
+cd impl/rust
+```
+
+Preflight:
+
+```bash
+cargo test
+cargo package
+cargo publish --dry-run
+```
+
+Publish:
+
+```bash
+cargo publish
+```
+
+Manual checklist:
+
+- [ ] `impl/rust/Cargo.toml` version updated
+- [ ] `cargo test` succeeded
+- [ ] `cargo package` succeeded
+- [ ] `cargo publish --dry-run` succeeded
+- [ ] crates.io token is available
+- [ ] `cargo publish` completed
+
+## Makrell Formats for Ruby
+
+Working directory:
+
+```bash
+cd impl/ruby
+```
+
+Preflight:
+
+```bash
+ruby test/smoke.rb
+gem build makrell-formats.gemspec
+```
+
+Publish:
+
+```bash
+gem push makrell-formats-<version>.gem
+```
+
+Manual checklist:
+
+- [ ] `impl/ruby/makrell-formats.gemspec` version updated
+- [ ] `ruby test/smoke.rb` succeeded
+- [ ] `gem build` succeeded
+- [ ] RubyGems API key is available
+- [ ] `gem push` completed
 
 ## Makrell#
 
@@ -311,13 +387,16 @@ If publishing everything in one pass, this is the safest order:
 1. MakrellPy
 2. MakrellTS
 3. Makrell Family LSP
-4. Makrell# libraries and CLI tool
-5. `vscode-makrell`
+4. Makrell Formats for Rust
+5. Makrell Formats for Ruby
+6. Makrell# libraries and CLI tool
+7. `vscode-makrell`
 
 Why this order:
 
 - language/runtime packages first
 - the family LSP before the editor package that points at it
+- ecosystem libraries before the editor package
 - editor package last, once package names and install flows are already real
 
 ## Final human checklist
@@ -327,6 +406,8 @@ Why this order:
 - [ ] MakrellPy uploaded
 - [ ] MakrellTS uploaded
 - [ ] Makrell Family LSP uploaded
+- [ ] Makrell Formats for Rust uploaded
+- [ ] Makrell Formats for Ruby uploaded
 - [ ] Makrell# libraries uploaded
 - [ ] Makrell# CLI tool uploaded
 - [ ] `vscode-makrell` published

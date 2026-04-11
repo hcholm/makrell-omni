@@ -7,6 +7,8 @@ description = "MRON, MRML, and MRTD support for Rust."
 homepage = "https://makrell.dev"
 repository = "https://github.com/hcholm/makrell-omni"
 readme = "README.md"
+keywords = ["makrell", "mron", "mrml", "mrtd"]
+categories = ["parser-implementations", "encoding"]
 
 [lib]
 name = "makrell_formats"
