@@ -187,8 +187,13 @@ static node parse_node(token* tokens, size_t count, size_t* index) {
         out.children = parse_group(tokens, count, index, "]", &out.count);
         return out;
     }
-    strcpy(out.kind, "paren");
-    out.children = parse_group(tokens, count, index, ")", &out.count);
+    if (strcmp(token.kind, "(") == 0) {
+        strcpy(out.kind, "paren");
+        out.children = parse_group(tokens, count, index, ")", &out.count);
+        return out;
+    }
+    strcpy(out.kind, "invalid");
+    out.text = mf_strdup(token.text);
     return out;
 }
 
@@ -205,6 +210,23 @@ static node* parse_nodes(const char* source, size_t* out_count) {
     free(tokens);
     *out_count = count;
     return items;
+}
+
+static int node_contains_invalid(const node* item) {
+    size_t i;
+    if (strcmp(item->kind, "invalid") == 0) return 1;
+    for (i = 0; i < item->count; ++i) {
+        if (node_contains_invalid(&item->children[i])) return 1;
+    }
+    return 0;
+}
+
+static int nodes_contain_invalid(const node* items, size_t count) {
+    size_t i;
+    for (i = 0; i < count; ++i) {
+        if (node_contains_invalid(&items[i])) return 1;
+    }
+    return 0;
 }
 
 static mf_value* alloc_value(mf_kind kind) {
@@ -355,6 +377,7 @@ static void write_mron_value(string_builder* sb, const mf_value* value) {
 mf_value* mf_parse_mron_string(const char* source) {
     size_t count = 0;
     node* items = parse_nodes(source, &count);
+    if (nodes_contain_invalid(items, count)) return NULL;
     if (count == 0) return alloc_value(MF_NULL);
     if (count == 1) return convert_mron_node(&items[0]);
     return convert_mron_pairs(items, count);
@@ -491,7 +514,7 @@ mf_mrtd_document* mf_parse_mrtd_string(const char* source) {
                 document->columns[i].type = mf_strdup(colon + 1);
             } else {
                 document->columns[i].name = mf_strdup(header[i].text);
-                document->columns[i].type = mf_strdup("string");
+                document->columns[i].type = NULL;
             }
         }
     }
@@ -508,11 +531,12 @@ mf_mrtd_document* mf_parse_mrtd_string(const char* source) {
             }
         }
         cells = parse_nodes(line, &count);
+        if (nodes_contain_invalid(cells, count)) return NULL;
         document->rows = (mf_value***) realloc(document->rows, sizeof(mf_value**) * (document->row_count + 1));
         document->rows[document->row_count] = (mf_value**) calloc(document->column_count, sizeof(mf_value*));
         for (i = 0; i < document->column_count && i < count; ++i) {
             mf_value* scalar = convert_scalar(cells[i].text, cells[i].quoted);
-            const char* type = document->columns[i].type;
+            const char* type = document->columns[i].type ? document->columns[i].type : "string";
             if (strcmp(type, "int") == 0 && scalar->kind != MF_INT) return NULL;
             if (strcmp(type, "float") == 0 && scalar->kind != MF_FLOAT && scalar->kind != MF_INT) return NULL;
             if (strcmp(type, "bool") == 0 && scalar->kind != MF_BOOL) return NULL;
@@ -548,8 +572,10 @@ char* mf_write_mrtd_string(const mf_mrtd_document* document) {
         if (i) sb_append(&sb, " ");
         if (is_identifier_like(document->columns[i].name)) sb_append(&sb, document->columns[i].name);
         else append_quoted(&sb, document->columns[i].name);
-        sb_append(&sb, ":");
-        sb_append(&sb, document->columns[i].type);
+        if (document->columns[i].type) {
+            sb_append(&sb, ":");
+            sb_append(&sb, document->columns[i].type);
+        }
     }
     for (i = 0; i < document->row_count; ++i) {
         sb_append(&sb, "\n");

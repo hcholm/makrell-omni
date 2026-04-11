@@ -24,7 +24,11 @@ assert(mf.write_mrml_string(mrml) == '<page lang="en"><title>Makrell</title><p>A
 local mrtd = mf.parse_mrtd_string(read_all(fixture("mrtd", "sample.mrtd")))
 assert(mrtd.records[1].name == "Ada", "MRTD fixture failed")
 
-local id_table = mf.parse_mrtd_string("name:string status note\nAda active draft\nBen inactive review")
+local conformance_mron = mf.parse_mron_string(read_all(fixture("conformance/mron", "comments-and-identifiers.mron")))
+assert(conformance_mron.name == "Makrell", "Conformance MRON name failed")
+assert(conformance_mron.features[2] == "typed_scalars", "Conformance MRON identifier array failed")
+
+local id_table = mf.parse_mrtd_string(read_all(fixture("conformance/mrtd", "untyped-headers.mrtd")))
 assert(id_table.records[1].status == "active", "MRTD identifier values failed")
 assert(id_table.columns[2].type == nil and id_table.columns[3].type == nil, "MRTD untyped headers should stay untyped")
 
@@ -53,12 +57,12 @@ local untyped_out = mf.write_mrtd_string({
 assert(untyped_out == "name status\nAda active", "MRTD untyped writer output failed")
 
 local ok, err = pcall(function()
-  mf.parse_mron_string("name trailing-commas")
+  mf.parse_mron_string(read_all(fixture("conformance/mron", "hyphenated-bareword.invalid.mron")))
 end)
 assert(not ok and err:find("Unexpected token: %-"), "Expected MRON hyphenated bareword rejection")
 
 ok, err = pcall(function()
-  mf.parse_mrtd_string("name:string\ntrailing-commas")
+  mf.parse_mrtd_string(read_all(fixture("conformance/mrtd", "hyphenated-bareword.invalid.mrtd")))
 end)
 assert(not ok and err:find("Unexpected token: %-"), "Expected MRTD hyphenated bareword rejection")
 

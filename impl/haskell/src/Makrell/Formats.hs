@@ -37,7 +37,7 @@ data MrmlElement = MrmlElement
   , mrmlChildren :: [Either String MrmlElement]
   } deriving (Eq, Show)
 
-data MrtdColumn = MrtdColumn { columnName :: String, columnType :: String } deriving (Eq, Show)
+data MrtdColumn = MrtdColumn { columnName :: String, columnType :: Maybe String } deriving (Eq, Show)
 data MrtdCell = TString String | TInt Integer | TFloat Double | TBool Bool deriving (Eq, Show)
 data MrtdDocument = MrtdDocument { mrtdColumns :: [MrtdColumn], mrtdRows :: [[MrtdCell]] } deriving (Eq, Show)
 
@@ -98,7 +98,10 @@ parseMrtdFile = parseMrtdString . unsafePerformIO . readFile
 
 writeMrtdString :: MrtdDocument -> String
 writeMrtdString doc =
-  let header = List.intercalate " " [quoteIfNeeded (columnName c) ++ ":" ++ columnType c | c <- mrtdColumns doc]
+  let renderColumn c = case columnType c of
+        Just t -> quoteIfNeeded (columnName c) ++ ":" ++ t
+        Nothing -> quoteIfNeeded (columnName c)
+      header = List.intercalate " " [renderColumn c | c <- mrtdColumns doc]
       rows = map (List.intercalate " " . map writeCell) (mrtdRows doc)
   in List.intercalate "\n" (header : rows)
 
@@ -112,7 +115,8 @@ parseNodes source = go (tokenise source)
       | kind == "scalar" || kind == "=" = (Scalar text quoted, rest)
       | kind == "{" = let (items, tail') = parseGroup "}" rest in (Brace items, tail')
       | kind == "[" = let (items, tail') = parseGroup "]" rest in (Square items, tail')
-      | otherwise = let (items, tail') = parseGroup ")" rest in (Paren items, tail')
+      | kind == "(" = let (items, tail') = parseGroup ")" rest in (Paren items, tail')
+      | otherwise = error ("Unexpected token: " ++ text)
     parseNode [] = error "Unexpected end of input"
 
     parseGroup closing tokens =
@@ -130,6 +134,10 @@ tokenise (c:cs)
   | c == '#' = tokenise (dropWhile (/= '\n') cs)
   | c == '/' && not (null cs) && head cs == '/' = tokenise (dropWhile (/= '\n') (tail cs))
   | c `elem` "{}[]()=" = Token [c] [c] False : tokenise cs
+  | c == '-' && not (null cs) && Char.isDigit (head cs) =
+      let (restNum, rest) = span (\x -> Char.isDigit x || x == '.') cs
+      in Token "scalar" ('-':restNum) False : tokenise rest
+  | c == '-' = Token "operator" "-" False : tokenise cs
   | c == '"' = let (text, rest) = spanQuoted cs in Token "scalar" text True : tokenise rest
   | otherwise = let (text, rest) = span (\x -> not (Char.isSpace x) && notElem x "{}[]()=,#\"-") (c:cs)
                 in Token "scalar" text False : tokenise rest
@@ -197,19 +205,22 @@ parseChild _ = error "Unsupported MRML child node"
 parseColumn :: Node -> MrtdColumn
 parseColumn (Scalar text _) =
   let (name, rest) = break (== ':') text
-  in MrtdColumn name (if null rest then "string" else tail rest)
+  in MrtdColumn name (if null rest then Nothing else Just (tail rest))
 parseColumn _ = error "Invalid MRTD header field"
 
 parseRow :: [MrtdColumn] -> String -> [MrtdCell]
 parseRow columns line =
   let stripped = if not (null line) && head line == '(' && last line == ')' then init (tail line) else line
       cells = parseNodes stripped
-  in zipWith convertCell columns cells
+  in if length cells /= length columns
+        then error "MRTD row width mismatch"
+        else zipWith convertCell columns cells
 
 convertCell :: MrtdColumn -> Node -> MrtdCell
 convertCell column (Scalar text quoted) =
   let value = convertScalar text quoted
-  in case columnType column of
+      fieldType = maybe "string" id (columnType column)
+  in case fieldType of
        "string" -> TString (asKey value)
        "int" -> case value of MInt v -> TInt v; _ -> error "MRTD value does not match int field"
        "float" -> case value of MInt v -> TFloat (fromInteger v); MFloat v -> TFloat v; _ -> error "MRTD value does not match float field"

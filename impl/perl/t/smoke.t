@@ -10,6 +10,13 @@ sub fixture {
     return "$FindBin::Bin/../../../shared/format-fixtures/$group/$file";
 }
 
+sub read_fixture {
+    my ($group, $file) = @_;
+    open my $fh, '<:encoding(UTF-8)', fixture($group, $file) or die "Could not read fixture";
+    local $/;
+    return <$fh>;
+}
+
 is_deeply(mbf_support_profile(), {
     implemented_levels => [0, 1],
     reserved_levels => [2],
@@ -28,7 +35,11 @@ my $mrtd = parse_mrtd_file(fixture('mrtd', 'sample.mrtd'));
 is(scalar @{$mrtd->{columns}}, 3, 'MRTD columns');
 is($mrtd->{records}[0]{name}, 'Ada', 'MRTD record');
 
-my $idtable = parse_mrtd_string("name:string status note\nAda active draft\nBen inactive review");
+my $conformance_mron = parse_mron_string(read_fixture('conformance/mron', 'comments-and-identifiers.mron'));
+is($conformance_mron->{name}, 'Makrell', 'Conformance MRON name');
+is($conformance_mron->{features}[1], 'typed_scalars', 'Conformance MRON identifier array item');
+
+my $idtable = parse_mrtd_string(read_fixture('conformance/mrtd', 'untyped-headers.mrtd'));
 is($idtable->{records}[0]{status}, 'active', 'MRTD identifier string');
 ok(!defined $idtable->{columns}[1]{type}, 'MRTD untyped header stays untyped');
 ok(!defined $idtable->{columns}[2]{type}, 'MRTD second untyped header stays untyped');
@@ -57,10 +68,10 @@ my $untyped_out = write_mrtd_string({
 });
 is($untyped_out, "name status\nAda active", 'MRTD writer keeps untyped headers untyped');
 
-eval { parse_mron_string('name trailing-commas') };
+eval { parse_mron_string(read_fixture('conformance/mron', 'hyphenated-bareword.invalid.mron')) };
 ok($@, 'MRON rejects hyphenated bareword');
 
-eval { parse_mrtd_string("name:string\ntrailing-commas") };
+eval { parse_mrtd_string(read_fixture('conformance/mrtd', 'hyphenated-bareword.invalid.mrtd')) };
 ok($@, 'MRTD rejects hyphenated bareword');
 
 eval { parse_mbf_level2_nodes('name value') };

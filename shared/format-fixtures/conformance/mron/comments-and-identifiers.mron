@@ -1,0 +1,4 @@
+# MBF level 0/1: comments are ignored, identifiers are string values
+name Makrell
+features [comments typed_scalars]
+stable false

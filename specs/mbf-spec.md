@@ -6,10 +6,19 @@ This document defines Makrell Base Format (MBF) requirements as of February 15, 
 
 Requirement keywords **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, and **MAY** follow RFC 2119.
 
-A conforming MBF implementation MUST declare support for:
+A conforming full MBF implementation MUST declare support for:
 - Level 0: tokenization
 - Level 1: bracket/list parsing
 - Level 2: binary operator parsing
+
+Data-format implementations that use MBF structurally without claiming full MBF
+expression support MAY instead declare:
+
+- implemented support for Level 0 and Level 1
+- a reserved implementation path for Level 2
+
+This is the intended baseline for MRON, MRML, and MRTD SDKs that are not yet
+general Makrell language implementations.
 
 ## 2. MBF Overview
 

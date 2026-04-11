@@ -11,3 +11,7 @@ Current fixture groups:
 - `mron/`
 - `mrml/`
 - `mrtd/`
+- `conformance/`
+
+The `conformance/` group is for smaller cross-language MBF level 0/1 cases that
+multiple MRON/MRML/MRTD implementations should consume directly in tests.

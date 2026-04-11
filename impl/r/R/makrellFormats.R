@@ -22,6 +22,18 @@ tokenise_makrell <- function(source) {
       i <- i + 1L
       next
     }
+    if (ch == "-") {
+      if (i < n && grepl("[0-9]", substr(source, i + 1L, i + 1L))) {
+        start <- i
+        i <- i + 1L
+        while (i <= n && grepl("[0-9.]", substr(source, i, i))) i <- i + 1L
+        tokens[[length(tokens) + 1L]] <- list(kind = "scalar", text = substr(source, start, i - 1L), quoted = FALSE)
+        next
+      }
+      tokens[[length(tokens) + 1L]] <- list(kind = "operator", text = "-", quoted = FALSE)
+      i <- i + 1L
+      next
+    }
     if (ch == "\"") {
       i <- i + 1L
       text <- character()
@@ -73,6 +85,9 @@ parse_nodes_makrell <- function(source) {
     if (token$kind %in% c("scalar", "=")) {
       return(list(node = list(kind = "scalar", text = token$text, quoted = token$quoted), index = index))
     }
+    if (token$kind == "operator") {
+      return(list(node = list(kind = "invalid", text = token$text, quoted = FALSE), index = index))
+    }
     if (token$kind == "{") {
       parsed <- parse_group(index, "}")
       return(list(node = list(kind = "brace", children = parsed$items), index = parsed$index))
@@ -81,8 +96,11 @@ parse_nodes_makrell <- function(source) {
       parsed <- parse_group(index, "]")
       return(list(node = list(kind = "square", children = parsed$items), index = parsed$index))
     }
-    parsed <- parse_group(index, ")")
-    list(node = list(kind = "paren", children = parsed$items), index = parsed$index)
+    if (token$kind == "(") {
+      parsed <- parse_group(index, ")")
+      return(list(node = list(kind = "paren", children = parsed$items), index = parsed$index))
+    }
+    list(node = list(kind = "invalid", text = token$text, quoted = FALSE), index = index)
   }
 
   items <- list()
@@ -93,6 +111,12 @@ parse_nodes_makrell <- function(source) {
     index <- parsed$index
   }
   items
+}
+
+contains_invalid_node <- function(node) {
+  if (identical(node$kind, "invalid")) return(TRUE)
+  if (!is.null(node$children)) return(any(vapply(node$children, contains_invalid_node, logical(1))))
+  FALSE
 }
 
 convert_scalar_mron <- function(text, quoted) {
@@ -124,6 +148,7 @@ convert_mron_pairs <- function(nodes) {
 
 parse_mron_string <- function(source) {
   nodes <- parse_nodes_makrell(source)
+  if (any(vapply(nodes, contains_invalid_node, logical(1)))) stop("Invalid MBF level 1 node")
   if (length(nodes) == 0) return(NULL)
   if (length(nodes) == 1) return(convert_mron_node(nodes[[1]]))
   convert_mron_pairs(nodes)
@@ -197,6 +222,7 @@ write_mrml_string <- function(value) {
 }
 
 convert_mrtd_cell <- function(node, type) {
+  if (is.null(type) || identical(type, "")) type <- "string"
   value <- convert_scalar_mron(node$text, node$quoted)
   if (identical(type, "string")) return(as.character(value))
   if (identical(type, "int") && is.integer(value)) return(value)
@@ -213,13 +239,14 @@ parse_mrtd_string <- function(source) {
   headers <- parse_nodes_makrell(lines[[1]])
   columns <- lapply(headers, function(node) {
     parts <- strsplit(node$text, ":", fixed = TRUE)[[1]]
-    list(name = parts[[1]], type = if (length(parts) > 1) parts[[2]] else "string")
+    list(name = parts[[1]], type = if (length(parts) > 1) parts[[2]] else NULL)
   })
   rows <- list()
   records <- list()
   for (line in lines[-1]) {
     if (startsWith(line, "(") && endsWith(line, ")")) line <- trimws(substr(line, 2, nchar(line) - 1))
     cells <- parse_nodes_makrell(line)
+    if (any(vapply(cells, contains_invalid_node, logical(1)))) stop("Invalid MBF level 1 node")
     row <- list()
     record <- list()
     for (i in seq_along(columns)) {
@@ -242,7 +269,10 @@ write_mrtd_cell <- function(value) {
 }
 
 write_mrtd_string <- function(value) {
-  header <- paste(vapply(value$columns, function(col) sprintf("%s:%s", quote_if_needed(col$name), col$type), ""), collapse = " ")
+  header <- paste(vapply(value$columns, function(col) {
+    if (is.null(col$type) || identical(col$type, "")) quote_if_needed(col$name)
+    else sprintf("%s:%s", quote_if_needed(col$name), col$type)
+  }, ""), collapse = " ")
   lines <- c(header, vapply(value$rows, function(row) paste(vapply(row, write_mrtd_cell, ""), collapse = " "), ""))
   paste(lines, collapse = "\n")
 }
