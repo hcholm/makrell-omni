@@ -416,7 +416,7 @@ See:
 - parsing to `MrtdDocument`
 - row and record projections
 - typed read/write helpers for object-like rows and tuple-like rows
-- profile-gated MRTD suffix extensions via `MrtdParseOptions.Profiles`
+- the shared basic suffix profile as part of the current MRTD core surface
 
 Examples:
 
@@ -438,21 +438,14 @@ var tuples = MrtdTyped.ReadTuples<int, string, double>(
     """);
 ```
 
-Profile example:
+Basic suffix profile example:
 
 ```csharp
 var doc = MrtdParser.ParseSource(
     """
     when bonus
     "2026-04-03"dt 3k
-    """,
-    new MrtdParseOptions
-    {
-        Profiles = new HashSet<string>(StringComparer.Ordinal)
-        {
-            MrtdProfiles.ExtendedScalars,
-        },
-    });
+    """);
 ```
 
 ## Design docs

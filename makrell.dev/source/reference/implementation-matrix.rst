@@ -83,9 +83,9 @@ Family formats and tooling
    * - MRTD
      - active
      - available across Py, TS, and .NET
-   * - MRTD profiles
-     - evolving
-     - ``extended-scalars`` is the first shared profile
+   * - MRTD basic suffix profile
+     - active
+     - shared post-L1 suffix semantics are part of current MRON/MRTD core conformance
    * - VS Code extension
      - active
      - active now with run/check workflow and diagnostics coverage; see :doc:`vscode-makrell`

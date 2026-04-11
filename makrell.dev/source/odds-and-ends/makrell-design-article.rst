@@ -325,9 +325,8 @@ space-separated values aligned to the header. Supported types include
 do elsewhere in MBF, so ``2k`` in a numeric column means 2000 and ``90deg``
 means approximately 1.571 radians.
 
-MRTD has typed read/write helpers across all three implementation tracks and
-an initial profile experiment (``extended-scalars``) for richer value types.
-Its inclusion in v0.10.0 demonstrates that the MBF substrate can
+MRTD has typed read/write helpers across all three implementation tracks and a
+shared basic suffix profile for richer scalar values. Its inclusion in v0.10.0 demonstrates that the MBF substrate can
 accommodate a fourth semantic layer --- tabular data --- without
 modification to the shared parsing pipeline.
 

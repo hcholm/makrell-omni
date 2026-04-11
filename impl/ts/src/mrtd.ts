@@ -15,6 +15,11 @@ export interface MrtdDocument {
 }
 
 export interface MrtdOptions {
+  /**
+   * Reserved for future optional MRTD extensions.
+   * The shared basic suffix profile is part of current MRTD core parsing and
+   * does not need to be enabled here.
+   */
   profiles?: readonly string[];
 }
 

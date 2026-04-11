@@ -98,7 +98,7 @@ Covered behaviours across the three tracks:
 - typed/object mapping
 - tuple mapping
 - write helpers
-- profile-gated `extended-scalars`
+- shared basic suffix profile
 
 Known difference:
 

@@ -155,32 +155,44 @@ Unknown operators default to precedence `0`, left-associative, unless overridden
 
 Language implementations MAY extend operator precedence tables (MakrellPy does via `def operator`).
 
-## 6. Core Literal Value Mapping
+## 6. Suffix Preservation vs Semantic Conversion
 
-This section defines currently supported literal conversion semantics in the Python reference implementation.
+MBF level 0 and level 1 are responsible for recognising suffix-bearing scalar
+tokens and preserving their suffix text on the resulting nodes.
 
-### 6.1 String Suffixes
+MBF does not, by itself, require a particular value-conversion policy for those
+suffixes. Semantic interpretation of suffix-bearing scalar nodes belongs to
+formats and language hosts that consume MBF.
 
-Supported suffixes:
-- `dt`: ISO datetime (`datetime.fromisoformat`)
-- `bin`: parse as base-2 integer
-- `oct`: parse as base-8 integer
-- `hex`: parse as base-16 integer
-- `regex`: compile to regex object
-- empty suffix: plain string
+The Makrell family currently uses a shared post-L1 semantic layer referred to as
+the **basic suffix profile**. MRON and MRTD currently require that profile as
+part of their core conformance surface, and language implementations MAY also
+reuse it.
 
-### 6.2 Number Suffixes
+### 6.1 Basic Suffix Profile
 
-Supported suffixes:
-- `k`, `M`, `G`, `T`, `P`, `E`: scale by powers of 10^3
-- `i`: imaginary component (complex)
-- `e`: multiply by Euler's number
-- `tau`: multiply by tau
-- `deg`: degrees to radians
-- `pi`: multiply by pi
-- empty suffix: int/float standard numeric value
+The current shared basic suffix profile includes:
 
-Implementations targeting non-Python runtimes MAY map these suffixes differently but MUST document exact behavior.
+- string suffixes:
+  - `dt`
+  - `bin`
+  - `oct`
+  - `hex`
+- number suffixes:
+  - `k`
+  - `M`
+  - `G`
+  - `T`
+  - `P`
+  - `E`
+  - `e`
+  - `tau`
+  - `deg`
+  - `pi`
+
+Hosts MAY additionally define their own suffix semantics, but they SHOULD
+document clearly which suffixes belong to the shared basic suffix profile and
+which are host- or application-specific.
 
 ## 7. Conformance Test Mapping
 

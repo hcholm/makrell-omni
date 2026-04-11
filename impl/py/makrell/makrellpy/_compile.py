@@ -6,7 +6,7 @@ from makrell.ast import (
 from makrell.makrellpy._compile_curly_reserved import compile_curly_reserved
 from makrell.makrellpy._compiler_common import CompilerContext
 from makrell.tokeniser import regular
-from makrell.parsing import (get_binop, get_operator, python_value, get_identifier)
+from makrell.parsing import apply_basic_suffix_profile, get_binop, get_operator, get_identifier
 from .py_primitives import simple_reserved
 from ._compile_binop import compile_binop
 from ._compiler_common import transfer_pos
@@ -147,7 +147,7 @@ def compile_mr(n: Node, cc: CompilerContext) -> py.AST | list[py.AST] | None:
                 transformed = compile_suffix_transform("strsuffix", n.suffix, n.value[1:-1])
                 if transformed is not None:
                     return transformed
-            return pb.constant(python_value(n))
+            return pb.constant(apply_basic_suffix_profile(n))
         
         case Number():
             # numeric constant
@@ -156,9 +156,9 @@ def compile_mr(n: Node, cc: CompilerContext) -> py.AST | list[py.AST] | None:
                 transformed = compile_suffix_transform(kind, n.suffix, n.value)
                 if transformed is not None:
                     return transformed
-            value = python_value(n)
+            value = apply_basic_suffix_profile(n)
             n._type = Identifier("int" if isinstance(value, int) else "float")
-            return pb.constant(python_value(n))
+            return pb.constant(apply_basic_suffix_profile(n))
                        
         case BinOp(left, op, right):
             return compile_binop(n, cc, compile_mr)

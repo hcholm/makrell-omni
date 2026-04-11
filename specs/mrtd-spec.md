@@ -10,6 +10,11 @@ For data-format implementations, MRTD requires:
 - MBF level 0 tokenisation
 - MBF level 1 bracketed/nested node parsing
 
+MRTD semantic parsing should consume the output of MBF level 1 parsing as its
+input layer. In practice this means row and cell segmentation may still happen
+at the token level, but header cells and data cells should be interpreted from
+their L1 node form rather than from raw source text.
+
 MRTD does not require MBF level 2 operator parsing for its core tabular
 surface, but implementations should leave room for a later level 2 path.
 
@@ -191,9 +196,9 @@ In the MRTD core, plain scalar values are:
 
 - identifiers may represent ordinary strings
 - `true` and `false` represent booleans
-- numbers follow MBF number parsing with the shared MRTD suffix surface described below
+- numbers follow MBF number parsing with the shared basic suffix profile described below
 
-The current MRTD base scalar surface includes these suffixes:
+The current MRTD basic suffix profile includes these suffixes:
 
 - string suffixes:
   - `dt`
@@ -212,8 +217,12 @@ The current MRTD base scalar surface includes these suffixes:
   - `deg`
   - `pi`
 
-Portable MRTD implementations SHOULD support this set directly as part of MRTD
-core rather than behind a named profile.
+Portable MRTD implementations MUST support this set directly as part of MRTD
+core for the current specification version.
+
+Suffix interpretation is not part of MBF level 1 itself. MBF level 1 preserves
+the suffix text on scalar nodes; MRTD then applies the shared basic suffix
+profile as a post-L1 semantic conversion step.
 
 If an implementation does not have a natural host type for a suffixed scalar, it
 MAY expose a source-level representation that preserves both the scalar value and
@@ -233,10 +242,6 @@ Ben 4.5 2M
 ```mrtd
 when
 "2026-04-03"dt
-```
-
-```text
-profiles = { "extended-scalars", "gis-data" }
 ```
 
 ## Multiline rows

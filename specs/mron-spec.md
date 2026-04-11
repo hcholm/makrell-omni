@@ -11,6 +11,10 @@ For data-format implementations, MRON requires:
 - MBF level 0 tokenisation
 - MBF level 1 bracketed/nested node parsing
 
+MRON semantic parsing should consume the output of MBF level 1 parsing as its
+input layer. In other words, source text is first tokenised and regularised to
+L1 nodes, and MRON object/array/scalar rules are then applied to those nodes.
+
 MRON does not require MBF level 2 operator parsing for its core data-format
 surface, but implementations should leave room for a later level 2 path.
 
@@ -42,7 +46,7 @@ Square brackets parse to arrays/lists.
 
 ## 5. Scalars
 
-Scalars include identifier text values, string/number literals with suffix conversions, and null/bool equivalents where language layer provides them.
+Scalars include identifier text values, string/number literals with suffix conversions from the shared basic suffix profile, and null/bool equivalents where language layer provides them.
 
 Identifier boundaries are inherited from MBF level 0 tokenisation. That means
 operator-shaped text is not silently treated as an identifier string.
@@ -51,9 +55,9 @@ For example, `trailing-commas` is not one MRON identifier value. It is
 operator-shaped input and MUST be rejected unless a higher-level syntax mode
 explicitly gives it meaning.
 
-### 5.1 Base suffix surface
+### 5.1 Basic suffix profile
 
-The current MRON base scalar surface includes these suffixes:
+The current MRON basic suffix profile includes these suffixes:
 
 - string suffixes:
   - `dt`
@@ -72,8 +76,12 @@ The current MRON base scalar surface includes these suffixes:
   - `deg`
   - `pi`
 
-Portable MRON implementations SHOULD support this set directly as part of MRON
-core rather than behind a named profile.
+Portable MRON implementations MUST support this set directly as part of MRON
+core for the current specification version.
+
+Suffix interpretation is not part of MBF level 1 itself. MBF level 1 preserves
+the suffix text on scalar nodes; MRON then applies the shared basic suffix
+profile as a post-L1 semantic conversion step.
 
 If an implementation does not have a natural host type for a suffixed scalar, it
 MAY expose a source-level representation that preserves both the scalar value and

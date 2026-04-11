@@ -5,7 +5,7 @@ from makrell.ast import Identifier, Number, Sequence, SquareBrackets, CurlyBrack
 from makrell.makrellpy.compiler import eval_nodes
 import makrell.baseformat as mp
 from makrell.tokeniser import regular
-from makrell.parsing import get_identifier, python_value, pairwise
+from makrell.parsing import apply_basic_suffix_profile, get_identifier, pairwise
 
 
 class MronObject:
@@ -63,9 +63,9 @@ def parse_token(n: Node, allow_exec: bool = False,
             return None
         return n.value
     elif isinstance(n, String):
-        return python_value(n)
+        return apply_basic_suffix_profile(n)
     elif isinstance(n, Number):
-        return python_value(n)
+        return apply_basic_suffix_profile(n)
     elif isinstance(n, CurlyBrackets):
         if allow_exec and len(n.nodes) >= 2 and get_identifier(n.nodes[0], "$"):
             r = eval_nodes(mp.operator_parse(n.nodes[1:])[0], None, globals() | (globs or {}), locals() | (locs or {}))
@@ -104,14 +104,10 @@ def parse_src(text: str, allow_exec: bool = False,
               globs: dict | None = None, locs: dict | None = None) -> MronObject | Any:
     tokens = regular(mp.src_to_tokens(text))
     ns = mp.nodes_to_baseformat(tokens)
-    if len(ns) == 0:
-        return None
-    if len(ns) == 1:
-        v = parse_token(ns[0], allow_exec, globs, locs)
-        return v
-    if len(ns) % 2 == 0:
-        return parse_token_pairs(ns, allow_exec, globs, locs)
-    raise Exception(f"Illegal number ({len(ns)}) of root level expressions")
+    result = parse_nodes(ns, allow_exec, globs, locs)
+    if len(ns) % 2 == 1 and len(ns) > 1:
+        raise Exception(f"Illegal number ({len(ns)}) of root level expressions")
+    return result
 
 
 def parse_file(path: str, allow_exec: bool = False) -> MronObject | Any:

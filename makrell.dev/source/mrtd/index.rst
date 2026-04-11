@@ -39,9 +39,9 @@ Current implementation note
 The current draft is now implemented in the `.NET`, Python, and TypeScript
 tracks as a simple row-based parser plus typed/object-and-tuple helper APIs.
 
-The first profile experiment is also in place: ``extended-scalars`` adds a small
-set of profile-level scalar suffixes such as ``dt`` and ``k``. Those suffixes are
-not part of MRTD core and should be treated as profile-specific.
+The shared basic suffix profile is also in place as part of the current MRTD
+core surface. That includes scalar suffixes such as ``dt`` and ``k`` as a
+post-L1 semantic conversion layer reused across the family.
 
 Related pages
 -------------

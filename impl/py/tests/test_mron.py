@@ -1,6 +1,8 @@
 from datetime import datetime
 from pathlib import Path
 from makrell.mron import parse_src
+from makrell.parsing import apply_basic_suffix_profile
+from makrell.ast import String
 
 
 FIXTURES = Path(__file__).resolve().parents[3] / "shared" / "format-fixtures"
@@ -207,3 +209,7 @@ def test_base_suffixes_are_supported_in_shared_conformance_fixture():
     assert abs(actual["turn"] - 3.141592653589793) < 1e-12
     assert abs(actual["angle"] - 3.141592653589793) < 1e-12
     assert abs(actual["half"] - 1.5707963267948966) < 1e-12
+
+
+def test_basic_suffix_profile_is_an_explicit_post_l1_conversion_layer():
+    assert apply_basic_suffix_profile(String('"2026-04-11"', "dt")) == datetime.fromisoformat("2026-04-11")

@@ -17,7 +17,14 @@ def deescape(s: str) -> str:
     return s.replace(r'\"', '"')
 
 
-def python_value(n: Node) -> Any:
+def apply_basic_suffix_profile(n: Node) -> Any:
+    """Convert an MBF L1 scalar node using the shared basic suffix profile.
+
+    This is a post-L1 semantic step. MBF level 1 is responsible for producing
+    string/number nodes with suffix text preserved; MRON, MRTD, and Makrell
+    language hosts may then reuse this conversion layer when they want the
+    family's default scalar suffix behaviour.
+    """
     if isinstance(n, String):
         s = n.value[1:-1]
         match n.suffix:
@@ -91,13 +98,23 @@ def python_value(n: Node) -> Any:
         return None
 
 
+def python_value(n: Node) -> Any:
+    """Backward-compatible alias for the shared basic suffix conversion layer."""
+    return apply_basic_suffix_profile(n)
+
+
+def apply_core_suffix_profile(n: Node) -> Any:
+    """Backward-compatible alias for the shared basic suffix profile."""
+    return apply_basic_suffix_profile(n)
+
+
 def baseformat_value(n: Node) -> Node:
     if isinstance(n, String):
-        pv = python_value(n)
+        pv = apply_basic_suffix_profile(n)
         if pv is not None:
             return pv
     elif isinstance(n, Number):
-        pv = python_value(n)
+        pv = apply_basic_suffix_profile(n)
         if pv is not None:
             return pv
     return n
@@ -110,11 +127,11 @@ def pyast_value(n: Node) -> py.AST | None:
         match n.suffix:  # type: ignore
             case "regex":
                 return py.Constant(regex.compile(s))
-    pv = python_value(n)
+    pv = apply_basic_suffix_profile(n)
     if not pv:
         return None
         # raise ValueError(f"Can't convert {n} to python value")
-    return py.Constant(python_value(n))
+    return py.Constant(apply_basic_suffix_profile(n))
 
 
 def flatten(a: list) -> list:

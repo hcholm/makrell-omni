@@ -233,7 +233,7 @@ Ben 41 false
 """)
 ```
 
-Profile example:
+Basic suffix profile example:
 
 ```python
 from makrell.mrtd import parse_src
@@ -241,7 +241,7 @@ from makrell.mrtd import parse_src
 doc = parse_src("""
 when bonus
 "2026-04-03"dt 3k
-""", profiles=("extended-scalars",))
+""")
 ```
 
 ## Makrell Base Format (MBF)

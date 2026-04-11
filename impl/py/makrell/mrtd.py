@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime
-import inspect
 from typing import Any
 
 from makrell.ast import Comment, Identifier, LPar, Node, Number, Operator, RPar, String, Whitespace
-from makrell.parsing import python_value
-from makrell.tokeniser import src_to_tokens
+import makrell.baseformat as mp
+from makrell.parsing import apply_basic_suffix_profile
+from makrell.tokeniser import regular, src_to_tokens
 
 
 DECLARED_TYPES = {"int", "float", "bool", "string"}
@@ -40,7 +40,7 @@ def parse_src(src: str, profiles: list[str] | tuple[str, ...] | set[str] | None 
     if len(row_tokens) == 0:
         return MrtdDocument([], [])
 
-    columns = [_parse_header_cell(cell_tokens) for cell_tokens in _split_row_cells(row_tokens[0])]
+    columns = [_parse_header_cell(_to_l1_nodes(cell_tokens)) for cell_tokens in _split_row_cells(row_tokens[0])]
     rows = [
         _parse_data_row(tokens, columns, row_index + 2, profiles)
         for row_index, tokens in enumerate(row_tokens[1:])
@@ -269,7 +269,7 @@ def _parse_header_name(tokens: list[Node]) -> str:
     if isinstance(token, Identifier):
         return token.value
     if isinstance(token, String):
-        return python_value(token)
+        return apply_basic_suffix_profile(token)
     raise ValueError("Illegal MRTD header cell.")
 
 
@@ -291,31 +291,35 @@ def _parse_data_row(
     line_number: int,
     profiles: list[str] | tuple[str, ...] | set[str] | None,
 ) -> MrtdRow:
-    cells = _split_row_cells(tokens)
-    if len(cells) != len(columns):
-        raise ValueError(f"MRTD row {line_number} has {len(cells)} cells, expected {len(columns)}.")
+    cell_nodes = [_to_l1_nodes(cell_tokens) for cell_tokens in _split_row_cells(tokens)]
+    if len(cell_nodes) != len(columns):
+        raise ValueError(f"MRTD row {line_number} has {len(cell_nodes)} cells, expected {len(columns)}.")
 
     return MrtdRow([
-        _parse_data_cell(cell_tokens, column, profiles)
-        for cell_tokens, column in zip(cells, columns, strict=True)
+        _parse_data_cell(nodes, column, profiles)
+        for nodes, column in zip(cell_nodes, columns, strict=True)
     ])
 
 
-def _parse_data_cell(tokens: list[Node], column: MrtdColumn, profiles: list[str] | tuple[str, ...] | set[str] | None) -> Any:
-    if len(tokens) != 1:
+def _parse_data_cell(nodes: list[Node], column: MrtdColumn, profiles: list[str] | tuple[str, ...] | set[str] | None) -> Any:
+    if len(nodes) != 1:
         raise ValueError("MRTD data cells must currently be scalar values.")
 
-    value = _parse_scalar(tokens[0], profiles)
+    value = _parse_scalar(nodes[0], profiles)
     if column.type is None:
         return value
     return _coerce_declared_type(value, column.type, column.name)
 
 
+def _to_l1_nodes(tokens: list[Node]) -> list[Node]:
+    return mp.nodes_to_baseformat(regular(tokens))
+
+
 def _parse_scalar(token: Node, profiles: list[str] | tuple[str, ...] | set[str] | None) -> Any:
     if isinstance(token, String):
-        return python_value(token)
+        return apply_basic_suffix_profile(token)
     if isinstance(token, Number):
-        return python_value(token)
+        return apply_basic_suffix_profile(token)
     if isinstance(token, Identifier):
         if token.value == "true":
             return True

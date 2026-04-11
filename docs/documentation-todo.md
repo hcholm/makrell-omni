@@ -98,8 +98,8 @@ Suggested item format:
 - [x] Expose synced shared editor assets from MakrellTS for browser/playground reuse.
   - Source: `impl/ts` now syncs `shared/makrell-editor-assets/` into local package files and exports them from `makrellts/editor-assets`
   - Target docs: `impl/ts/README.md`, `makrell.dev/` playground architecture/implementation notes
-- [x] Document the MRTD `extended-scalars` profile in implementation READMEs and `makrell.dev`.
-  - Source: profile-gated MRTD suffix support in `.NET`, MakrellTS, and MakrellPy
+- [x] Document the shared basic suffix profile in implementation READMEs and `makrell.dev`.
+  - Source: shared MRON/MRTD suffix support in `.NET`, MakrellTS, and MakrellPy
   - Target docs: `impl/dotnet/README.md`, `impl/py/README.md`, `impl/ts/README.md`, `makrell.dev/`
 - [x] Add MRTD family documentation pages and navigation on `makrell.dev`.
   - Source: new `specs/mrtd-spec.md` draft and initial `.NET` implementation

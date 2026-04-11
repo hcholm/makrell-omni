@@ -60,23 +60,22 @@ Rows can be wrapped in round brackets when they need to span multiple lines:
       "line wrapped"
       13.5 )
 
-Profiles
---------
+Basic suffix profile
+--------------------
 
-The MRTD core does not include suffix extensions. If an implementation supports
-extra suffixes, they should be exposed through named profiles rather than being
-accepted silently in core mode.
+The current MRTD core includes the shared basic suffix profile. That profile is
+applied after MBF L1 parsing and gives a common meaning to standard suffixed
+scalar nodes.
 
-The current profile experiment is ``extended-scalars``. That profile allows
-examples such as:
+Examples:
 
 .. code-block:: mrtd
 
     when bonus
     "2026-04-03"dt 3k
 
-Profile activation is intended to be composable. An implementation may enable
-more than one named profile at once.
+For the current spec version, MRTD implementations should treat this as part of
+core conformance rather than as an optional toggle.
 
 Implementation examples
 -----------------------
@@ -99,14 +98,7 @@ Makrell#
         """
         when bonus
         "2026-04-03"dt 3k
-        """,
-        new MrtdParseOptions
-        {
-            Profiles = new HashSet<string>(StringComparer.Ordinal)
-            {
-                MrtdProfiles.ExtendedScalars,
-            },
-        });
+        """);
 
 MakrellPy
 ^^^^^^^^^
@@ -126,7 +118,7 @@ MakrellPy
     doc = parse_src("""
     when bonus
     "2026-04-03"dt 3k
-    """, profiles=("extended-scalars",))
+    """)
 
 MakrellTS
 ^^^^^^^^^
@@ -146,7 +138,7 @@ MakrellTS
     const doc = parseMrtd(`
     when bonus
     "2026-04-03"dt 3k
-    `, { profiles: ["extended-scalars"] });
+    `);
 
 Where to go next
 ----------------

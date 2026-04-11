@@ -14,7 +14,7 @@ from makrell.ast import (
     String,
 )
 from makrell.baseformat import operator_parse, src_to_baseformat
-from makrell.parsing import python_value
+from makrell.parsing import apply_basic_suffix_profile
 from makrell.tokeniser import regular
 
 
@@ -30,9 +30,9 @@ def _matches_simple(value: Any, patt: Node) -> bool:
             return value is None
         return value == patt.value
     if isinstance(patt, Number):
-        return value == python_value(patt)
+        return value == apply_basic_suffix_profile(patt)
     if isinstance(patt, String):
-        return value == python_value(patt)
+        return value == apply_basic_suffix_profile(patt)
     if isinstance(patt, RoundBrackets):
         pns = operator_parse(regular(patt.nodes))
         if len(pns) == 0:

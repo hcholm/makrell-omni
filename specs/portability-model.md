@@ -89,7 +89,7 @@ That is useful for:
 
 Suffixes are a clear case for this model.
 
-- some suffixes may be defined as core family suffixes
+- some suffixes may be defined as part of a shared basic suffix profile
 - others may belong to a language or format profile
 - others may be application-specific in controlled environments
 

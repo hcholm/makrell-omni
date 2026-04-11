@@ -235,13 +235,13 @@ Ben 41 false
 `);
 ```
 
-Profile example:
+Basic suffix profile example:
 
 ```ts
 const profileDoc = parseMrtd(`
 when bonus
 "2026-04-03"dt 3k
-`, { profiles: ["extended-scalars"] });
+`);
 ```
 
 ## Layout
