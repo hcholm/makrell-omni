@@ -69,6 +69,27 @@ def test_parse_src_supports_multiline_rows():
     ]
 
 
+def test_parse_src_treats_identifiers_as_string_values_in_typed_and_untyped_cells():
+    doc = parse_src("""
+    name:string status note
+    Ada active draft
+    Ben inactive review
+    """)
+
+    assert doc.records == [
+        {
+            "name": "Ada",
+            "status": "active",
+            "note": "draft",
+        },
+        {
+            "name": "Ben",
+            "status": "inactive",
+            "note": "review",
+        },
+    ]
+
+
 def test_write_records_writes_header_and_rows():
     class Person:
         def __init__(self, name, age, active):

@@ -13,6 +13,10 @@ def test_scalars():
     v = parse_src(src)
     assert v == 2
 
+    src = " Makrell "
+    v = parse_src(src)
+    assert v == "Makrell"
+
 
 def test_illegal_syntax():
     src = "2 3 5"
@@ -117,6 +121,27 @@ def test_complex2():
                 "ø2": "qweÆØÅ",
                 "生年月日": datetime.fromisoformat("1996-05-12"),
             },
+        },
+    }
+    assert actual == expected
+
+
+def test_identifiers_are_string_values_everywhere():
+    src = """
+    title Makrell
+    tags [alpha beta gamma]
+    nested {
+        kind article
+        status draft
+    }
+    """
+    actual = parse_src(src)
+    expected = {
+        "title": "Makrell",
+        "tags": ["alpha", "beta", "gamma"],
+        "nested": {
+            "kind": "article",
+            "status": "draft",
         },
     }
     assert actual == expected

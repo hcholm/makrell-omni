@@ -646,6 +646,19 @@ describe("MakrellTs MVP", () => {
     ]);
   });
 
+  test("parseMrtd treats identifiers as string values in typed and untyped cells", () => {
+    const document = parseMrtd(`
+      name:string status note
+      Ada active draft
+      Ben inactive review
+    `);
+
+    expect(document.records).toEqual([
+      { name: "Ada", status: "active", note: "draft" },
+      { name: "Ben", status: "inactive", note: "review" },
+    ]);
+  });
+
   test("writeMrtdRecords writes typed header and rows", () => {
     const text = writeMrtdRecords([
       { name: "Ada", age: 32, active: true },

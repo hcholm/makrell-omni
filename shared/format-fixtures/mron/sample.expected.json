@@ -1,0 +1,5 @@
+{
+  "name": "Makrell",
+  "features": ["comments", "trailing commas", "typed scalars"],
+  "stable": false
+}

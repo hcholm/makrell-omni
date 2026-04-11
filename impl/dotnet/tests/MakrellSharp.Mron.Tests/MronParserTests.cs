@@ -20,6 +20,14 @@ public sealed class MronParserTests
     }
 
     [Fact]
+    public void ParseSource_BareIdentifierRootParsesAsJsonString()
+    {
+        using var document = MronParser.ParseSource("Makrell");
+
+        Assert.Equal("Makrell", document.RootElement.GetString());
+    }
+
+    [Fact]
     public void ParseSource_ThrowsOnIllegalRootCardinality()
     {
         var exception = Assert.Throws<InvalidOperationException>(() => MronParser.ParseSource("2 3 5"));
@@ -101,6 +109,32 @@ public sealed class MronParserTests
         Assert.False(obj.GetProperty("no").GetBoolean());
         Assert.Equal(System.Text.Json.JsonValueKind.Null, obj.GetProperty("nothing").ValueKind);
         Assert.Equal("hello", obj.GetProperty("word").GetString());
+    }
+
+    [Fact]
+    public void ParseSource_TreatsIdentifiersAsStringValuesInArraysAndNestedObjects()
+    {
+        using var document = MronParser.ParseSource(
+            """
+            title Makrell
+            tags [alpha beta gamma]
+            nested {
+                kind article
+                status draft
+            }
+            """);
+
+        var root = document.RootElement;
+        Assert.Equal("Makrell", root.GetProperty("title").GetString());
+
+        var tags = root.GetProperty("tags");
+        Assert.Equal("alpha", tags[0].GetString());
+        Assert.Equal("beta", tags[1].GetString());
+        Assert.Equal("gamma", tags[2].GetString());
+
+        var nested = root.GetProperty("nested");
+        Assert.Equal("article", nested.GetProperty("kind").GetString());
+        Assert.Equal("draft", nested.GetProperty("status").GetString());
     }
 
     [Fact]

@@ -1,0 +1,16 @@
+[package]
+name = "makrell-formats"
+version = "0.1.0-alpha.1"
+edition = "2021"
+license = "MIT"
+description = "MRON, MRML, and MRTD support for Rust."
+homepage = "https://makrell.dev"
+repository = "https://github.com/hcholm/makrell"
+readme = "README.md"
+
+[lib]
+name = "makrell_formats"
+path = "src/lib.rs"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }

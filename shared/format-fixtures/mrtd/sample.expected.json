@@ -1,0 +1,11 @@
+{
+  "columns": [
+    { "name": "name", "type": "string" },
+    { "name": "age", "type": "int" },
+    { "name": "active", "type": "bool" }
+  ],
+  "rows": [
+    ["Ada", 32, true],
+    ["Ben", 41, false]
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "name": "makrell/formats",
+  "description": "MRON, MRML, and MRTD support for PHP.",
+  "type": "library",
+  "license": "MIT",
+  "homepage": "https://makrell.dev",
+  "autoload": {
+    "psr-4": {
+      "Makrell\\Formats\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Makrell\\Formats\\Tests\\": "tests/"
+    }
+  },
+  "require": {
+    "php": "^8.2"
+  }
+}

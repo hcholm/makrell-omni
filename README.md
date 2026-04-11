@@ -70,6 +70,7 @@ MRML:
 - `impl/ts/`: TypeScript implementation, tests, examples, browser runtime, and roadmap material
 - `impl/py/`: Python implementation, tests, examples, packaging, and implementation docs
 - `impl/dotnet/`: .NET implementation for Makrell#, parsers, compiler, CLI, tests, and examples
+- `impl/jvm/`, `impl/dart/`, `impl/go/`, `impl/rust/`, `impl/php/`: multi-format SDK tracks with first working MRON, MRML, and MRTD support
 - `makrell.dev/`: website and documentation source
 - `vscode-makrell/`: VS Code extension and editor support assets
 
@@ -114,6 +115,11 @@ Today, `vscode-makrell` gives you:
 - **Makrell#** is the .NET track, already covering MBF parsing, MRON, MRML, compile/load, CLI tooling, and an actively growing CLR interop layer.
 
 The long-term source of truth should be the specs and conformance tests rather than any single implementation in isolation.
+
+Additional ecosystem expansion work now also has checked-in package tracks
+for JVM, Dart, Go, Rust, and PHP format SDKs. All five now have first working
+core implementations. See
+[`docs/format-sdk-expansion.md`](docs/format-sdk-expansion.md).
 
 ## Using MakrellTS
 

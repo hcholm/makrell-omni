@@ -54,6 +54,25 @@ public sealed class MrtdParserTests
     }
 
     [Fact]
+    public void ParseSource_TreatsIdentifiersAsStringValuesInTypedAndUntypedCells()
+    {
+        var document = MrtdParser.ParseSource(
+            """
+            name:string status note
+            Ada active draft
+            Ben inactive review
+            """);
+
+        var records = document.ToJsonRecords();
+        Assert.Equal("Ada", records[0]!["name"]?.GetValue<string>());
+        Assert.Equal("active", records[0]!["status"]?.GetValue<string>());
+        Assert.Equal("draft", records[0]!["note"]?.GetValue<string>());
+        Assert.Equal("Ben", records[1]!["name"]?.GetValue<string>());
+        Assert.Equal("inactive", records[1]!["status"]?.GetValue<string>());
+        Assert.Equal("review", records[1]!["note"]?.GetValue<string>());
+    }
+
+    [Fact]
     public void ParseSource_SupportsMultilineHeaderAndRow()
     {
         var document = MrtdParser.ParseSource(
