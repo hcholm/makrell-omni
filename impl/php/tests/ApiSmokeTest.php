@@ -31,6 +31,15 @@ assertSame(
     Mron::parseString('title Makrell tags [alpha beta gamma] nested { kind article status draft }'),
 );
 
+assertSame(
+    [
+        'name' => 'Makrell',
+        'features' => ['comments', 'typed_scalars'],
+        'stable' => false,
+    ],
+    Mron::parseFile(fixturePath('conformance/mron/comments-and-identifiers.mron')),
+);
+
 $mrml = Mrml::parseFile(fixturePath('mrml/sample.mrml'));
 assertSame('page', $mrml['name']);
 assertSame(['lang' => 'en'], $mrml['attributes']);
@@ -53,9 +62,11 @@ assertSame(
     $mrtd['records'],
 );
 
-$identifierDoc = Mrtd::parseString("name:string status note\nAda active draft\nBen inactive review");
+$identifierDoc = Mrtd::parseFile(fixturePath('conformance/mrtd/untyped-headers.mrtd'));
 assertSame('active', $identifierDoc['records'][0]['status']);
 assertSame('review', $identifierDoc['records'][1]['note']);
+assertSame(['name' => 'status'], $identifierDoc['columns'][1]);
+assertSame(['name' => 'note'], $identifierDoc['columns'][2]);
 
 assertSame(
     "name:string age:int active:bool\nAda 32 true\nBen 41 false",
@@ -77,11 +88,11 @@ assertThrows(
     'Unsupported MRTD field type',
 );
 assertThrows(
-    static fn () => Mron::parseString('name trailing-commas'),
+    static fn () => Mron::parseFile(fixturePath('conformance/mron/hyphenated-bareword.invalid.mron')),
     'Unexpected token',
 );
 assertThrows(
-    static fn () => Mrtd::parseString("name:string\ntrailing-commas"),
+    static fn () => Mrtd::parseFile(fixturePath('conformance/mrtd/hyphenated-bareword.invalid.mrtd')),
     'Unexpected token',
 );
 

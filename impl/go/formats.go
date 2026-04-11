@@ -22,7 +22,7 @@ type MrmlElement struct {
 
 type MrtdColumn struct {
 	Name string
-	Type string
+	Type *string
 }
 
 type MrtdDocument struct {
@@ -110,9 +110,10 @@ func ParseMrtdString(source string) (MrtdDocument, error) {
 			return MrtdDocument{}, fmt.Errorf("invalid MRTD header field")
 		}
 		parts := strings.SplitN(item.text, ":", 2)
-		columnType := "string"
+		var columnType *string
 		if len(parts) == 2 {
-			columnType = parts[1]
+			parsedType := parts[1]
+			columnType = &parsedType
 		}
 		columns = append(columns, MrtdColumn{Name: parts[0], Type: columnType})
 	}
@@ -164,7 +165,11 @@ func WriteMrtdString(value any) (string, error) {
 	lines := make([]string, 0, len(document.Rows)+1)
 	header := make([]string, 0, len(document.Columns))
 	for _, column := range document.Columns {
-		header = append(header, quoteName(column.Name)+":"+column.Type)
+		if column.Type == nil {
+			header = append(header, quoteName(column.Name))
+		} else {
+			header = append(header, quoteName(column.Name)+":"+*column.Type)
+		}
 	}
 	lines = append(lines, strings.Join(header, " "))
 	for _, row := range document.Rows {
@@ -354,12 +359,16 @@ func writeMrmlElement(element MrmlElement) string {
 	return builder.String()
 }
 
-func convertMrtdCell(item node, valueType string) (any, error) {
+func convertMrtdCell(item node, valueType *string) (any, error) {
 	if item.kind != "scalar" {
 		return nil, fmt.Errorf("MRTD cells must be scalar values")
 	}
+	actualType := "string"
+	if valueType != nil {
+		actualType = *valueType
+	}
 	value := convertScalar(item.text, item.quoted)
-	switch valueType {
+	switch actualType {
 	case "string":
 		return fmt.Sprint(value), nil
 	case "int":
@@ -388,7 +397,7 @@ func convertMrtdCell(item node, valueType string) (any, error) {
 		}
 		return nil, fmt.Errorf("MRTD value does not match bool field")
 	default:
-		return nil, fmt.Errorf("unsupported MRTD field type: %s", valueType)
+		return nil, fmt.Errorf("unsupported MRTD field type: %s", actualType)
 	}
 }
 

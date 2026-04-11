@@ -73,7 +73,7 @@ public final class Mrtd {
                 throw new MakrellFormatException("Invalid MRTD header field.");
             }
             String[] parts = node.text.split(":", 2);
-            columns.add(new MrtdColumn(parts[0], parts.length == 2 ? parts[1] : "string"));
+            columns.add(new MrtdColumn(parts[0], parts.length == 2 ? parts[1] : null));
         }
 
         List<MrtdRow> rows = new ArrayList<>();
@@ -141,7 +141,8 @@ public final class Mrtd {
             throw new MakrellFormatException("MRTD cells must be scalar values.");
         }
         Object scalar = convertScalar(node.text, node.quoted, profiles);
-        switch (type) {
+        String actualType = type == null ? "string" : type;
+        switch (actualType) {
             case "string":
                 return String.valueOf(scalar);
             case "int":
@@ -160,7 +161,7 @@ public final class Mrtd {
                 }
                 throw new MakrellFormatException("MRTD value does not match bool field.");
             default:
-                throw new MakrellFormatException("Unsupported MRTD field type: " + type);
+                throw new MakrellFormatException("Unsupported MRTD field type: " + actualType);
         }
     }
 
@@ -214,7 +215,7 @@ public final class Mrtd {
         List<String> lines = new ArrayList<>();
         List<String> header = new ArrayList<>();
         for (MrtdColumn column : columns) {
-            header.add(quoteName(column.getName()) + ":" + column.getType());
+            header.add(column.getType() == null ? quoteName(column.getName()) : quoteName(column.getName()) + ":" + column.getType());
         }
         lines.add(String.join(" ", header));
         for (List<Object> row : rows) {

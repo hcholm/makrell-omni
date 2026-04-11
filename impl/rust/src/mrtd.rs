@@ -9,7 +9,7 @@ pub const EXTENDED_SCALARS_PROFILE: &str = "extended-scalars";
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MrtdColumn {
     pub name: String,
-    pub r#type: String,
+    pub r#type: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -46,7 +46,7 @@ pub fn parse_string(source: &str) -> Result<MrtdDocument, MakrellFormatError> {
                 let mut parts = text.splitn(2, ':');
                 Ok(MrtdColumn {
                     name: parts.next().unwrap_or_default().to_string(),
-                    r#type: parts.next().unwrap_or("string").to_string(),
+                    r#type: parts.next().map(str::to_string),
                 })
             }
             _ => Err(MakrellFormatError::new("Invalid MRTD header field.")),
@@ -65,7 +65,7 @@ pub fn parse_string(source: &str) -> Result<MrtdDocument, MakrellFormatError> {
         }
         let mut row = Vec::new();
         for (cell, column) in cells.iter().zip(&columns) {
-            row.push(convert_cell(cell, &column.r#type)?);
+            row.push(convert_cell(cell, column.r#type.as_deref())?);
         }
         rows.push(row);
     }
@@ -83,7 +83,10 @@ pub fn write_string(value: &MrtdDocument) -> Result<String, MakrellFormatError> 
     let header = value
         .columns
         .iter()
-        .map(|column| format!("{}:{}", quote_name(&column.name), column.r#type))
+        .map(|column| match &column.r#type {
+            Some(ty) => format!("{}:{}", quote_name(&column.name), ty),
+            None => quote_name(&column.name),
+        })
         .collect::<Vec<_>>()
         .join(" ");
     let rows = value
@@ -96,7 +99,7 @@ pub fn write_string(value: &MrtdDocument) -> Result<String, MakrellFormatError> 
     Ok(lines.join("\n"))
 }
 
-fn convert_cell(node: &Node, ty: &str) -> Result<MrtdValue, MakrellFormatError> {
+fn convert_cell(node: &Node, ty: Option<&str>) -> Result<MrtdValue, MakrellFormatError> {
     let Node::Scalar { text, quoted } = node else {
         return Err(MakrellFormatError::new("MRTD cells must be scalar values."));
     };
@@ -117,7 +120,8 @@ fn convert_cell(node: &Node, ty: &str) -> Result<MrtdValue, MakrellFormatError> 
             }
         }
     };
-    match (ty, scalar) {
+    let actual_type = ty.unwrap_or("string");
+    match (actual_type, scalar) {
         ("string", MrtdValue::String(text)) => Ok(MrtdValue::String(text)),
         ("string", other) => Ok(MrtdValue::String(match other {
             MrtdValue::String(text) => text,
@@ -132,7 +136,7 @@ fn convert_cell(node: &Node, ty: &str) -> Result<MrtdValue, MakrellFormatError> 
         ("int", _) => Err(MakrellFormatError::new("MRTD value does not match int field.")),
         ("float", _) => Err(MakrellFormatError::new("MRTD value does not match float field.")),
         ("bool", _) => Err(MakrellFormatError::new("MRTD value does not match bool field.")),
-        _ => Err(MakrellFormatError::new(format!("Unsupported MRTD field type: {ty}"))),
+        _ => Err(MakrellFormatError::new(format!("Unsupported MRTD field type: {actual_type}"))),
     }
 }
 

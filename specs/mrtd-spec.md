@@ -5,6 +5,14 @@ MRTD is the Makrell family tabular data format.
 This draft intentionally keeps MRTD close to CSV in shape while using MBF token
 rules for cells and typed headers.
 
+For data-format implementations, MRTD requires:
+
+- MBF level 0 tokenisation
+- MBF level 1 bracketed/nested node parsing
+
+MRTD does not require MBF level 2 operator parsing for its core tabular
+surface, but implementations should leave room for a later level 2 path.
+
 ## Status
 
 Draft specification.
@@ -16,6 +24,7 @@ This draft defines only the core tabular surface:
 - cells are whitespace-delimited
 - header cells are field names, optionally with scalar type annotations
 - multiline rows are written with round brackets
+- operator-shaped tokens are rejected in the core data-cell/header surface
 
 This draft does not yet define:
 
@@ -134,8 +143,9 @@ The initial MRTD draft limits declared field types to MBF scalar types:
 
 If no type annotation is given, the field is untyped in the source model.
 
-This draft does not yet define whether implementations should infer a type for
-untyped columns. They may preserve the absence of a declared type explicitly.
+Implementations may still choose a runtime coercion strategy for untyped cells,
+but they SHOULD preserve the absence of a declared type explicitly in the source
+model when they expose column metadata.
 
 ## Data cells
 
@@ -170,6 +180,10 @@ If it cannot be expressed as an identifier, it must be double-quoted:
 ```
 
 The same rule applies to field names in the header.
+
+Operator-shaped text is not a valid identifier string in MRTD core. For
+example, `trailing-commas` is not one unquoted string cell; it is operator-shaped
+input and MUST be rejected unless a higher-level syntax mode later defines it.
 
 ### Scalar interpretation
 
@@ -316,6 +330,12 @@ Implementations should report errors for:
 - unsupported declared type
 - row width not matching header width
 - non-scalar values in data cells
+- operator-shaped input where a core MRTD scalar/header cell is expected
+
+## Conformance Test Mapping
+
+- `shared/format-fixtures/mrtd/`: shared fixture coverage for core parsing/writing shape
+- `shared/format-fixtures/conformance/mrtd/`: shared MBF level 0/1 conformance cases for untyped headers, identifier cells, and operator-boundary rejection
 
 ## Examples
 

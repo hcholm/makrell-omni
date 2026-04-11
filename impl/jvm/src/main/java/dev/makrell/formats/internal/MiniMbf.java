@@ -184,7 +184,7 @@ public final class MiniMbf {
             int start = i;
             while (i < source.length()) {
                 char c = source.charAt(i);
-                if (Character.isWhitespace(c) || c == ',' || c == '#' || "{}[]()=\"".indexOf(c) >= 0) {
+                if (Character.isWhitespace(c) || c == ',' || c == '#' || "{}[]()=\"-".indexOf(c) >= 0) {
                     break;
                 }
                 if (c == '/' && i + 1 < source.length() && source.charAt(i + 1) == '/') {

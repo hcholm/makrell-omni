@@ -27,9 +27,17 @@ conformance_mron = Makrell::Formats.parse_mron_string(read_fixture("conformance/
 raise "Conformance MRON name failed" unless conformance_mron["name"] == "Makrell"
 raise "Conformance MRON identifier array failed" unless conformance_mron["features"][1] == "typed_scalars"
 
+negative_mron = Makrell::Formats.parse_mron_string(read_fixture("conformance/mron", "negative-numbers.mron"))
+raise "Conformance MRON negative scalar failed" unless negative_mron["offset"] == -2
+raise "Conformance MRON negative array failed" unless negative_mron["temps"][0] == -1
+
 id_table = Makrell::Formats.parse_mrtd_string(read_fixture("conformance/mrtd", "untyped-headers.mrtd"))
 raise "MRTD identifier values failed" unless id_table[:records].first["status"] == "active"
 raise "MRTD untyped header should stay untyped" unless id_table[:columns][1][:type].nil? && id_table[:columns][2][:type].nil?
+
+negative_table = Makrell::Formats.parse_mrtd_string(read_fixture("conformance/mrtd", "negative-numbers.mrtd"))
+raise "Conformance MRTD negative int failed" unless negative_table[:records].first["delta"] == -2
+raise "Conformance MRTD negative float failed" unless negative_table[:records].first["ratio"] == -3.5
 
 out = Makrell::Formats.write_mrtd_string(
   columns: [
@@ -60,6 +68,13 @@ begin
   raise "Expected MRON hyphenated bareword rejection"
 rescue => error
   raise error unless error.message.include?("Unexpected token: -")
+end
+
+begin
+  Makrell::Formats.parse_mron_string(read_fixture("conformance/mron", "unclosed-array.invalid.mron"))
+  raise "Expected MRON unclosed array rejection"
+rescue => error
+  raise error unless error.message.include?("Unclosed group")
 end
 
 begin

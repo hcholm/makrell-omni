@@ -49,16 +49,14 @@ void main() {
     });
 
     test("treats identifiers as string values in typed and untyped MRTD cells", () {
-      final doc = Mrtd.parseString('''
-        name:string status note
-        Ada active draft
-        Ben inactive review
-      ''');
+      final doc = Mrtd.parseFile(fixturePath("conformance/mrtd/untyped-headers.mrtd"));
 
       expect(doc.records, [
         {"name": "Ada", "status": "active", "note": "draft"},
         {"name": "Ben", "status": "inactive", "note": "review"},
       ]);
+      expect(doc.columns[1].type, isNull);
+      expect(doc.columns[2].type, isNull);
     });
 
     test("supports extended scalar profile", () {
@@ -149,7 +147,7 @@ void main() {
 
     test("rejects hyphenated barewords", () {
       expect(
-        () => Mrtd.parseString("name:string\ntrailing-commas"),
+        () => Mrtd.parseFile(fixturePath("conformance/mrtd/hyphenated-bareword.invalid.mrtd")),
         throwsA(isA<MakrellFormatException>()),
       );
     });

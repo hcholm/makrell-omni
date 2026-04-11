@@ -86,7 +86,7 @@ writeMrmlString element =
 
 parseMrtdString :: String -> MrtdDocument
 parseMrtdString source =
-  let lines' = filter (\line -> not (null line) && head line /= '#') $ map trim $ lines source
+  let lines' = filter (\line -> not (null line) && not (startsWith '#' line)) $ map trim $ lines source
   in case lines' of
        [] -> MrtdDocument [] []
        header:rows ->
@@ -132,9 +132,9 @@ tokenise [] = []
 tokenise (c:cs)
   | Char.isSpace c || c == ',' = tokenise cs
   | c == '#' = tokenise (dropWhile (/= '\n') cs)
-  | c == '/' && not (null cs) && head cs == '/' = tokenise (dropWhile (/= '\n') (tail cs))
+  | c == '/' && startsWith '/' cs = tokenise (dropWhile (/= '\n') (drop 1 cs))
   | c `elem` "{}[]()=" = Token [c] [c] False : tokenise cs
-  | c == '-' && not (null cs) && Char.isDigit (head cs) =
+  | c == '-' && maybe False Char.isDigit (firstChar cs) =
       let (restNum, rest) = span (\x -> Char.isDigit x || x == '.') cs
       in Token "scalar" ('-':restNum) False : tokenise rest
   | c == '-' = Token "operator" "-" False : tokenise cs
@@ -205,12 +205,12 @@ parseChild _ = error "Unsupported MRML child node"
 parseColumn :: Node -> MrtdColumn
 parseColumn (Scalar text _) =
   let (name, rest) = break (== ':') text
-  in MrtdColumn name (if null rest then Nothing else Just (tail rest))
+  in MrtdColumn name (stripColon rest)
 parseColumn _ = error "Invalid MRTD header field"
 
 parseRow :: [MrtdColumn] -> String -> [MrtdCell]
 parseRow columns line =
-  let stripped = if not (null line) && head line == '(' && last line == ')' then init (tail line) else line
+  let stripped = unwrapRoundRow line
       cells = parseNodes stripped
   in if length cells /= length columns
         then error "MRTD row width mismatch"
@@ -266,3 +266,23 @@ escapeXml = concatMap escape
 
 trim :: String -> String
 trim = reverse . dropWhile Char.isSpace . reverse . dropWhile Char.isSpace
+
+firstChar :: String -> Maybe Char
+firstChar [] = Nothing
+firstChar (x:_) = Just x
+
+startsWith :: Char -> String -> Bool
+startsWith ch text = firstChar text == Just ch
+
+stripColon :: String -> Maybe String
+stripColon [] = Nothing
+stripColon (_:rest) = Just rest
+
+unwrapRoundRow :: String -> String
+unwrapRoundRow text =
+  case text of
+    '(':rest ->
+      case reverse rest of
+        ')':middleRev -> reverse middleRev
+        _ -> text
+    _ -> text

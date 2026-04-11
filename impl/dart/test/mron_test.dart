@@ -41,21 +41,11 @@ void main() {
     });
 
     test("treats identifiers as string values everywhere in MRON", () {
-      final doc = Mron.parseString('''
-        title Makrell
-        tags [alpha beta gamma]
-        nested {
-          kind article
-          status draft
-        }
-      ''') as Map<String, Object?>;
+      final doc = Mron.parseFile(fixturePath("conformance/mron/comments-and-identifiers.mron")) as Map<String, Object?>;
 
-      expect(doc["title"], "Makrell");
-      expect(doc["tags"], ["alpha", "beta", "gamma"]);
-      expect(doc["nested"], {
-        "kind": "article",
-        "status": "draft",
-      });
+      expect(doc["name"], "Makrell");
+      expect(doc["features"], ["comments", "typed_scalars"]);
+      expect(doc["stable"], false);
     });
 
     test("supports comments in object roots", () {
@@ -128,7 +118,10 @@ void main() {
     });
 
     test("rejects hyphenated barewords", () {
-      expect(() => Mron.parseString("name trailing-commas"), throwsA(isA<MakrellFormatException>()));
+      expect(
+        () => Mron.parseFile(fixturePath("conformance/mron/hyphenated-bareword.invalid.mron")),
+        throwsA(isA<MakrellFormatException>()),
+      );
     });
   });
 }

@@ -44,9 +44,24 @@ fn mrtd_parses_shared_fixture_and_identifier_strings() {
     assert_eq!(doc.columns.len(), 3);
     assert_eq!(doc.rows[0][0], MrtdValue::String("Ada".into()));
 
-    let doc = mrtd::parse_string("name:string status note\nAda active draft\nBen inactive review").unwrap();
+    let conformance_mron = mron::parse_file(fixture_path("conformance/mron/comments-and-identifiers.mron")).unwrap();
+    assert_eq!(
+        conformance_mron,
+        MronValue::Object(BTreeMap::from([
+            ("features".into(), MronValue::Array(vec![
+                MronValue::String("comments".into()),
+                MronValue::String("typed_scalars".into()),
+            ])),
+            ("name".into(), MronValue::String("Makrell".into())),
+            ("stable".into(), MronValue::Bool(false)),
+        ]))
+    );
+
+    let doc = mrtd::parse_file(fixture_path("conformance/mrtd/untyped-headers.mrtd")).unwrap();
     assert_eq!(doc.rows[0][1], MrtdValue::String("active".into()));
     assert_eq!(doc.rows[1][2], MrtdValue::String("review".into()));
+    assert_eq!(doc.columns[1].r#type, None);
+    assert_eq!(doc.columns[2].r#type, None);
 }
 
 #[test]
@@ -55,15 +70,15 @@ fn mrtd_writes_document() {
         columns: vec![
             makrell_formats::mrtd::MrtdColumn {
                 name: "name".into(),
-                r#type: "string".into(),
+                r#type: Some("string".into()),
             },
             makrell_formats::mrtd::MrtdColumn {
                 name: "age".into(),
-                r#type: "int".into(),
+                r#type: Some("int".into()),
             },
             makrell_formats::mrtd::MrtdColumn {
                 name: "active".into(),
-                r#type: "bool".into(),
+                r#type: Some("bool".into()),
             },
         ],
         rows: vec![
@@ -109,6 +124,6 @@ fn fixture_path(relative: &str) -> PathBuf {
 
 #[test]
 fn hyphenated_barewords_are_rejected() {
-    assert!(mron::parse_string("name trailing-commas").is_err());
-    assert!(mrtd::parse_string("name:string\ntrailing-commas").is_err());
+    assert!(mron::parse_file(fixture_path("conformance/mron/hyphenated-bareword.invalid.mron")).is_err());
+    assert!(mrtd::parse_file(fixture_path("conformance/mrtd/hyphenated-bareword.invalid.mrtd")).is_err());
 }

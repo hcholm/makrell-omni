@@ -18,6 +18,9 @@ ad hoc inline smoke-test strings.
 Current groups:
 
 - `mron/comments-and-identifiers.mron`
+- `mron/negative-numbers.mron`
 - `mron/hyphenated-bareword.invalid.mron`
+- `mron/unclosed-array.invalid.mron`
 - `mrtd/untyped-headers.mrtd`
+- `mrtd/negative-numbers.mrtd`
 - `mrtd/hyphenated-bareword.invalid.mrtd`

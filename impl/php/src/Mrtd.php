@@ -23,7 +23,7 @@ final class Mrtd
                 throw new MakrellFormatException('Invalid MRTD header field.');
             }
             $parts = explode(':', $node['text'], 2);
-            return ['name' => $parts[0], 'type' => $parts[1] ?? 'string'];
+            return isset($parts[1]) ? ['name' => $parts[0], 'type' => $parts[1]] : ['name' => $parts[0]];
         }, $headerNodes);
 
         $rows = [];
@@ -40,7 +40,7 @@ final class Mrtd
             $row = [];
             $record = [];
             foreach ($columns as $index => $column) {
-                $value = self::convertCell($cells[$index], $column['type']);
+                $value = self::convertCell($cells[$index], $column['type'] ?? null);
                 $row[] = $value;
                 $record[$column['name']] = $value;
             }
@@ -66,7 +66,7 @@ final class Mrtd
             throw new MakrellFormatException('Unsupported MRTD value for serialisation.');
         }
         $header = implode(' ', array_map(
-            static fn (array $column): string => self::quoteName($column['name']) . ':' . $column['type'],
+            static fn (array $column): string => self::quoteName($column['name']) . (isset($column['type']) ? ':' . $column['type'] : ''),
             $value['columns'],
         ));
         $lines = [$header];
@@ -76,12 +76,13 @@ final class Mrtd
         return implode("\n", $lines);
     }
 
-    private static function convertCell(array $node, string $type): mixed
+    private static function convertCell(array $node, ?string $type): mixed
     {
         if ($node['kind'] !== 'scalar') {
             throw new MakrellFormatException('MRTD cells must be scalar values.');
         }
         $value = self::convertScalar($node['text'], $node['quoted']);
+        $type ??= 'string';
         return match ($type) {
             'string' => is_string($value) ? $value : (string) json_encode($value, JSON_THROW_ON_ERROR),
             'int' => is_int($value) ? $value : throw new MakrellFormatException('MRTD value does not match int field.'),

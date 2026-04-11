@@ -6,6 +6,14 @@ This document defines MRON semantics on top of MBF.
 
 Normative MBF syntax is defined in `specs/mbf-spec.md`.
 
+For data-format implementations, MRON requires:
+
+- MBF level 0 tokenisation
+- MBF level 1 bracketed/nested node parsing
+
+MRON does not require MBF level 2 operator parsing for its core data-format
+surface, but implementations should leave room for a later level 2 path.
+
 ### Portability labels used in this document
 
 - `[Core]`: intended to be portable across the Makrell family
@@ -36,6 +44,13 @@ Square brackets parse to arrays/lists.
 
 Scalars include identifier text values, string/number literals with suffix conversions, and null/bool equivalents where language layer provides them.
 
+Identifier boundaries are inherited from MBF level 0 tokenisation. That means
+operator-shaped text is not silently treated as an identifier string.
+
+For example, `trailing-commas` is not one MRON identifier value. It is
+operator-shaped input and MUST be rejected unless a higher-level syntax mode
+explicitly gives it meaning.
+
 ### 5.1 Suffix portability
 
 - `[Core]` A small shared family subset of scalar suffixes MAY be supported in portable MRON documents once defined centrally.
@@ -63,6 +78,7 @@ Execution-enabled MRON parsing is unsafe for untrusted input and MUST be treated
 ## 9. Conformance Test Mapping
 
 - `impl/py/tests/test_mron.py`: root cardinality, object/list/scalar parsing, suffix conversion behavior, nested objects, execution embeds
+- `shared/format-fixtures/conformance/mron/`: shared MBF level 0/1 conformance cases for comments, identifier values, and operator-boundary rejection
 
 ## 10. Known Limitations
 

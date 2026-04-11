@@ -85,6 +85,14 @@ These are intentionally small and human-readable so they can serve as:
 - smoke-test input
 - future conformance-suite seeds
 
+There is now also a smaller shared `conformance/` subset aimed specifically at
+MBF level 0/1 behaviour that the data-format SDKs should consume directly:
+
+- identifier versus operator boundaries
+- comments
+- untyped MRTD headers
+- invalid operator-shaped barewords
+
 ## Current Status
 
 This repo change creates real package and test structure across the new targets,
@@ -109,6 +117,7 @@ That means:
 - Perl now has a first working core parser/serialiser pass for MRON, MRML, and MRTD
 - Ruby now has a first working core parser/serialiser pass for MRON, MRML, and MRTD
 - Lua now has a first working core parser/serialiser pass for MRON, MRML, and MRTD
+- multiple tracks now consume shared MBF level 0/1 conformance fixtures rather than only local inline smoke cases
 
 That is deliberate: it keeps the project honest while still turning the
 expansion into concrete repository structure rather than an abstract wish list.

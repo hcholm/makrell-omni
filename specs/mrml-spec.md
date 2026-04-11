@@ -6,6 +6,14 @@ This document defines MRML semantics on top of MBF.
 
 Normative MBF syntax is defined in `specs/mbf-spec.md`.
 
+For data-format implementations, MRML requires:
+
+- MBF level 0 tokenisation
+- MBF level 1 bracketed/nested node parsing
+
+MRML does not require MBF level 2 operator parsing for its core markup surface,
+but implementations should leave room for a later level 2 path.
+
 ## 2. Element Form
 
 Canonical element syntax:
@@ -45,6 +53,7 @@ Minimum required parse/render errors:
 - malformed element form (non-curly root element)
 - malformed attribute expression
 - malformed syntax inherited from MBF levels
+- operator-shaped input that is not valid at the MRML level 0/1 surface
 
 ## 8. Security Considerations
 
@@ -53,6 +62,7 @@ Execution-enabled MRML parsing is unsafe for untrusted input and MUST be treated
 ## 9. Conformance Test Mapping
 
 - `impl/py/tests/test_mrml.py`: element rendering, attributes, mixed content, execution embeds in content and attributes
+- `shared/format-fixtures/conformance/`: shared MBF level 0/1 conformance cases reused across the family data formats
 
 ## 10. Known Limitations
 

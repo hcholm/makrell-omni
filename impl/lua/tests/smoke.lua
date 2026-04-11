@@ -28,9 +28,17 @@ local conformance_mron = mf.parse_mron_string(read_all(fixture("conformance/mron
 assert(conformance_mron.name == "Makrell", "Conformance MRON name failed")
 assert(conformance_mron.features[2] == "typed_scalars", "Conformance MRON identifier array failed")
 
+local negative_mron = mf.parse_mron_string(read_all(fixture("conformance/mron", "negative-numbers.mron")))
+assert(negative_mron.offset == -2, "Conformance MRON negative scalar failed")
+assert(negative_mron.temps[1] == -1, "Conformance MRON negative array failed")
+
 local id_table = mf.parse_mrtd_string(read_all(fixture("conformance/mrtd", "untyped-headers.mrtd")))
 assert(id_table.records[1].status == "active", "MRTD identifier values failed")
 assert(id_table.columns[2].type == nil and id_table.columns[3].type == nil, "MRTD untyped headers should stay untyped")
+
+local negative_table = mf.parse_mrtd_string(read_all(fixture("conformance/mrtd", "negative-numbers.mrtd")))
+assert(negative_table.records[1].delta == -2, "Conformance MRTD negative int failed")
+assert(negative_table.records[1].ratio == -3.5, "Conformance MRTD negative float failed")
 
 local out = mf.write_mrtd_string({
   columns = {
@@ -60,6 +68,11 @@ local ok, err = pcall(function()
   mf.parse_mron_string(read_all(fixture("conformance/mron", "hyphenated-bareword.invalid.mron")))
 end)
 assert(not ok and err:find("Unexpected token: %-"), "Expected MRON hyphenated bareword rejection")
+
+ok, err = pcall(function()
+  mf.parse_mron_string(read_all(fixture("conformance/mron", "unclosed-array.invalid.mron")))
+end)
+assert(not ok and err:find("Unclosed group"), "Expected MRON unclosed array rejection")
 
 ok, err = pcall(function()
   mf.parse_mrtd_string(read_all(fixture("conformance/mrtd", "hyphenated-bareword.invalid.mrtd")))

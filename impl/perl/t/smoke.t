@@ -39,10 +39,18 @@ my $conformance_mron = parse_mron_string(read_fixture('conformance/mron', 'comme
 is($conformance_mron->{name}, 'Makrell', 'Conformance MRON name');
 is($conformance_mron->{features}[1], 'typed_scalars', 'Conformance MRON identifier array item');
 
+my $negative_mron = parse_mron_string(read_fixture('conformance/mron', 'negative-numbers.mron'));
+is($negative_mron->{offset}, -2, 'Conformance MRON negative scalar');
+is($negative_mron->{temps}[0], -1, 'Conformance MRON negative array item');
+
 my $idtable = parse_mrtd_string(read_fixture('conformance/mrtd', 'untyped-headers.mrtd'));
 is($idtable->{records}[0]{status}, 'active', 'MRTD identifier string');
 ok(!defined $idtable->{columns}[1]{type}, 'MRTD untyped header stays untyped');
 ok(!defined $idtable->{columns}[2]{type}, 'MRTD second untyped header stays untyped');
+
+my $negative_table = parse_mrtd_string(read_fixture('conformance/mrtd', 'negative-numbers.mrtd'));
+is($negative_table->{records}[0]{delta}, -2, 'Conformance MRTD negative int');
+is($negative_table->{records}[0]{ratio}, -3.5, 'Conformance MRTD negative float');
 
 my $out = write_mrtd_string({
     columns => [
@@ -73,6 +81,9 @@ ok($@, 'MRON rejects hyphenated bareword');
 
 eval { parse_mrtd_string(read_fixture('conformance/mrtd', 'hyphenated-bareword.invalid.mrtd')) };
 ok($@, 'MRTD rejects hyphenated bareword');
+
+eval { parse_mron_string(read_fixture('conformance/mron', 'unclosed-array.invalid.mron')) };
+ok($@, 'MRON rejects unclosed array');
 
 eval { parse_mbf_level2_nodes('name value') };
 like($@, qr/not implemented yet/, 'MBF level 2 reserved hook');
