@@ -28,8 +28,26 @@ See [`PACKAGING.md`](PACKAGING.md) for the recorded scope and rationale.
 
 ## Install and use
 
+Public NuGet packages verified on 12 April 2026:
+
+- `MakrellSharp.Ast`
+- `MakrellSharp.BaseFormat`
+- `MakrellSharp.Mron`
+- `MakrellSharp.Mrml`
+- `MakrellSharp.Mrtd`
+- `MakrellSharp.Compiler`
+- `MakrellSharp.Cli`
+
 ```bash
 dotnet tool install --global MakrellSharp.Cli
+```
+
+Example library reference:
+
+```xml
+<ItemGroup>
+  <PackageReference Include="MakrellSharp.Mrtd" Version="0.10.0" />
+</ItemGroup>
 ```
 
 Run the CLI:
