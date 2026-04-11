@@ -126,5 +126,9 @@ void main() {
       expect(text, contains('features [comments typed]'));
       expect(text, contains("nested { enabled true count 2 }"));
     });
+
+    test("rejects hyphenated barewords", () {
+      expect(() => Mron.parseString("name trailing-commas"), throwsA(isA<MakrellFormatException>()));
+    });
   });
 }

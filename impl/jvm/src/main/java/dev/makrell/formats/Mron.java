@@ -154,7 +154,7 @@ public final class Mron {
     }
 
     private static boolean isIdentifierLike(String value) {
-        return value.matches("[A-Za-z_][A-Za-z0-9_\\-]*");
+        return value.matches("[A-Za-z_][A-Za-z0-9_]*");
     }
 
     private static String quote(String value) {

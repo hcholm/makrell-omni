@@ -103,4 +103,10 @@ public final class ApiSmokeTest {
         }
         throw new IllegalStateException("Could not locate shared fixture: " + group + "/" + file);
     }
+
+    @Test
+    void hyphenatedBarewordsAreRejected() {
+        assertThrows(MakrellFormatException.class, () -> Mron.parseString("name trailing-commas"));
+        assertThrows(MakrellFormatException.class, () -> Mrtd.parseString("name:string\ntrailing-commas"));
+    }
 }

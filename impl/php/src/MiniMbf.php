@@ -71,7 +71,22 @@ final class MiniMbf
                 }
                 continue;
             }
-            if (in_array($ch, ['{', '}', '[', ']', '(', ')', '='], true)) {
+            if ($ch === '-' && ctype_digit($source[$i + 1] ?? '')) {
+                $start = $i++;
+                while ($i < $length) {
+                    $c = $source[$i];
+                    if (ctype_space($c) || $c === ',' || $c === '#' || str_contains('{}[]()="', $c)) {
+                        break;
+                    }
+                    if ($c === '/' && ($source[$i + 1] ?? '') === '/') {
+                        break;
+                    }
+                    $i++;
+                }
+                $tokens[] = ['kind' => 'scalar', 'text' => substr($source, $start, $i - $start), 'quoted' => false];
+                continue;
+            }
+            if (in_array($ch, ['{', '}', '[', ']', '(', ')', '=', '-'], true)) {
                 $tokens[] = ['kind' => $ch, 'text' => $ch, 'quoted' => false];
                 $i++;
                 continue;
@@ -109,7 +124,7 @@ final class MiniMbf
             $start = $i;
             while ($i < $length) {
                 $c = $source[$i];
-                if (ctype_space($c) || $c === ',' || $c === '#' || str_contains('{}[]()="', $c)) {
+                if (ctype_space($c) || $c === ',' || $c === '#' || str_contains('{}[]()="-', $c)) {
                     break;
                 }
                 if ($c === '/' && ($source[$i + 1] ?? '') === '/') {

@@ -6,3 +6,7 @@ impl/jvm/build/
 
 impl/rust/target/
 impl/rust/Cargo.lock
+
+impl/c/build/
+impl/cpp/build/
+impl/haskell/.stack-work/

@@ -8,7 +8,7 @@ public final class BasicUsage {
     public static void main(String[] args) {
         @SuppressWarnings("unchecked")
         Map<String, Object> doc = (Map<String, Object>) Mron.parseString(
-            "name Makrell features [comments trailing-commas typed-scalars] stable false"
+            "name Makrell features [comments \"trailing-commas\" \"typed-scalars\"] stable false"
         );
 
         System.out.println(doc.get("name"));

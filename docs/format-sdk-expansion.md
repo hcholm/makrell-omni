@@ -13,6 +13,13 @@ New scaffolded language tracks:
 - `impl/go/`
 - `impl/rust/`
 - `impl/php/`
+- `impl/c/`
+- `impl/cpp/`
+- `impl/r/`
+- `impl/haskell/`
+- `impl/perl/`
+- `impl/ruby/`
+- `impl/lua/`
 
 Each scaffold includes:
 
@@ -22,6 +29,13 @@ Each scaffold includes:
 - package metadata for publication
 - MIT licence metadata
 - room for a future full Makrell/MBF layer rather than a dead-end format-only API
+
+For the data-format SDKs, the intended MBF split is now explicit:
+
+- MBF level 0: tokenisation and lexical structure
+- MBF level 1: bracketed/nested node structure used by MRON, MRML, and MRTD
+- MBF level 2: reserved for later operator/expression-aware growth and must have
+  an implementation slot even where it is not enabled yet
 
 ## Shared API Direction
 
@@ -46,6 +60,13 @@ Portable goals:
 - Go: `map[string]any`, `[]any`, XML-marshallable document/tree adapters later
 - Rust: `serde_json::Value` / XML tree adapter / typed row records later
 - PHP: associative arrays / `DOMDocument` integration / tabular arrays
+- C: explicit tree structs for values, elements, and tabular documents
+- C++: `std::variant`/`std::map`/`std::vector` native model layer
+- R: lists/vectors with package-level helpers
+- Haskell: algebraic data types with `Map`-based object models
+- Perl: hashes/arrays with explicit MBF token and node layers
+- Ruby: hashes/arrays with explicit MBF token and node layers
+- Lua: tables with explicit MBF token and node layers
 
 ## Shared Fixtures
 
@@ -68,8 +89,8 @@ These are intentionally small and human-readable so they can serve as:
 
 This repo change creates real package and test structure across the new targets,
 with first actual implementation passes in Dart, on the JVM, in Rust, in PHP,
-and in Go rather than pretending all five new ecosystems are equally complete
-at once.
+in Go, in C, in C++, in R, and in Haskell rather than pretending all the new
+ecosystems are equally complete at once.
 
 That means:
 
@@ -81,6 +102,13 @@ That means:
 - Rust now has a first working core parser/serialiser pass for MRON, MRML, and MRTD
 - PHP now has a first working core parser/serialiser pass for MRON, MRML, and MRTD
 - Go now has a first working core parser/serialiser pass for MRON, MRML, and MRTD
+- C now has a first working core parser/serialiser pass for MRON, MRML, and MRTD
+- C++ now has a first working core parser/serialiser pass for MRON, MRML, and MRTD
+- R now has a first working core parser/serialiser pass for MRON, MRML, and MRTD
+- Haskell now has a first working core parser/serialiser pass for MRON, MRML, and MRTD
+- Perl now has a first working core parser/serialiser pass for MRON, MRML, and MRTD
+- Ruby now has a first working core parser/serialiser pass for MRON, MRML, and MRTD
+- Lua now has a first working core parser/serialiser pass for MRON, MRML, and MRTD
 
 That is deliberate: it keeps the project honest while still turning the
 expansion into concrete repository structure rather than an abstract wish list.

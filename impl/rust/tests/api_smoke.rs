@@ -106,3 +106,9 @@ fn fixture_path(relative: &str) -> PathBuf {
         .join("format-fixtures")
         .join(relative)
 }
+
+#[test]
+fn hyphenated_barewords_are_rejected() {
+    assert!(mron::parse_string("name trailing-commas").is_err());
+    assert!(mrtd::parse_string("name:string\ntrailing-commas").is_err());
+}

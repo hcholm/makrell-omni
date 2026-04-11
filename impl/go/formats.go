@@ -525,8 +525,24 @@ func tokeniseMiniMbf(source string) ([]token, error) {
 			}
 			continue
 		}
+		if ch == '-' && i+1 < len(source) && source[i+1] >= '0' && source[i+1] <= '9' {
+			start := i
+			i++
+			for i < len(source) {
+				c := source[i]
+				if c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == ',' || c == '#' || strings.ContainsRune("{}[]()=\"", rune(c)) {
+					break
+				}
+				if c == '/' && i+1 < len(source) && source[i+1] == '/' {
+					break
+				}
+				i++
+			}
+			tokens = append(tokens, token{kind: "scalar", text: source[start:i]})
+			continue
+		}
 		switch ch {
-		case '{', '}', '[', ']', '(', ')', '=':
+		case '{', '}', '[', ']', '(', ')', '=', '-':
 			tokens = append(tokens, token{kind: string(ch), text: string(ch)})
 			i++
 			continue
@@ -569,7 +585,7 @@ func tokeniseMiniMbf(source string) ([]token, error) {
 		start := i
 		for i < len(source) {
 			c := source[i]
-			if c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == ',' || c == '#' || strings.ContainsRune("{}[]()=\"", rune(c)) {
+			if c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == ',' || c == '#' || strings.ContainsRune("{}[]()=\"-", rune(c)) {
 				break
 			}
 			if c == '/' && i+1 < len(source) && source[i+1] == '/' {
@@ -605,7 +621,7 @@ func isIdentifierLike(value string) bool {
 	}
 	for i := 1; i < len(value); i++ {
 		ch := value[i]
-		if !((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch == '_' || ch == '-') {
+		if !((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch == '_') {
 			return false
 		}
 	}

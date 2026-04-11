@@ -136,7 +136,7 @@ fn is_identifier_like(text: &str) -> bool {
         Some(first) if first.is_ascii_alphabetic() || first == '_' => {}
         _ => return false,
     }
-    chars.all(|ch| ch.is_ascii_alphanumeric() || ch == '_' || ch == '-')
+    chars.all(|ch| ch.is_ascii_alphanumeric() || ch == '_')
 }
 
 fn quote(text: &str) -> String {

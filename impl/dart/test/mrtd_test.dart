@@ -146,5 +146,12 @@ void main() {
         throwsA(isA<MakrellFormatException>()),
       );
     });
+
+    test("rejects hyphenated barewords", () {
+      expect(
+        () => Mrtd.parseString("name:string\ntrailing-commas"),
+        throwsA(isA<MakrellFormatException>()),
+      );
+    });
   });
 }

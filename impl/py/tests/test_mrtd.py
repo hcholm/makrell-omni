@@ -145,3 +145,11 @@ def test_write_records_writes_date_values_with_extended_scalar_profile():
 
     assert 'when active:bool' in text
     assert '"2026-04-03"dt true' in text
+
+
+def test_parse_src_rejects_hyphenated_barewords():
+    try:
+        parse_src("name:string\ntrailing-commas")
+        assert False
+    except ValueError:
+        assert True

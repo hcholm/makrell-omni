@@ -1,0 +1,10 @@
+Package: makrellformats
+Type: Package
+Title: MRON, MRML, and MRTD Support for R
+Version: 0.1.0
+Authors@R: person("Makrell", "Project", role = c("aut", "cre"), email = "info@makrell.dev")
+Description: First working core support for the Makrell family data formats
+    MRON, MRML, and MRTD.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true

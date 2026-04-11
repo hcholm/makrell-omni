@@ -248,10 +248,10 @@ public final class Mrtd {
             return String.valueOf(value);
         }
         String text = String.valueOf(value);
-        return text.matches("[A-Za-z_][A-Za-z0-9_\\-]*") ? text : "\"" + text.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
+        return text.matches("[A-Za-z_][A-Za-z0-9_]*") ? text : "\"" + text.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
     }
 
     private static String quoteName(String value) {
-        return value.matches("[A-Za-z_][A-Za-z0-9_\\-]*") ? value : "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
+        return value.matches("[A-Za-z_][A-Za-z0-9_]*") ? value : "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
     }
 }

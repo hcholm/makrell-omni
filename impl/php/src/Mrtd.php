@@ -123,11 +123,11 @@ final class Mrtd
             return (string) $value;
         }
         $text = (string) $value;
-        return preg_match('/^[A-Za-z_][A-Za-z0-9_-]*$/', $text) === 1 ? $text : '"' . addcslashes($text, "\\\"") . '"';
+        return preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $text) === 1 ? $text : '"' . addcslashes($text, "\\\"") . '"';
     }
 
     private static function quoteName(string $value): string
     {
-        return preg_match('/^[A-Za-z_][A-Za-z0-9_-]*$/', $value) === 1 ? $value : '"' . addcslashes($value, "\\\"") . '"';
+        return preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $value) === 1 ? $value : '"' . addcslashes($value, "\\\"") . '"';
     }
 }

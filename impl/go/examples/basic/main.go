@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	doc, err := formats.ParseMronString(`name Makrell features [comments trailing-commas typed-scalars] stable false`)
+	doc, err := formats.ParseMronString(`name Makrell features [comments "trailing-commas" "typed-scalars"] stable false`)
 	if err != nil {
 		panic(err)
 	}

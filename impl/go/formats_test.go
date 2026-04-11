@@ -114,3 +114,12 @@ func TestParseMrtdRejectsUnsupportedTypes(t *testing.T) {
 func fixturePath(group string, file string) string {
 	return filepath.Join("..", "..", "shared", "format-fixtures", group, file)
 }
+
+func TestHyphenatedBarewordsAreRejected(t *testing.T) {
+	if _, err := ParseMronString("name trailing-commas"); err == nil {
+		t.Fatalf("expected MRON hyphenated bareword to fail")
+	}
+	if _, err := ParseMrtdString("name:string\ntrailing-commas"); err == nil {
+		t.Fatalf("expected MRTD hyphenated bareword to fail")
+	}
+}

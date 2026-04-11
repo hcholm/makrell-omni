@@ -25,6 +25,7 @@ enum TokenKind {
     ParenOpen,
     ParenClose,
     Equals,
+    Operator,
 }
 
 pub fn parse(source: &str) -> Result<Vec<Node>, MakrellFormatError> {
@@ -53,6 +54,26 @@ fn tokenize(source: &str) -> Result<Vec<Token>, MakrellFormatError> {
             while i < chars.len() && chars[i] != '\n' {
                 i += 1;
             }
+            continue;
+        }
+        if ch == '-' && i + 1 < chars.len() && chars[i + 1].is_ascii_digit() {
+            let start = i;
+            i += 1;
+            while i < chars.len() {
+                let c = chars[i];
+                if c.is_whitespace() || c == ',' || c == '#' || "{}[]()=\"".contains(c) {
+                    break;
+                }
+                if c == '/' && i + 1 < chars.len() && chars[i + 1] == '/' {
+                    break;
+                }
+                i += 1;
+            }
+            tokens.push(Token {
+                kind: TokenKind::Scalar,
+                text: chars[start..i].iter().collect(),
+                quoted: false,
+            });
             continue;
         }
         match ch {
@@ -88,6 +109,11 @@ fn tokenize(source: &str) -> Result<Vec<Token>, MakrellFormatError> {
             }
             '=' => {
                 tokens.push(token(TokenKind::Equals, "="));
+                i += 1;
+                continue;
+            }
+            '-' => {
+                tokens.push(token(TokenKind::Operator, "-"));
                 i += 1;
                 continue;
             }
@@ -132,7 +158,7 @@ fn tokenize(source: &str) -> Result<Vec<Token>, MakrellFormatError> {
         let start = i;
         while i < chars.len() {
             let c = chars[i];
-            if c.is_whitespace() || c == ',' || c == '#' || "{}[]()=\"".contains(c) {
+            if c.is_whitespace() || c == ',' || c == '#' || "{}[]()=\"-".contains(c) {
                 break;
             }
             if c == '/' && i + 1 < chars.len() && chars[i + 1] == '/' {
@@ -188,6 +214,7 @@ impl Parser {
             TokenKind::BraceOpen => Ok(Node::Brace(self.parse_group(TokenKind::BraceClose)?)),
             TokenKind::SquareOpen => Ok(Node::Square(self.parse_group(TokenKind::SquareClose)?)),
             TokenKind::ParenOpen => Ok(Node::Paren(self.parse_group(TokenKind::ParenClose)?)),
+            TokenKind::Operator => Err(MakrellFormatError::new(format!("Unexpected token: {}", token.text))),
             _ => Err(MakrellFormatError::new(format!("Unexpected token: {}", token.text))),
         }
     }

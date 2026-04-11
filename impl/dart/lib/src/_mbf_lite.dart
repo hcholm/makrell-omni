@@ -11,6 +11,7 @@ enum MbfLiteTokenKind {
   lParen,
   rParen,
   equals,
+  operator,
 }
 
 class MbfLiteToken {
@@ -73,6 +74,7 @@ List<MbfLiteToken> tokenizeMbfLite(String source) {
         char == "(" ||
         char == ")" ||
         char == "=" ||
+        char == "-" ||
         char == "\"";
   }
 
@@ -87,6 +89,22 @@ List<MbfLiteToken> tokenizeMbfLite(String source) {
     if (char == "#") {
       while (index < source.length && source[index] != "\n") {
         index += 1;
+      }
+      continue;
+    }
+
+    if (char == "-" && index + 1 < source.length && RegExp(r"\d").hasMatch(source[index + 1])) {
+      final start = index;
+      index += 1;
+      while (index < source.length && !isDelimiter(source[index])) {
+        index += 1;
+      }
+      final lexeme = source.substring(start, index);
+      if (_numberRx.hasMatch(lexeme)) {
+        final suffix = RegExp(r"[A-Za-z][A-Za-z0-9_]*$").firstMatch(lexeme)?.group(0) ?? "";
+        tokens.add(MbfLiteToken(MbfLiteTokenKind.number, lexeme, suffix: suffix));
+      } else {
+        tokens.add(MbfLiteToken(MbfLiteTokenKind.identifier, lexeme));
       }
       continue;
     }
@@ -118,6 +136,10 @@ List<MbfLiteToken> tokenizeMbfLite(String source) {
         continue;
       case "=":
         tokens.add(const MbfLiteToken(MbfLiteTokenKind.equals, "="));
+        index += 1;
+        continue;
+      case "-":
+        tokens.add(const MbfLiteToken(MbfLiteTokenKind.operator, "-"));
         index += 1;
         continue;
       case "\"":
@@ -201,7 +223,7 @@ String scalarToSource(Object? value) {
   if (value is num) return value.toString();
   if (value is DateTime) return '"${value.toIso8601String()}"dt';
   final text = value.toString();
-  if (RegExp(r'^[^\s#,{}\[\]\(\)="]+$').hasMatch(text) && text != "true" && text != "false" && text != "null") {
+  if (RegExp(r'^[A-Za-z_$][A-Za-z0-9_$]*$').hasMatch(text) && text != "true" && text != "false" && text != "null") {
     return text;
   }
   return "\"${text.replaceAll("\\", "\\\\").replaceAll("\"", "\\\"").replaceAll("\n", "\\n")}\"";
@@ -219,6 +241,7 @@ String tokenToText(MbfLiteToken token) {
     MbfLiteTokenKind.lBrace => "{",
     MbfLiteTokenKind.rBrace => "}",
     MbfLiteTokenKind.equals => "=",
+    MbfLiteTokenKind.operator => token.lexeme,
   };
 }
 

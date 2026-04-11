@@ -171,3 +171,11 @@ def test_exec():
         "b": 5,
     }
     assert actual == expected
+
+
+def test_hyphenated_barewords_are_not_identifiers():
+    try:
+        parse_src("name trailing-commas")
+        assert False
+    except Exception:
+        assert True

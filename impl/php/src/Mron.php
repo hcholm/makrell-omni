@@ -111,7 +111,7 @@ final class Mron
 
     private static function isIdentifierLike(string $value): bool
     {
-        return preg_match('/^[A-Za-z_][A-Za-z0-9_-]*$/', $value) === 1;
+        return preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $value) === 1;
     }
 
     private static function quote(string $value): string

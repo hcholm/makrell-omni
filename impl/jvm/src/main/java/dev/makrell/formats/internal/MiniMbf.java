@@ -116,6 +116,26 @@ public final class MiniMbf {
                 }
                 continue;
             }
+            if (ch == '-' && i + 1 < source.length() && Character.isDigit(source.charAt(i + 1))) {
+                int start = i++;
+                while (i < source.length()) {
+                    char c = source.charAt(i);
+                    if (Character.isWhitespace(c) || c == ',' || c == '#' || "{}[]()=\"".indexOf(c) >= 0) {
+                        break;
+                    }
+                    if (c == '/' && i + 1 < source.length() && source.charAt(i + 1) == '/') {
+                        break;
+                    }
+                    i++;
+                }
+                tokens.add(new Token("scalar", source.substring(start, i), false));
+                continue;
+            }
+            if (ch == '-') {
+                tokens.add(new Token("-", "-", false));
+                i++;
+                continue;
+            }
             if ("{}[]()=".indexOf(ch) >= 0) {
                 tokens.add(new Token(String.valueOf(ch), String.valueOf(ch), false));
                 i++;

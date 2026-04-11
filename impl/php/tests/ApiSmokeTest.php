@@ -76,6 +76,14 @@ assertThrows(
     static fn () => Mrtd::parseString("name:date\nAda"),
     'Unsupported MRTD field type',
 );
+assertThrows(
+    static fn () => Mron::parseString('name trailing-commas'),
+    'Unexpected token',
+);
+assertThrows(
+    static fn () => Mrtd::parseString("name:string\ntrailing-commas"),
+    'Unexpected token',
+);
 
 echo "PHP API smoke tests passed.\n";
 

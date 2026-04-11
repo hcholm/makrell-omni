@@ -70,7 +70,7 @@ MRML:
 - `impl/ts/`: TypeScript implementation, tests, examples, browser runtime, and roadmap material
 - `impl/py/`: Python implementation, tests, examples, packaging, and implementation docs
 - `impl/dotnet/`: .NET implementation for Makrell#, parsers, compiler, CLI, tests, and examples
-- `impl/jvm/`, `impl/dart/`, `impl/go/`, `impl/rust/`, `impl/php/`: multi-format SDK tracks with first working MRON, MRML, and MRTD support
+- `impl/jvm/`, `impl/dart/`, `impl/go/`, `impl/rust/`, `impl/php/`, `impl/c/`, `impl/cpp/`, `impl/r/`, `impl/haskell/`, `impl/perl/`, `impl/ruby/`, `impl/lua/`: multi-format SDK tracks with first working MRON, MRML, and MRTD support
 - `makrell.dev/`: website and documentation source
 - `vscode-makrell/`: VS Code extension and editor support assets
 
@@ -117,8 +117,10 @@ Today, `vscode-makrell` gives you:
 The long-term source of truth should be the specs and conformance tests rather than any single implementation in isolation.
 
 Additional ecosystem expansion work now also has checked-in package tracks
-for JVM, Dart, Go, Rust, and PHP format SDKs. All five now have first working
-core implementations. See
+for JVM, Dart, Go, Rust, PHP, C, C++, R, Haskell, Perl, Ruby, and Lua
+format SDKs. All of them now have first working core implementations, with
+data-format support explicitly targeting MBF levels 0 and 1 while reserving
+an implementation path for level 2 later. See
 [`docs/format-sdk-expansion.md`](docs/format-sdk-expansion.md).
 
 ## Using MakrellTS
