@@ -121,7 +121,7 @@ def test_write_tuples_writes_tuple_rows_with_default_headers():
     assert "1 Ada 13.5" in text
 
 
-def test_parse_src_accepts_suffixes_without_profile():
+def test_parse_src_accepts_core_suffixes_directly():
     doc = parse_src("""
     when bonus:float
     "2026-04-03"dt 3k
@@ -131,7 +131,7 @@ def test_parse_src_accepts_suffixes_without_profile():
     assert doc.records[0]["bonus"] == 3000
 
 
-def test_write_records_writes_date_values_without_profile():
+def test_write_records_writes_date_values_as_core_suffixes():
     text = write_records([
         {"when": date(2026, 4, 3), "active": True},
     ])

@@ -40,10 +40,10 @@ It is meant to answer:
 | Area | Current status | Notes |
 |---|---|---|
 | MBF | active | shared structural base across the family |
-| MRON | active | available in Py and .NET, evolving in TS |
-| MRML | active | available in Py and .NET, evolving in TS |
-| MRTD | active | available across Py, TS, and .NET |
-| MBF L0/L1 data-format conformance | active | shared conformance now covers comments, operator boundaries, the shared basic suffix profile, malformed groups, and untyped MRTD headers across the stronger tracks |
+| MRON | active | available across the current SDK tracks, with the shared post-L1 basic suffix profile now explicit in Py, TS, .NET, Dart, Go, Rust, PHP, JVM, Lua, Perl, Ruby, C, C++, R, and Haskell |
+| MRML | active | available across the main active SDK tracks, with the strongest semantic/reference story still centred on Py and .NET |
+| MRTD | active | available across the current SDK tracks, with shared post-L1 basic suffix profile support explicit in Py, TS, .NET, Dart, Go, Rust, PHP, JVM, Lua, Perl, Ruby, C, C++, R, and Haskell |
+| MBF L0/L1 data-format conformance | active | shared conformance now covers comments, operator boundaries, the shared basic suffix profile, malformed groups, and untyped MRTD headers across the current SDK tracks |
 | VS Code extension | active | being refreshed for the current family |
 | Shared editor assets | active | shared grammar/snippets/language config now exist |
 | MakrellTS playground | evolving | live direction and browser-host groundwork exist |

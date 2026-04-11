@@ -3,11 +3,13 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../src/MakrellFormatException.php';
+require_once __DIR__ . '/../src/BasicSuffixProfile.php';
 require_once __DIR__ . '/../src/MiniMbf.php';
 require_once __DIR__ . '/../src/Mron.php';
 require_once __DIR__ . '/../src/Mrml.php';
 require_once __DIR__ . '/../src/Mrtd.php';
 
+use Makrell\Formats\BasicSuffixProfile;
 use Makrell\Formats\MakrellFormatException;
 use Makrell\Formats\Mron;
 use Makrell\Formats\Mrml;
@@ -49,6 +51,21 @@ assertSame(
     Mron::parseFile(fixturePath('conformance/mron/block-comments.mron')),
 );
 
+assertSame(
+    [
+        'when' => ['value' => '2026-04-11', 'suffix' => 'dt'],
+        'bits' => 10,
+        'octal' => 15,
+        'mask' => 255,
+        'bonus' => 3000,
+        'scale' => 2000000,
+        'turn' => M_PI,
+        'angle' => M_PI,
+        'half' => M_PI / 2,
+    ],
+    Mron::parseFile(fixturePath('conformance/mron/base-suffixes.mron')),
+);
+
 $mrml = Mrml::parseFile(fixturePath('mrml/sample.mrml'));
 assertSame('page', $mrml['name']);
 assertSame(['lang' => 'en'], $mrml['attributes']);
@@ -85,6 +102,20 @@ assertSame(
     ],
     $blockCommentDoc['records'],
 );
+
+$suffixDoc = Mrtd::parseFile(fixturePath('conformance/mrtd/base-suffixes.mrtd'));
+assertSame(['value' => '2026-04-11', 'suffix' => 'dt'], $suffixDoc['rows'][0][0]);
+assertSame(10, $suffixDoc['rows'][0][1]);
+assertSame(15, $suffixDoc['rows'][0][2]);
+assertSame(255, $suffixDoc['rows'][0][3]);
+assertSame(3000, $suffixDoc['rows'][0][4]);
+assertSame(2000000, $suffixDoc['rows'][0][5]);
+assertSame(M_PI, $suffixDoc['rows'][0][6]);
+assertSame(M_PI, $suffixDoc['rows'][0][7]);
+assertSame(M_PI / 2, $suffixDoc['rows'][0][8]);
+
+assertSame(['value' => '2026-04-11', 'suffix' => 'dt'], BasicSuffixProfile::applyString('2026-04-11', 'dt'));
+assertSame(3000, BasicSuffixProfile::applyNumber('3', 'k'));
 
 assertSame(
     "name:string age:int active:bool\nAda 32 true\nBen 41 false",

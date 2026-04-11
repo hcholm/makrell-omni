@@ -9,12 +9,14 @@ typedef struct {
     char kind[8];
     char* text;
     int quoted;
+    char* suffix;
 } token;
 
 typedef struct node {
     char kind[8];
     char* text;
     int quoted;
+    char* suffix;
     struct node* children;
     size_t count;
 } node;
@@ -29,6 +31,13 @@ static char* mf_strdup(const char* text) {
     size_t len = strlen(text);
     char* out = (char*) malloc(len + 1);
     memcpy(out, text, len + 1);
+    return out;
+}
+
+static char* mf_strndup(const char* text, size_t len) {
+    char* out = (char*) malloc(len + 1);
+    memcpy(out, text, len);
+    out[len] = 0;
     return out;
 }
 
@@ -67,6 +76,12 @@ static void sb_append(string_builder* sb, const char* text) {
 static void token_push(token** items, size_t* count, token item) {
     *items = (token*) realloc(*items, sizeof(token) * (*count + 1));
     (*items)[(*count)++] = item;
+}
+
+static char* read_suffix(const char* source, size_t* index) {
+    size_t start = *index;
+    while (source[*index] != 0 && (isalnum((unsigned char) source[*index]) || source[*index] == '_')) ++*index;
+    return mf_strndup(source + start, *index - start);
 }
 
 static void node_push(node** items, size_t* count, node item) {
@@ -108,14 +123,15 @@ static token* tokenize(const char* source, size_t* out_count) {
                 if (c == '/' && (source[i + 1] == '/' || source[i + 1] == '*')) break;
                 ++i;
             }
-            token_push(&tokens, &count, (token){"scalar", (char*) malloc(i - start + 1), 0});
+            token_push(&tokens, &count, (token){"scalar", (char*) malloc(i - start + 1), 0, NULL});
             memcpy(tokens[count - 1].text, source + start, i - start);
             tokens[count - 1].text[i - start] = 0;
+            tokens[count - 1].suffix = mf_strdup("");
             continue;
         }
         if (strchr("{}[]()=-", ch) != NULL) {
             char text[2] = {ch, 0};
-            token_push(&tokens, &count, (token){"", mf_strdup(text), 0});
+            token_push(&tokens, &count, (token){"", mf_strdup(text), 0, mf_strdup("")});
             strcpy(tokens[count - 1].kind, text);
             ++i;
             continue;
@@ -141,7 +157,8 @@ static token* tokenize(const char* source, size_t* out_count) {
                 char text[2] = {c, 0};
                 sb_append(&sb, text);
             }
-            token_push(&tokens, &count, (token){"scalar", sb.data, 1});
+            token_push(&tokens, &count, (token){"scalar", sb.data, 1, NULL});
+            tokens[count - 1].suffix = read_suffix(source, &i);
             continue;
         }
         {
@@ -152,9 +169,10 @@ static token* tokenize(const char* source, size_t* out_count) {
                 if (c == '/' && (source[i + 1] == '/' || source[i + 1] == '*')) break;
                 ++i;
             }
-            token_push(&tokens, &count, (token){"scalar", (char*) malloc(i - start + 1), 0});
+            token_push(&tokens, &count, (token){"scalar", (char*) malloc(i - start + 1), 0, NULL});
             memcpy(tokens[count - 1].text, source + start, i - start);
             tokens[count - 1].text[i - start] = 0;
+            tokens[count - 1].suffix = mf_strdup("");
         }
     }
     *out_count = count;
@@ -182,6 +200,7 @@ static node parse_node(token* tokens, size_t count, size_t* index) {
         strcpy(out.kind, "scalar");
         out.text = mf_strdup(token.text);
         out.quoted = token.quoted;
+        out.suffix = mf_strdup(token.suffix ? token.suffix : "");
         return out;
     }
     if (strcmp(token.kind, "{") == 0) {
@@ -201,6 +220,7 @@ static node parse_node(token* tokens, size_t count, size_t* index) {
     }
     strcpy(out.kind, "invalid");
     out.text = mf_strdup(token.text);
+    out.suffix = mf_strdup(token.suffix ? token.suffix : "");
     return out;
 }
 
@@ -213,7 +233,10 @@ static node* parse_nodes(const char* source, size_t* out_count) {
     while (index < token_count) {
         node_push(&items, &count, parse_node(tokens, token_count, &index));
     }
-    for (index = 0; index < token_count; ++index) free(tokens[index].text);
+    for (index = 0; index < token_count; ++index) {
+        free(tokens[index].text);
+        free(tokens[index].suffix);
+    }
     free(tokens);
     *out_count = count;
     return items;
@@ -242,49 +265,134 @@ static mf_value* alloc_value(mf_kind kind) {
     return value;
 }
 
-static mf_value* convert_scalar(const char* text, int quoted) {
+mf_numeric_suffix_parts mf_split_numeric_literal_suffix(const char* text) {
+    size_t len = strlen(text);
+    size_t boundary;
+    mf_numeric_suffix_parts parts = {NULL, NULL};
+    for (boundary = len; boundary > 0; --boundary) {
+        char* value = mf_strndup(text, boundary);
+        char* suffix = mf_strdup(text + boundary);
+        char* end = NULL;
+        int suffix_ok = suffix[0] == 0 || (isalpha((unsigned char) suffix[0]) || suffix[0] == '_');
+        size_t i;
+        for (i = 1; suffix_ok && suffix[i] != 0; ++i) {
+            if (!(isalnum((unsigned char) suffix[i]) || suffix[i] == '_')) suffix_ok = 0;
+        }
+        if (suffix_ok) {
+            strtod(value, &end);
+            if (*value != 0 && end != NULL && *end == 0) {
+                parts.value = value;
+                parts.suffix = suffix;
+                return parts;
+            }
+        }
+        free(value);
+        free(suffix);
+    }
+    return parts;
+}
+
+mf_value* mf_apply_basic_suffix_profile(const char* kind, const char* raw, const char* suffix) {
     char* end = NULL;
-    mf_value* value;
+    mf_value* out;
+    if (strcmp(kind, "string") == 0) {
+        if (suffix == NULL || suffix[0] == 0) {
+            out = alloc_value(MF_STRING);
+            out->as.string_value = mf_strdup(raw);
+            return out;
+        }
+        if (strcmp(suffix, "dt") == 0) {
+            out = alloc_value(MF_TAGGED_STRING);
+            out->as.tagged_string.value = mf_strdup(raw);
+            out->as.tagged_string.suffix = mf_strdup(suffix);
+            return out;
+        }
+        if (strcmp(suffix, "bin") == 0 || strcmp(suffix, "oct") == 0 || strcmp(suffix, "hex") == 0) {
+            int base = strcmp(suffix, "bin") == 0 ? 2 : strcmp(suffix, "oct") == 0 ? 8 : 16;
+            long long parsed = strtoll(raw, &end, base);
+            if (*raw != 0 && end != NULL && *end == 0) {
+                out = alloc_value(MF_INT);
+                out->as.int_value = parsed;
+                return out;
+            }
+            return NULL;
+        }
+        return NULL;
+    }
+
+    {
+        double base = strtod(raw, &end);
+        if (*raw == 0 || end == NULL || *end != 0) return NULL;
+        if (suffix == NULL || suffix[0] == 0) {
+            long long i = strtoll(raw, &end, 10);
+            if (*raw != 0 && end != NULL && *end == 0 && strchr(raw, '.') == NULL && strchr(raw, 'e') == NULL && strchr(raw, 'E') == NULL) {
+                out = alloc_value(MF_INT);
+                out->as.int_value = i;
+                return out;
+            }
+            out = alloc_value(MF_FLOAT);
+            out->as.float_value = base;
+            return out;
+        }
+        if (strcmp(suffix, "k") == 0) base *= 1e3;
+        else if (strcmp(suffix, "M") == 0) base *= 1e6;
+        else if (strcmp(suffix, "G") == 0) base *= 1e9;
+        else if (strcmp(suffix, "T") == 0) base *= 1e12;
+        else if (strcmp(suffix, "P") == 0) base *= 1e15;
+        else if (strcmp(suffix, "E") == 0) base *= 1e18;
+        else if (strcmp(suffix, "e") == 0) base *= 2.718281828459045;
+        else if (strcmp(suffix, "tau") == 0) base *= 6.283185307179586;
+        else if (strcmp(suffix, "deg") == 0) base *= 0.017453292519943295;
+        else if (strcmp(suffix, "pi") == 0) base *= 3.141592653589793;
+        else return NULL;
+        {
+            long long i = (long long) base;
+            if (base == (double) i && strchr(raw, '.') == NULL && strchr(raw, 'e') == NULL && strchr(raw, 'E') == NULL &&
+                strcmp(suffix, "e") != 0 && strcmp(suffix, "tau") != 0 && strcmp(suffix, "deg") != 0 && strcmp(suffix, "pi") != 0) {
+                out = alloc_value(MF_INT);
+                out->as.int_value = i;
+                return out;
+            }
+        }
+        out = alloc_value(MF_FLOAT);
+        out->as.float_value = base;
+        return out;
+    }
+}
+
+static mf_value* convert_scalar(const char* text, int quoted, const char* suffix) {
+    mf_numeric_suffix_parts parts;
+    mf_value* out;
     if (quoted) {
-        value = alloc_value(MF_STRING);
-        value->as.string_value = mf_strdup(text);
-        return value;
+        return mf_apply_basic_suffix_profile("string", text, suffix);
     }
     if (strcmp(text, "null") == 0) return alloc_value(MF_NULL);
     if (strcmp(text, "true") == 0) {
-        value = alloc_value(MF_BOOL);
-        value->as.bool_value = 1;
-        return value;
+        out = alloc_value(MF_BOOL);
+        out->as.bool_value = 1;
+        return out;
     }
     if (strcmp(text, "false") == 0) {
-        value = alloc_value(MF_BOOL);
-        value->as.bool_value = 0;
-        return value;
+        out = alloc_value(MF_BOOL);
+        out->as.bool_value = 0;
+        return out;
     }
-    {
-        long long i = strtoll(text, &end, 10);
-        if (*text != 0 && end != NULL && *end == 0) {
-            value = alloc_value(MF_INT);
-            value->as.int_value = i;
-            return value;
-        }
+    parts = mf_split_numeric_literal_suffix(text);
+    if (parts.value != NULL) {
+        mf_value* parsed = mf_apply_basic_suffix_profile("number", parts.value, parts.suffix);
+        free(parts.value);
+        free(parts.suffix);
+        if (parsed) return parsed;
     }
-    {
-        double f = strtod(text, &end);
-        if (*text != 0 && end != NULL && *end == 0 && strchr(text, '.') != NULL) {
-            value = alloc_value(MF_FLOAT);
-            value->as.float_value = f;
-            return value;
-        }
-    }
-    value = alloc_value(MF_STRING);
-    value->as.string_value = mf_strdup(text);
-    return value;
+    out = alloc_value(MF_STRING);
+    out->as.string_value = mf_strdup(text);
+    return out;
 }
 
 static const char* value_key(const mf_value* value, char* buffer, size_t size) {
     switch (value->kind) {
         case MF_STRING: return value->as.string_value;
+        case MF_TAGGED_STRING: return value->as.tagged_string.value;
         case MF_BOOL: return value->as.bool_value ? "true" : "false";
         case MF_NULL: return "null";
         case MF_INT: snprintf(buffer, size, "%lld", value->as.int_value); return buffer;
@@ -315,7 +423,7 @@ static mf_value* convert_mron_pairs(node* items, size_t count) {
 
 static mf_value* convert_mron_node(node* item) {
     size_t i;
-    if (strcmp(item->kind, "scalar") == 0) return convert_scalar(item->text, item->quoted);
+    if (strcmp(item->kind, "scalar") == 0) return convert_scalar(item->text, item->quoted, item->suffix);
     if (strcmp(item->kind, "square") == 0) {
         mf_value* value = alloc_value(MF_ARRAY);
         value->as.array.items = NULL;
@@ -359,6 +467,11 @@ static void write_mron_value(string_builder* sb, const mf_value* value) {
         case MF_INT: snprintf(buffer, sizeof(buffer), "%lld", value->as.int_value); sb_append(sb, buffer); break;
         case MF_FLOAT: snprintf(buffer, sizeof(buffer), "%g", value->as.float_value); sb_append(sb, buffer); break;
         case MF_STRING: if (is_identifier_like(value->as.string_value)) sb_append(sb, value->as.string_value); else append_quoted(sb, value->as.string_value); break;
+        case MF_TAGGED_STRING:
+            if (is_identifier_like(value->as.tagged_string.value)) sb_append(sb, value->as.tagged_string.value);
+            else append_quoted(sb, value->as.tagged_string.value);
+            sb_append(sb, value->as.tagged_string.suffix);
+            break;
         case MF_ARRAY:
             sb_append(sb, "[");
             for (i = 0; i < value->as.array.count; ++i) {
@@ -542,12 +655,16 @@ mf_mrtd_document* mf_parse_mrtd_string(const char* source) {
         document->rows = (mf_value***) realloc(document->rows, sizeof(mf_value**) * (document->row_count + 1));
         document->rows[document->row_count] = (mf_value**) calloc(document->column_count, sizeof(mf_value*));
         for (i = 0; i < document->column_count && i < count; ++i) {
-            mf_value* scalar = convert_scalar(cells[i].text, cells[i].quoted);
-            const char* type = document->columns[i].type ? document->columns[i].type : "string";
+            mf_value* scalar = convert_scalar(cells[i].text, cells[i].quoted, cells[i].suffix);
+            const char* type = document->columns[i].type;
+            if (type == NULL) {
+                document->rows[document->row_count][i] = scalar;
+                continue;
+            }
             if (strcmp(type, "int") == 0 && scalar->kind != MF_INT) return NULL;
             if (strcmp(type, "float") == 0 && scalar->kind != MF_FLOAT && scalar->kind != MF_INT) return NULL;
             if (strcmp(type, "bool") == 0 && scalar->kind != MF_BOOL) return NULL;
-            if (strcmp(type, "string") == 0 && scalar->kind != MF_STRING) {
+            if (strcmp(type, "string") == 0 && scalar->kind != MF_STRING && scalar->kind != MF_TAGGED_STRING) {
                 char buffer[64];
                 const char* key = value_key(scalar, buffer, sizeof(buffer));
                 mf_free_value(scalar);
@@ -598,6 +715,10 @@ void mf_free_value(mf_value* value) {
     size_t i;
     if (!value) return;
     if (value->kind == MF_STRING) free(value->as.string_value);
+    if (value->kind == MF_TAGGED_STRING) {
+        free(value->as.tagged_string.value);
+        free(value->as.tagged_string.suffix);
+    }
     if (value->kind == MF_ARRAY) {
         for (i = 0; i < value->as.array.count; ++i) mf_free_value(value->as.array.items[i]);
         free(value->as.array.items);

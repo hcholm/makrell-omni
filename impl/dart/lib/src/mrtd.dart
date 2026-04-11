@@ -37,6 +37,10 @@ class Mrtd {
   static const Set<String> _declaredTypes = {"int", "float", "bool", "string"};
 
   static MrtdDocument parseString(String source, {Set<String> profiles = const {}}) {
+    if (profiles.isNotEmpty) {
+      // Reserved for future optional MRTD extensions. Current core parsing
+      // always applies the shared basic suffix profile directly.
+    }
     final rows = _splitRootRows(source);
     if (rows.isEmpty) {
       return const MrtdDocument(columns: [], rows: []);
@@ -45,7 +49,7 @@ class Mrtd {
     final columns = _parseHeaderRow(rows.first);
     final parsedRows = <MrtdRow>[];
     for (var index = 1; index < rows.length; index += 1) {
-      parsedRows.add(_parseDataRow(rows[index], columns, index + 1, profiles: profiles));
+      parsedRows.add(_parseDataRow(rows[index], columns, index + 1));
     }
     return MrtdDocument(columns: columns, rows: parsedRows);
   }
@@ -55,25 +59,31 @@ class Mrtd {
   }
 
   static String writeString(Object? value, {Set<String> profiles = const {}}) {
+    if (profiles.isNotEmpty) {
+      // Reserved for future optional MRTD extensions. Current core writing
+      // always applies the shared basic suffix profile directly.
+    }
     if (value is MrtdDocument) {
-      return _writeDocument(value, profiles: profiles);
+      return _writeDocument(value);
     }
     if (value is List && (value.isEmpty || value.first is Map)) {
       return writeRecords(
         value.map((row) => Map<String, Object?>.from((row as Map).cast<String, Object?>())).toList(growable: false),
-        profiles: profiles,
       );
     }
     if (value is List && (value.isEmpty || value.first is List)) {
       return writeTuples(
         value.map((row) => List<Object?>.from(row as List, growable: false)).toList(growable: false),
-        profiles: profiles,
       );
     }
     throw MakrellFormatException("MRTD writeString expects MrtdDocument, List<Map>, or List<List>.");
   }
 
   static String writeRecords(List<Map<String, Object?>> rows, {Set<String> profiles = const {}}) {
+    if (profiles.isNotEmpty) {
+      // Reserved for future optional MRTD extensions. Current core writing
+      // always applies the shared basic suffix profile directly.
+    }
     if (rows.isEmpty) {
       throw MakrellFormatException("Cannot write MRTD records from an empty row sequence.");
     }
@@ -87,7 +97,7 @@ class Mrtd {
     final dataRows = rows
         .map((row) => MrtdRow(headers.map((header) => row[header]).toList(growable: false)))
         .toList(growable: false);
-    return _writeDocument(MrtdDocument(columns: columns, rows: dataRows), profiles: profiles);
+    return _writeDocument(MrtdDocument(columns: columns, rows: dataRows));
   }
 
   static String writeTuples(
@@ -95,6 +105,10 @@ class Mrtd {
     List<String>? headers,
     Set<String> profiles = const {},
   }) {
+    if (profiles.isNotEmpty) {
+      // Reserved for future optional MRTD extensions. Current core writing
+      // always applies the shared basic suffix profile directly.
+    }
     if (rows.isEmpty) {
       throw MakrellFormatException("Cannot write MRTD tuples from an empty row sequence.");
     }
@@ -117,14 +131,14 @@ class Mrtd {
       growable: false,
     );
     final dataRows = rows.map((row) => MrtdRow(List<Object?>.from(row, growable: false))).toList(growable: false);
-    return _writeDocument(MrtdDocument(columns: columns, rows: dataRows), profiles: profiles);
+    return _writeDocument(MrtdDocument(columns: columns, rows: dataRows));
   }
 
-  static String _writeDocument(MrtdDocument document, {required Set<String> profiles}) {
+  static String _writeDocument(MrtdDocument document) {
     final lines = <String>[];
     lines.add(document.columns.map(_formatHeaderCell).join(" "));
     for (final row in document.rows) {
-      lines.add(row.cells.map((value) => _formatScalar(value, profiles: profiles)).join(" "));
+      lines.add(row.cells.map(_formatScalar).join(" "));
     }
     return lines.join("\n");
   }
@@ -340,7 +354,7 @@ class Mrtd {
     return value;
   }
 
-  static MrtdRow _parseDataRow(String row, List<MrtdColumn> columns, int lineNumber, {required Set<String> profiles}) {
+  static MrtdRow _parseDataRow(String row, List<MrtdColumn> columns, int lineNumber) {
     final cells = _splitRowCells(row);
     if (cells.length != columns.length) {
       throw MakrellFormatException("MRTD row $lineNumber has ${cells.length} cells, expected ${columns.length}.");
@@ -348,14 +362,14 @@ class Mrtd {
 
     final parsed = <Object?>[];
     for (var index = 0; index < columns.length; index += 1) {
-      parsed.add(_parseDataCell(cells[index], columns[index], profiles: profiles));
+      parsed.add(_parseDataCell(cells[index], columns[index]));
     }
     return MrtdRow(parsed);
   }
 
-  static Object? _parseDataCell(String cell, MrtdColumn column, {required Set<String> profiles}) {
+  static Object? _parseDataCell(String cell, MrtdColumn column) {
     final token = _singleScalarToken(cell);
-    final value = parseCoreScalar(token, profiles: profiles);
+    final value = parseCoreScalar(token);
     if (column.type == null) return value;
     if (!_matchesDeclaredType(value, column.type!)) {
       throw MakrellFormatException("MRTD field '${column.name}' expected ${column.type}, got ${value.runtimeType}.");
@@ -390,7 +404,7 @@ class Mrtd {
     return column.type == null ? base : "$base:${column.type}";
   }
 
-  static String _formatScalar(Object? value, {required Set<String> profiles}) {
+  static String _formatScalar(Object? value) {
     if (value is DateTime) {
       return '"${value.toIso8601String()}"dt';
     }

@@ -3,7 +3,7 @@ use warnings;
 use Test::More;
 use FindBin;
 use lib "$FindBin::Bin/../lib";
-use Makrell::Formats qw(mbf_support_profile parse_mbf_level2_nodes parse_mron_string parse_mron_file parse_mrml_file write_mrml_string parse_mrtd_string parse_mrtd_file write_mrtd_string);
+use Makrell::Formats qw(mbf_support_profile parse_mbf_level2_nodes apply_basic_suffix_profile split_numeric_literal_suffix parse_mron_string parse_mron_file parse_mrml_file write_mrml_string parse_mrtd_string parse_mrtd_file write_mrtd_string);
 
 sub fixture {
     my ($group, $file) = @_;
@@ -59,6 +59,27 @@ is($negative_table->{records}[0]{ratio}, -3.5, 'Conformance MRTD negative float'
 my $block_comment_table = parse_mrtd_string(read_fixture('conformance/mrtd', 'block-comments.mrtd'));
 is($block_comment_table->{records}[0]{status}, 'active', 'Block-comment MRTD first row');
 is($block_comment_table->{records}[1]{note}, 'review', 'Block-comment MRTD second row');
+
+my $suffix_value = apply_basic_suffix_profile('string', '2026-04-11', 'dt');
+is_deeply($suffix_value, { value => '2026-04-11', suffix => 'dt', __basic_suffix_profile => 1 }, 'Perl basic suffix profile string helper');
+is(apply_basic_suffix_profile('number', '3', 'k'), 3000, 'Perl basic suffix profile number helper');
+is_deeply([split_numeric_literal_suffix('0.5tau')], ['0.5', 'tau'], 'Perl numeric suffix splitting');
+
+my $suffix_mron = parse_mron_string(read_fixture('conformance/mron', 'base-suffixes.mron'));
+is_deeply($suffix_mron->{when}, { value => '2026-04-11', suffix => 'dt', __basic_suffix_profile => 1 }, 'Suffix MRON dt');
+is($suffix_mron->{bits}, 10, 'Suffix MRON bin');
+is($suffix_mron->{octal}, 15, 'Suffix MRON oct');
+is($suffix_mron->{mask}, 255, 'Suffix MRON hex');
+is($suffix_mron->{bonus}, 3000, 'Suffix MRON k');
+is($suffix_mron->{scale}, 2_000_000, 'Suffix MRON M');
+
+my $suffix_table = parse_mrtd_string(read_fixture('conformance/mrtd', 'base-suffixes.mrtd'));
+is_deeply($suffix_table->{records}[0]{when}, { value => '2026-04-11', suffix => 'dt', __basic_suffix_profile => 1 }, 'Suffix MRTD dt');
+is($suffix_table->{records}[0]{bits}, 10, 'Suffix MRTD bin');
+is($suffix_table->{records}[0]{octal}, 15, 'Suffix MRTD oct');
+is($suffix_table->{records}[0]{mask}, 255, 'Suffix MRTD hex');
+is($suffix_table->{records}[0]{bonus}, 3000, 'Suffix MRTD k');
+is($suffix_table->{records}[0]{scale}, 2_000_000, 'Suffix MRTD M');
 
 my $out = write_mrtd_string({
     columns => [

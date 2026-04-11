@@ -78,10 +78,12 @@ final class Mrtd
         if ($node['kind'] !== 'scalar') {
             throw new MakrellFormatException('MRTD cells must be scalar values.');
         }
-        $value = self::convertScalar($node['text'], $node['quoted']);
-        $type ??= 'string';
+        $value = self::convertScalar($node['text'], $node['quoted'], $node['suffix'] ?? '');
         return match ($type) {
-            'string' => is_string($value) ? $value : (string) json_encode($value, JSON_THROW_ON_ERROR),
+            null => $value,
+            'string' => is_string($value) || BasicSuffixProfile::isTaggedString($value)
+                ? $value
+                : (string) json_encode($value, JSON_THROW_ON_ERROR),
             'int' => is_int($value) ? $value : throw new MakrellFormatException('MRTD value does not match int field.'),
             'float' => is_int($value) || is_float($value) ? (float) $value : throw new MakrellFormatException('MRTD value does not match float field.'),
             'bool' => is_bool($value) ? $value : throw new MakrellFormatException('MRTD value does not match bool field.'),
@@ -89,10 +91,14 @@ final class Mrtd
         };
     }
 
-    private static function convertScalar(string $text, bool $quoted): mixed
+    private static function convertScalar(string $text, bool $quoted, string $suffix): mixed
     {
         if ($quoted) {
-            return $text;
+            return BasicSuffixProfile::applyString($text, $suffix);
+        }
+        $numericLiteral = BasicSuffixProfile::splitNumericLiteralSuffix($text);
+        if ($numericLiteral !== null && $numericLiteral[1] !== '') {
+            return BasicSuffixProfile::applyNumber($numericLiteral[0], $numericLiteral[1]);
         }
         return match ($text) {
             'true' => true,
@@ -119,6 +125,9 @@ final class Mrtd
         }
         if (is_int($value) || is_float($value)) {
             return (string) $value;
+        }
+        if (BasicSuffixProfile::isTaggedString($value)) {
+            return '"' . addcslashes($value['value'], "\\\"") . '"' . $value['suffix'];
         }
         $text = (string) $value;
         return preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $text) === 1 ? $text : '"' . addcslashes($text, "\\\"") . '"';

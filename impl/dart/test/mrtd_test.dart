@@ -68,7 +68,7 @@ void main() {
       ]);
     });
 
-    test("supports suffixes without a profile", () {
+    test("supports core suffixes directly", () {
       final doc = Mrtd.parseString(
         '''
         when bonus:float
@@ -77,7 +77,7 @@ void main() {
       );
 
       expect(doc.rows.single.cells[0], DateTime.parse("2026-04-11"));
-      expect(doc.rows.single.cells[1], 3000.0);
+      expect(doc.rows.single.cells[1], 3000);
     });
 
     test("supports shared base suffix conformance fixture", () {
@@ -87,8 +87,8 @@ void main() {
       expect(doc.records.single["bits"], 10);
       expect(doc.records.single["octal"], 15);
       expect(doc.records.single["mask"], 255);
-      expect(doc.records.single["bonus"], 3000.0);
-      expect(doc.records.single["scale"], 2000000.0);
+      expect(doc.records.single["bonus"], 3000);
+      expect(doc.records.single["scale"], 2000000);
       expect(doc.records.single["turn"], closeTo(3.141592653589793, 1e-12));
       expect(doc.records.single["angle"], closeTo(3.141592653589793, 1e-12));
       expect(doc.records.single["half"], closeTo(1.5707963267948966, 1e-12));

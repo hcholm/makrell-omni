@@ -67,7 +67,7 @@ void main() {
       expect(doc, {"name": "Makrell", "stable": false});
     });
 
-    test("supports suffixes without a profile", () {
+    test("supports core suffixes directly", () {
       final doc = Mron.parseString(
         '''
         born "2026-04-11"dt
@@ -76,7 +76,7 @@ void main() {
       ) as Map<String, Object?>;
 
       expect(doc["born"], DateTime.parse("2026-04-11"));
-      expect(doc["size"], 3000.0);
+      expect(doc["size"], 3000);
     });
 
     test("supports shared base suffix conformance fixture", () {
@@ -86,11 +86,22 @@ void main() {
       expect(doc["bits"], 10);
       expect(doc["octal"], 15);
       expect(doc["mask"], 255);
-      expect(doc["bonus"], 3000.0);
-      expect(doc["scale"], 2000000.0);
+      expect(doc["bonus"], 3000);
+      expect(doc["scale"], 2000000);
       expect(doc["turn"], closeTo(3.141592653589793, 1e-12));
       expect(doc["angle"], closeTo(3.141592653589793, 1e-12));
       expect(doc["half"], closeTo(1.5707963267948966, 1e-12));
+    });
+
+    test("basic suffix profile is exposed as a direct post-L1 conversion layer", () {
+      expect(
+        applyBasicSuffixProfile(const BasicSuffixLiteral(BasicSuffixLiteralKind.string, "2026-04-11", "dt")),
+        DateTime.parse("2026-04-11"),
+      );
+      expect(
+        applyBasicSuffixProfile(const BasicSuffixLiteral(BasicSuffixLiteralKind.number, "3", "k")),
+        3000,
+      );
     });
 
     test("rejects odd root cardinality", () {

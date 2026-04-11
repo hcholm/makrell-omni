@@ -6,8 +6,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.time.LocalDate;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -102,7 +100,7 @@ public final class Mrtd {
             List<Object> rowValues = new ArrayList<>();
             Map<String, Object> record = new LinkedHashMap<>();
             for (int i = 0; i < columns.size(); i++) {
-                Object value = convertCell(cells.get(i), columns.get(i).getType(), profiles);
+                Object value = convertCell(cells.get(i), columns.get(i).getType());
                 rowValues.add(value);
                 record.put(columns.get(i).getName(), value);
             }
@@ -136,7 +134,7 @@ public final class Mrtd {
         return writeRows(columns, tuples);
     }
 
-    private static Object convertCell(MiniMbf.Node node, String type, Set<String> profiles) {
+    private static Object convertCell(MiniMbf.Node node, String type) {
         if (!"scalar".equals(node.kind)) {
             throw new MakrellFormatException("MRTD cells must be scalar values.");
         }
@@ -170,20 +168,7 @@ public final class Mrtd {
 
     private static Object convertScalar(String text, boolean quoted, String suffix) {
         if (quoted) {
-            switch (suffix) {
-                case "":
-                    return text;
-                case "dt":
-                    return tryParseDateTime(text);
-                case "bin":
-                    return Integer.parseInt(text, 2);
-                case "oct":
-                    return Integer.parseInt(text, 8);
-                case "hex":
-                    return Integer.parseInt(text, 16);
-                default:
-                    throw new MakrellFormatException("Unsupported MRTD string suffix '" + suffix + "'.");
-            }
+            return BasicSuffixProfile.applyString(text, suffix);
         }
         if ("true".equals(text)) {
             return Boolean.TRUE;
@@ -191,26 +176,15 @@ public final class Mrtd {
         if ("false".equals(text)) {
             return Boolean.FALSE;
         }
-        String numericSuffix = "";
-        String numericBody = text;
-        int suffixStart = text.length();
-        while (suffixStart > 0) {
-            char current = text.charAt(suffixStart - 1);
-            if (!Character.isLetter(current) && current != '_') {
-                break;
-            }
-            suffixStart -= 1;
+        BasicSuffixProfile.NumericLiteralParts numericLiteral = BasicSuffixProfile.splitNumericLiteralSuffix(text);
+        if (numericLiteral != null && !numericLiteral.getSuffix().isEmpty()) {
+            return BasicSuffixProfile.applyNumber(numericLiteral.getValue(), numericLiteral.getSuffix());
         }
-        if (suffixStart < text.length() && suffixStart > 0 && Character.isDigit(text.charAt(suffixStart - 1))) {
-            numericSuffix = text.substring(suffixStart);
-            numericBody = text.substring(0, suffixStart);
+        if (text.matches("-?\\d+")) {
+            return BasicSuffixProfile.applyNumber(text, "");
         }
-
-        if (numericBody.matches("-?\\d+")) {
-            return convertIntegerWithSuffix(Long.parseLong(numericBody), numericSuffix);
-        }
-        if (numericBody.matches("-?\\d+(\\.\\d+)?([eE][-+]?\\d+)?")) {
-            return convertFloatWithSuffix(Double.parseDouble(numericBody), numericSuffix);
+        if (text.matches("-?\\d+(\\.\\d+)?([eE][-+]?\\d+)?")) {
+            return BasicSuffixProfile.applyNumber(text, "");
         }
         return text;
     }
@@ -273,7 +247,7 @@ public final class Mrtd {
         if (value == null) {
             return "null";
         }
-        if (value instanceof LocalDate || value instanceof OffsetDateTime) {
+        if (value instanceof java.time.LocalDate || value instanceof java.time.OffsetDateTime) {
             return "\"" + value + "\"dt";
         }
         if (value instanceof Boolean || value instanceof Number) {
@@ -281,76 +255,6 @@ public final class Mrtd {
         }
         String text = String.valueOf(value);
         return text.matches("[A-Za-z_][A-Za-z0-9_]*") ? text : "\"" + text.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
-    }
-
-    private static Object tryParseDateTime(String text) {
-        try {
-            return OffsetDateTime.parse(text);
-        } catch (RuntimeException ignored) {
-        }
-        try {
-            return LocalDate.parse(text);
-        } catch (RuntimeException ignored) {
-        }
-        return text;
-    }
-
-    private static Object convertIntegerWithSuffix(long value, String suffix) {
-        switch (suffix) {
-            case "":
-                return value;
-            case "k":
-                return value * 1_000L;
-            case "M":
-                return value * 1_000_000L;
-            case "G":
-                return value * 1_000_000_000L;
-            case "T":
-                return value * 1_000_000_000_000L;
-            case "P":
-                return value * 1_000_000_000_000_000L;
-            case "E":
-                return value * 1_000_000_000_000_000_000L;
-            case "e":
-                return Math.E * value;
-            case "tau":
-                return Math.PI * 2d * value;
-            case "deg":
-                return Math.PI * value / 180d;
-            case "pi":
-                return Math.PI * value;
-            default:
-                throw new MakrellFormatException("Unsupported MRTD number suffix '" + suffix + "'.");
-        }
-    }
-
-    private static Object convertFloatWithSuffix(double value, String suffix) {
-        switch (suffix) {
-            case "":
-                return value;
-            case "k":
-                return value * 1_000d;
-            case "M":
-                return value * 1_000_000d;
-            case "G":
-                return value * 1_000_000_000d;
-            case "T":
-                return value * 1_000_000_000_000d;
-            case "P":
-                return value * 1_000_000_000_000_000d;
-            case "E":
-                return value * 1_000_000_000_000_000_000d;
-            case "e":
-                return Math.E * value;
-            case "tau":
-                return Math.PI * 2d * value;
-            case "deg":
-                return Math.PI * value / 180d;
-            case "pi":
-                return Math.PI * value;
-            default:
-                throw new MakrellFormatException("Unsupported MRTD number suffix '" + suffix + "'.");
-        }
     }
 
     private static String quoteName(String value) {

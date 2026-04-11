@@ -1,3 +1,6 @@
+use crate::basic_suffix_profile::{
+    apply_basic_suffix_profile, split_numeric_literal_suffix, BasicSuffixLiteralKind, BasicSuffixValue,
+};
 use crate::mini_mbf::{parse as parse_nodes, Node};
 use crate::MakrellFormatError;
 use std::collections::BTreeMap;
@@ -11,6 +14,7 @@ pub enum MronValue {
     Int(i64),
     Float(f64),
     String(String),
+    TaggedString { value: String, suffix: String },
     Array(Vec<MronValue>),
     Object(BTreeMap<String, MronValue>),
 }
@@ -45,7 +49,7 @@ pub fn write_string(value: &MronValue) -> Result<String, MakrellFormatError> {
 
 fn convert_node(node: &Node) -> Result<MronValue, MakrellFormatError> {
     match node {
-        Node::Scalar { text, quoted } => Ok(convert_scalar(text, *quoted)),
+        Node::Scalar { text, quoted, suffix } => convert_scalar(text, *quoted, suffix),
         Node::Square(children) => {
             let mut values = Vec::new();
             for child in children {
@@ -71,11 +75,26 @@ fn convert_pairs(nodes: &[Node]) -> Result<MronValue, MakrellFormatError> {
     Ok(MronValue::Object(result))
 }
 
-fn convert_scalar(text: &str, quoted: bool) -> MronValue {
+fn convert_scalar(text: &str, quoted: bool, suffix: &str) -> Result<MronValue, MakrellFormatError> {
     if quoted {
-        return MronValue::String(text.to_string());
+        return map_basic_suffix_value(apply_basic_suffix_profile(
+            BasicSuffixLiteralKind::String,
+            text,
+            suffix,
+        )?);
     }
-    match text {
+
+    if let Some((value, numeric_suffix)) = split_numeric_literal_suffix(text) {
+        if !numeric_suffix.is_empty() {
+            return map_basic_suffix_value(apply_basic_suffix_profile(
+                BasicSuffixLiteralKind::Number,
+                value,
+                numeric_suffix,
+            )?);
+        }
+    }
+
+    Ok(match text {
         "null" => MronValue::Null,
         "true" => MronValue::Bool(true),
         "false" => MronValue::Bool(false),
@@ -88,12 +107,34 @@ fn convert_scalar(text: &str, quoted: bool) -> MronValue {
                 MronValue::String(text.to_string())
             }
         }
+    })
+}
+
+fn map_basic_suffix_value(value: BasicSuffixValue) -> Result<MronValue, MakrellFormatError> {
+    Ok(match value {
+        BasicSuffixValue::String(text) => MronValue::String(text),
+        BasicSuffixValue::Int(value) => MronValue::Int(value),
+        BasicSuffixValue::Float(value) => MronValue::Float(value),
+        BasicSuffixValue::TaggedString { value, suffix } => MronValue::TaggedString { value, suffix },
+    })
+}
+
+fn tagged_text(value: &str, suffix: &str) -> String {
+    format!("{}{}", quote(value), suffix)
+}
+
+fn identifier_or_quote(text: &str) -> String {
+    if is_identifier_like(text) {
+        text.to_string()
+    } else {
+        quote(text)
     }
 }
 
 fn as_key(value: MronValue) -> String {
     match value {
         MronValue::String(text) => text,
+        MronValue::TaggedString { value, .. } => value,
         MronValue::Null => "null".to_string(),
         MronValue::Bool(value) => value.to_string(),
         MronValue::Int(value) => value.to_string(),
@@ -108,13 +149,8 @@ fn write_value(value: &MronValue) -> String {
         MronValue::Bool(value) => value.to_string(),
         MronValue::Int(value) => value.to_string(),
         MronValue::Float(value) => value.to_string(),
-        MronValue::String(text) => {
-            if is_identifier_like(text) {
-                text.clone()
-            } else {
-                quote(text)
-            }
-        }
+        MronValue::String(text) => identifier_or_quote(text),
+        MronValue::TaggedString { value, suffix } => tagged_text(value, suffix),
         MronValue::Array(items) => {
             let parts: Vec<String> = items.iter().map(write_value).collect();
             format!("[{}]", parts.join(" "))

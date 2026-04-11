@@ -2,6 +2,11 @@ tokenise_makrell <- function(source) {
   tokens <- list()
   i <- 1L
   n <- nchar(source)
+  read_suffix <- function() {
+    start <- i
+    while (i <= n && grepl("[A-Za-z0-9_]", substr(source, i, i))) i <<- i + 1L
+    if (start == i) "" else substr(source, start, i - 1L)
+  }
   while (i <= n) {
     ch <- substr(source, i, i)
     if (grepl("[[:space:],]", ch)) {
@@ -25,7 +30,7 @@ tokenise_makrell <- function(source) {
       next
     }
     if (ch %in% c("{", "}", "[", "]", "(", ")", "=")) {
-      tokens[[length(tokens) + 1L]] <- list(kind = ch, text = ch, quoted = FALSE)
+      tokens[[length(tokens) + 1L]] <- list(kind = ch, text = ch, quoted = FALSE, suffix = "")
       i <- i + 1L
       next
     }
@@ -34,10 +39,10 @@ tokenise_makrell <- function(source) {
         start <- i
         i <- i + 1L
         while (i <= n && grepl("[0-9.]", substr(source, i, i))) i <- i + 1L
-        tokens[[length(tokens) + 1L]] <- list(kind = "scalar", text = substr(source, start, i - 1L), quoted = FALSE)
+        tokens[[length(tokens) + 1L]] <- list(kind = "scalar", text = substr(source, start, i - 1L), quoted = FALSE, suffix = read_suffix())
         next
       }
-      tokens[[length(tokens) + 1L]] <- list(kind = "operator", text = "-", quoted = FALSE)
+      tokens[[length(tokens) + 1L]] <- list(kind = "operator", text = "-", quoted = FALSE, suffix = "")
       i <- i + 1L
       next
     }
@@ -59,7 +64,7 @@ tokenise_makrell <- function(source) {
           text <- c(text, c)
         }
       }
-      tokens[[length(tokens) + 1L]] <- list(kind = "scalar", text = paste(text, collapse = ""), quoted = TRUE)
+      tokens[[length(tokens) + 1L]] <- list(kind = "scalar", text = paste(text, collapse = ""), quoted = TRUE, suffix = read_suffix())
       next
     }
     start <- i
@@ -69,7 +74,13 @@ tokenise_makrell <- function(source) {
       if (c == "/" && i < n && substr(source, i + 1L, i + 1L) %in% c("/", "*")) break
       i <- i + 1L
     }
-    tokens[[length(tokens) + 1L]] <- list(kind = "scalar", text = substr(source, start, i - 1L), quoted = FALSE)
+    raw <- substr(source, start, i - 1L)
+    numeric_suffix <- split_basic_numeric_suffix(raw)
+    if (!is.null(numeric_suffix)) {
+      tokens[[length(tokens) + 1L]] <- list(kind = "scalar", text = numeric_suffix$value, quoted = FALSE, suffix = numeric_suffix$suffix)
+    } else {
+      tokens[[length(tokens) + 1L]] <- list(kind = "scalar", text = raw, quoted = FALSE, suffix = "")
+    }
   }
   tokens
 }
@@ -90,10 +101,10 @@ parse_nodes_makrell <- function(source) {
     token <- tokens[[index]]
     index <- index + 1L
     if (token$kind %in% c("scalar", "=")) {
-      return(list(node = list(kind = "scalar", text = token$text, quoted = token$quoted), index = index))
+      return(list(node = list(kind = "scalar", text = token$text, quoted = token$quoted, suffix = token$suffix), index = index))
     }
     if (token$kind == "operator") {
-      return(list(node = list(kind = "invalid", text = token$text, quoted = FALSE), index = index))
+      return(list(node = list(kind = "invalid", text = token$text, quoted = FALSE, suffix = ""), index = index))
     }
     if (token$kind == "{") {
       parsed <- parse_group(index, "}")
@@ -107,7 +118,7 @@ parse_nodes_makrell <- function(source) {
       parsed <- parse_group(index, ")")
       return(list(node = list(kind = "paren", children = parsed$items), index = parsed$index))
     }
-    list(node = list(kind = "invalid", text = token$text, quoted = FALSE), index = index)
+    list(node = list(kind = "invalid", text = token$text, quoted = FALSE, suffix = ""), index = index)
   }
 
   items <- list()
@@ -126,18 +137,65 @@ contains_invalid_node <- function(node) {
   FALSE
 }
 
-convert_scalar_mron <- function(text, quoted) {
-  if (quoted) return(text)
+new_basic_suffix_tagged_string <- function(value, suffix) {
+  structure(list(value = value, suffix = suffix), class = "basic_suffix_tagged_string")
+}
+
+is_basic_suffix_tagged_string <- function(value) inherits(value, "basic_suffix_tagged_string")
+
+split_basic_numeric_suffix <- function(text) {
+  boundaries <- rev(seq_len(nchar(text)))
+  for (boundary in boundaries) {
+    value <- substr(text, 1L, boundary)
+    suffix <- if (boundary == nchar(text)) "" else substr(text, boundary + 1L, nchar(text))
+    if (!identical(suffix, "") && !grepl("^[A-Za-z_][A-Za-z0-9_]*$", suffix)) next
+    if (grepl("^-?[0-9]+$", value) || grepl("^-?[0-9]+\\.[0-9]+$", value)) {
+      return(list(value = value, suffix = suffix))
+    }
+  }
+  NULL
+}
+
+apply_basic_suffix_profile <- function(kind, value, suffix = "") {
+  if (identical(kind, "string")) {
+    if (identical(suffix, "")) return(value)
+    if (identical(suffix, "dt")) return(new_basic_suffix_tagged_string(value, suffix))
+    if (identical(suffix, "bin")) return(strtoi(value, base = 2L))
+    if (identical(suffix, "oct")) return(strtoi(value, base = 8L))
+    if (identical(suffix, "hex")) return(strtoi(value, base = 16L))
+    stop(sprintf("Unsupported basic suffix profile string suffix: %s", suffix))
+  }
+  if (!identical(kind, "number")) stop(sprintf("Unsupported basic suffix profile kind: %s", kind))
+
+  base_value <- if (grepl("^-?[0-9]+$", value)) as.numeric(as.integer(value)) else as.numeric(value)
+  if (identical(suffix, "")) {
+    if (grepl("^-?[0-9]+$", value)) return(as.integer(value))
+    return(base_value)
+  }
+  if (identical(suffix, "k")) return(if (grepl("^-?[0-9]+$", value)) as.integer(as.integer(value) * 1000L) else base_value * 1e3)
+  if (identical(suffix, "M")) return(if (grepl("^-?[0-9]+$", value)) as.integer(as.integer(value) * 1000000L) else base_value * 1e6)
+  if (identical(suffix, "G")) return(base_value * 1e9)
+  if (identical(suffix, "T")) return(base_value * 1e12)
+  if (identical(suffix, "P")) return(base_value * 1e15)
+  if (identical(suffix, "E")) return(base_value * 1e18)
+  if (identical(suffix, "pi")) return(base_value * pi)
+  if (identical(suffix, "tau")) return(base_value * 2 * pi)
+  if (identical(suffix, "deg")) return(base_value * pi / 180)
+  if (identical(suffix, "e")) return(base_value * exp(1))
+  stop(sprintf("Unsupported basic suffix profile numeric suffix: %s", suffix))
+}
+
+convert_scalar_mron <- function(text, quoted, suffix = "") {
+  if (quoted) return(apply_basic_suffix_profile("string", text, suffix))
   if (identical(text, "null")) return(NULL)
   if (identical(text, "true")) return(TRUE)
   if (identical(text, "false")) return(FALSE)
-  if (grepl("^-?[0-9]+$", text)) return(as.integer(text))
-  if (grepl("^-?[0-9]+\\.[0-9]+$", text)) return(as.numeric(text))
+  if (grepl("^-?[0-9]+$", text) || grepl("^-?[0-9]+\\.[0-9]+$", text)) return(apply_basic_suffix_profile("number", text, suffix))
   text
 }
 
 convert_mron_node <- function(node) {
-  if (node$kind == "scalar") return(convert_scalar_mron(node$text, node$quoted))
+  if (node$kind == "scalar") return(convert_scalar_mron(node$text, node$quoted, node$suffix))
   if (node$kind == "square") return(lapply(node$children, convert_mron_node))
   convert_mron_pairs(node$children)
 }
@@ -168,6 +226,7 @@ quote_if_needed <- function(text) {
 }
 
 write_mron_string <- function(value) {
+  if (is_basic_suffix_tagged_string(value)) return(sprintf("\"%s\"%s", gsub("([\\\\\"])", "\\\\\\1", value$value), value$suffix))
   if (is.null(value)) return("null")
   if (is.logical(value) && length(value) == 1) return(if (isTRUE(value)) "true" else "false")
   if (is.integer(value) && length(value) == 1) return(as.character(value))
@@ -229,9 +288,12 @@ write_mrml_string <- function(value) {
 }
 
 convert_mrtd_cell <- function(node, type) {
-  if (is.null(type) || identical(type, "")) type <- "string"
-  value <- convert_scalar_mron(node$text, node$quoted)
-  if (identical(type, "string")) return(as.character(value))
+  value <- convert_scalar_mron(node$text, node$quoted, node$suffix)
+  if (is.null(type) || identical(type, "")) return(value)
+  if (identical(type, "string")) {
+    if (is.character(value) || is_basic_suffix_tagged_string(value)) return(value)
+    return(as.character(value))
+  }
   if (identical(type, "int") && is.integer(value)) return(value)
   if (identical(type, "float") && (is.integer(value) || is.double(value))) return(as.numeric(value))
   if (identical(type, "bool") && is.logical(value)) return(value)
@@ -270,6 +332,7 @@ parse_mrtd_string <- function(source) {
 parse_mrtd_file <- function(path) parse_mrtd_string(paste(readLines(path, warn = FALSE), collapse = "\n"))
 
 write_mrtd_cell <- function(value) {
+  if (is_basic_suffix_tagged_string(value)) return(sprintf("\"%s\"%s", gsub("([\\\\\"])", "\\\\\\1", value$value), value$suffix))
   if (is.logical(value)) return(if (isTRUE(value)) "true" else "false")
   if ((is.integer(value) || is.double(value)) && length(value) == 1) return(as.character(value))
   quote_if_needed(as.character(value))

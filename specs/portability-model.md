@@ -93,6 +93,21 @@ Suffixes are a clear case for this model.
 - others may belong to a language or format profile
 - others may be application-specific in controlled environments
 
+At the moment, the shared **basic suffix profile** is not optional for MRON and
+MRTD. It is part of their current core conformance surface and is applied as a
+post-L1 semantic conversion step after MBF level 1 has preserved suffix-bearing
+scalar nodes.
+
+That architectural split matters:
+
+- MBF level 1 preserves the node form and suffix text
+- the basic suffix profile gives standard suffixes their shared meaning
+- formats and language hosts can reuse that layer directly without turning
+  suffix semantics into part of MBF itself
+
+That shared layer is now exposed explicitly across the current MRON/MRTD SDK
+tracks rather than living only as inline parser behaviour.
+
 The same general model should be available for other constructs as well.
 
 ## Working rule

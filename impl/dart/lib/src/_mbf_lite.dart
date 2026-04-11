@@ -1,3 +1,4 @@
+import "basic_suffix_profile.dart";
 import "error.dart";
 
 enum MbfLiteTokenKind {
@@ -212,12 +213,18 @@ List<MbfLiteToken> tokenizeMbfLite(String source) {
   return tokens;
 }
 
-Object? parseCoreScalar(MbfLiteToken token, {Set<String> profiles = const {}}) {
+Object? parseCoreScalar(MbfLiteToken token) {
   switch (token.kind) {
     case MbfLiteTokenKind.string:
-      return _parseStringToken(token, profiles: profiles);
+      return applyBasicSuffixProfile(BasicSuffixLiteral(
+        BasicSuffixLiteralKind.string,
+        token.stringValue ?? "",
+        token.suffix,
+      ));
     case MbfLiteTokenKind.number:
-      return _parseNumberToken(token, profiles: profiles);
+      final suffix = token.suffix;
+      final raw = suffix.isEmpty ? token.lexeme : token.lexeme.substring(0, token.lexeme.length - suffix.length);
+      return applyBasicSuffixProfile(BasicSuffixLiteral(BasicSuffixLiteralKind.number, raw, suffix));
     case MbfLiteTokenKind.identifier:
       return switch (token.lexeme) {
         "true" => true,
@@ -256,42 +263,4 @@ String tokenToText(MbfLiteToken token) {
     MbfLiteTokenKind.equals => "=",
     MbfLiteTokenKind.operator => token.lexeme,
   };
-}
-
-Object? _parseStringToken(MbfLiteToken token, {Set<String> profiles = const {}}) {
-  final value = token.stringValue ?? "";
-  if (token.suffix.isEmpty) return value;
-  if (token.suffix == "dt") return DateTime.parse(value);
-  return switch (token.suffix) {
-    "bin" => int.parse(value, radix: 2),
-    "oct" => int.parse(value, radix: 8),
-    "hex" => int.parse(value, radix: 16),
-    _ => throw MakrellFormatException("Unsupported string suffix '${token.suffix}'."),
-  };
-}
-
-Object _parseNumberToken(MbfLiteToken token, {Set<String> profiles = const {}}) {
-  final suffix = token.suffix;
-  final raw = suffix.isEmpty ? token.lexeme : token.lexeme.substring(0, token.lexeme.length - suffix.length);
-  final baseValue = raw.contains(".") || raw.contains("e") || raw.contains("E")
-      ? double.parse(raw)
-      : int.parse(raw);
-  if (suffix.isEmpty) return baseValue;
-
-  const factors = <String, double>{
-    "k": 1e3,
-    "M": 1e6,
-    "G": 1e9,
-    "T": 1e12,
-    "P": 1e15,
-    "E": 1e18,
-    "pi": 3.141592653589793,
-    "tau": 6.283185307179586,
-    "deg": 0.017453292519943295,
-  };
-
-  if (!factors.containsKey(suffix)) {
-    throw MakrellFormatException("Unsupported numeric suffix '$suffix'.");
-  }
-  return (baseValue as num) * factors[suffix]!;
 }

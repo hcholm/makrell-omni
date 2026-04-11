@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -115,6 +116,16 @@ public final class ApiSmokeTest {
         assertEquals(Math.PI, ((Number) suffixMrtd.getRecords().get(0).get("turn")).doubleValue(), 1e-12);
         assertEquals(Math.PI, ((Number) suffixMrtd.getRecords().get(0).get("angle")).doubleValue(), 1e-12);
         assertEquals(Math.PI / 2d, ((Number) suffixMrtd.getRecords().get(0).get("half")).doubleValue(), 1e-12);
+    }
+
+    @Test
+    void basicSuffixProfileIsExposedAsDirectPostL1ConversionLayer() {
+        assertEquals(LocalDate.parse("2026-04-11"), BasicSuffixProfile.applyString("2026-04-11", "dt"));
+        assertEquals(3000L, ((Number) BasicSuffixProfile.applyNumber("3", "k")).longValue());
+
+        BasicSuffixProfile.NumericLiteralParts parts = BasicSuffixProfile.splitNumericLiteralSuffix("0.5tau");
+        assertEquals("0.5", parts.getValue());
+        assertEquals("tau", parts.getSuffix());
     }
 
     @Test

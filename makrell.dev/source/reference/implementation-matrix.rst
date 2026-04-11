@@ -76,16 +76,16 @@ Family formats and tooling
      - shared structural base across the family
    * - MRON
      - active
-     - available in Py and .NET, evolving in TS
+     - available across the current SDK tracks, with the shared post-L1 basic suffix profile now explicit in Py, TS, .NET, Dart, Go, Rust, PHP, JVM, Lua, Perl, Ruby, C, C++, R, and Haskell
    * - MRML
      - active
-     - available in Py and .NET, evolving in TS
+     - available across the main active SDK tracks, with the strongest semantic/reference story still centred on Py and .NET
    * - MRTD
      - active
-     - available across Py, TS, and .NET
+     - available across the current SDK tracks, with shared post-L1 basic suffix profile support explicit in Py, TS, .NET, Dart, Go, Rust, PHP, JVM, Lua, Perl, Ruby, C, C++, R, and Haskell
    * - MRTD basic suffix profile
      - active
-     - shared post-L1 suffix semantics are part of current MRON/MRTD core conformance
+     - shared post-L1 suffix semantics are part of current MRON/MRTD core conformance and are now exposed as named helpers across the current SDK implementations
    * - VS Code extension
      - active
      - active now with run/check workflow and diagnostics coverage; see :doc:`vscode-makrell`

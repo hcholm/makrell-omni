@@ -27,6 +27,7 @@ Current supported Dart surface:
   - nested objects and arrays
   - comments
   - `true` / `false` / `null`
+  - shared basic suffix profile
 - MRML:
   - `{tag ...}` elements
   - optional `[attr=value ...]` attributes
@@ -37,12 +38,13 @@ Current supported Dart surface:
   - scalar rows
   - record projection
   - record and tuple writing
+  - shared basic suffix profile
 
 Not implemented yet in the Dart track:
 
 - executable embeds for MRON/MRML
 - full MBF compatibility
-- the broader portability/profile matrix beyond the current core subset
+- broader extension/profile work beyond the current core subset
 
 Example:
 

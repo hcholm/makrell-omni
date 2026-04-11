@@ -49,7 +49,7 @@ Portable goals:
 
 - align with native JSON/XML/CSV expectations in each host ecosystem
 - preserve room for Makrell-specific extensions such as comments, trailing
-  commas, richer scalar types, and profile-gated behaviour
+  commas, richer scalar types, and future optional/profile-specific behaviour
 - keep a future syntax-preserving layer possible without forcing breaking API
   redesign
 

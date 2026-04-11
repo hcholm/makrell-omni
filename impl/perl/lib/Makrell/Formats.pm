@@ -11,6 +11,8 @@ our @EXPORT_OK = qw(
   parse_mbf_level2_nodes
   tokenize_mbf
   parse_mbf_nodes
+  apply_basic_suffix_profile
+  split_numeric_literal_suffix
   parse_mron_string parse_mron_file write_mron_string
   parse_mrml_string parse_mrml_file write_mrml_string
   parse_mrtd_string parse_mrtd_file write_mrtd_string
@@ -33,8 +35,10 @@ sub tokenize_mbf_level0 {
         if ($source =~ /\G\#.*?(?:\n|\z)/gc) { next; }
         if ($source =~ /\G\/\/.*?(?:\n|\z)/gc) { next; }
         if ($source =~ /\G\/\*.*?\*\//gcs) { next; }
-        if ($source =~ /\G(-?\d+(?:\.\d+)?)/gc) {
-            push @tokens, { kind => 'number', text => $1, quoted => 0 };
+        if ($source =~ /\G(-?\d+(?:\.\d+)?(?:[A-Za-z_][A-Za-z0-9_]*)?)/gc) {
+            my $text = $1;
+            my ($raw, $suffix) = split_numeric_literal_suffix($text);
+            push @tokens, { kind => 'number', text => $text, quoted => 0, suffix => ($suffix // '') };
             next;
         }
         if ($source =~ /\G([\{\}\[\]\(\)])/gc) {
@@ -49,14 +53,15 @@ sub tokenize_mbf_level0 {
             push @tokens, { kind => 'operator', text => '-', quoted => 0 };
             next;
         }
-        if ($source =~ /\G"((?:\\.|[^"])*)"/gc) {
+        if ($source =~ /\G"((?:\\.|[^"])*)"([A-Za-z0-9_]*)/gc) {
             my $text = $1;
+            my $suffix = $2 // '';
             $text =~ s/\\n/\n/g;
             $text =~ s/\\r/\r/g;
             $text =~ s/\\t/\t/g;
             $text =~ s/\\"/"/g;
             $text =~ s/\\\\/\\/g;
-            push @tokens, { kind => 'string', text => $text, quoted => 1 };
+            push @tokens, { kind => 'string', text => $text, quoted => 1, suffix => $suffix };
             next;
         }
         if ($source =~ /\G([A-Za-z_\$][A-Za-z0-9_\$:]*)(?!-)/gc) {
@@ -88,10 +93,49 @@ sub parse_mbf_level2_nodes {
 sub tokenize_mbf { return tokenize_mbf_level0(@_); }
 sub parse_mbf_nodes { return parse_mbf_level1_nodes(@_); }
 
+sub split_numeric_literal_suffix {
+    my ($text) = @_;
+    for (my $boundary = length($text); $boundary > 0; $boundary--) {
+        my $value = substr($text, 0, $boundary);
+        my $suffix = substr($text, $boundary);
+        next if $suffix ne '' && $suffix !~ /^[A-Za-z_][A-Za-z0-9_]*$/;
+        return ($value, $suffix) if $value =~ /^-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?$/;
+    }
+    return;
+}
+
+sub apply_basic_suffix_profile {
+    my ($kind, $value, $suffix) = @_;
+    $suffix //= '';
+    if ($kind eq 'string') {
+        return $value if $suffix eq '';
+        return { value => $value, suffix => $suffix, __basic_suffix_profile => 1 } if $suffix eq 'dt';
+        return oct("0b$value") if $suffix eq 'bin';
+        return oct("0$value") if $suffix eq 'oct';
+        return hex($value) if $suffix eq 'hex';
+        die "Unsupported basic suffix profile string suffix '$suffix'.";
+    }
+
+    die "Invalid numeric literal '$value'." unless defined $value && $value =~ /^-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?$/;
+    my $base = 0 + $value;
+    return $base if $suffix eq '';
+    return $base * 1e3 if $suffix eq 'k';
+    return $base * 1e6 if $suffix eq 'M';
+    return $base * 1e9 if $suffix eq 'G';
+    return $base * 1e12 if $suffix eq 'T';
+    return $base * 1e15 if $suffix eq 'P';
+    return $base * 1e18 if $suffix eq 'E';
+    return $base * exp(1) if $suffix eq 'e';
+    return $base * (atan2(0, -1) * 2) if $suffix eq 'tau';
+    return $base * (atan2(0, -1) / 180) if $suffix eq 'deg';
+    return $base * atan2(0, -1) if $suffix eq 'pi';
+    die "Unsupported basic suffix profile numeric suffix '$suffix'.";
+}
+
 sub _parse_node {
     my ($tokens, $index_ref) = @_;
     my $token = $tokens->[$$index_ref++] // die "Unexpected end of input";
-    return { kind => 'scalar', text => $token->{text}, quoted => $token->{quoted} }
+    return { kind => 'scalar', text => $token->{text}, quoted => $token->{quoted}, suffix => ($token->{suffix} // '') }
       if $token->{kind} eq 'identifier' || $token->{kind} eq 'number' || $token->{kind} eq 'string' || $token->{kind} eq '=';
     die "Unexpected token: $token->{text}" if $token->{kind} eq 'operator';
     return { kind => 'brace', children => _parse_group($tokens, $index_ref, '}') } if $token->{kind} eq '{';
@@ -129,7 +173,7 @@ sub parse_mron_file {
 
 sub _mron_node {
     my ($node) = @_;
-    return _scalar($node->{text}, $node->{quoted}) if $node->{kind} eq 'scalar';
+    return _scalar($node->{text}, $node->{quoted}, $node->{suffix}) if $node->{kind} eq 'scalar';
     return [ map { _mron_node($_) } @{$node->{children}} ] if $node->{kind} eq 'square';
     return _mron_pairs($node->{children}) if $node->{kind} eq 'brace';
     die "Unsupported MRON node kind";
@@ -197,7 +241,7 @@ sub parse_mrtd_string {
         my @row;
         my %record;
         for my $i (0 .. $#columns) {
-            my $value = _coerce_mrtd(_scalar($cells[$i]{text}, $cells[$i]{quoted}), $columns[$i]{type});
+            my $value = _coerce_mrtd(_scalar($cells[$i]{text}, $cells[$i]{quoted}, $cells[$i]{suffix}), $columns[$i]{type});
             push @row, $value;
             $record{$columns[$i]{name}} = $value;
         }
@@ -301,6 +345,7 @@ sub write_mron_string {
     return 'null' if !defined $value;
     return $value ? 'true' : 'false' if !ref($value) && ($value eq '0' || $value eq '1');
     return $value if !ref($value) && $value =~ /^-?\d+(?:\.\d+)?$/;
+    return _quote_if_needed($value->{value}) . $value->{suffix} if ref($value) eq 'HASH' && $value->{__basic_suffix_profile};
     return _quote_if_needed($value) if !ref($value);
     return '[' . join(' ', map { write_mron_string($_) } @$value) . ']' if ref($value) eq 'ARRAY';
     return '{ ' . join(' ', map { _quote_if_needed($_) . ' ' . write_mron_string($value->{$_}) } keys %$value) . ' }';
@@ -327,18 +372,20 @@ sub write_mrtd_string {
 }
 
 sub _scalar {
-    my ($text, $quoted) = @_;
-    return $text if $quoted;
+    my ($text, $quoted, $suffix) = @_;
+    return apply_basic_suffix_profile('string', $text, $suffix) if $quoted;
     return undef if $text eq 'null';
     return 1 if $text eq 'true';
     return 0 if $text eq 'false';
-    return 0 + $text if $text =~ /^-?\d+(?:\.\d+)?$/;
+    my ($raw, $numeric_suffix) = split_numeric_literal_suffix($text);
+    return apply_basic_suffix_profile('number', $raw, $numeric_suffix) if defined $raw;
     return $text;
 }
 
 sub _coerce_mrtd {
     my ($value, $type) = @_;
-    $type = 'string' if !defined $type || $type eq '';
+    return $value if !defined $type || $type eq '';
+    return $value if $type eq 'string' && ref($value) eq 'HASH' && $value->{__basic_suffix_profile};
     return defined($value) ? "$value" : 'null' if $type eq 'string';
     die "MRTD value does not match int field" if $type eq 'int' && ref($value);
     return int($value) if $type eq 'int' && $value =~ /^-?\d+$/;
@@ -352,6 +399,7 @@ sub _mrtd_cell {
     my ($value) = @_;
     return $value ? 'true' : 'false' if !ref($value) && ($value eq '0' || $value eq '1');
     return $value if !ref($value) && $value =~ /^-?\d+(?:\.\d+)?$/;
+    return _quote_if_needed($value->{value}) . $value->{suffix} if ref($value) eq 'HASH' && $value->{__basic_suffix_profile};
     return _quote_if_needed("$value");
 }
 

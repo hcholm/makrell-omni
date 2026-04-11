@@ -20,6 +20,25 @@ conformance_mron <- parse_mron_string(read_fixture(file.path("conformance", "mro
 stopifnot(identical(conformance_mron$name, "Makrell"))
 stopifnot(identical(conformance_mron$features[[2]], "typed_scalars"))
 
+suffix_value <- apply_basic_suffix_profile("string", "2026-04-11", "dt")
+stopifnot(is_basic_suffix_tagged_string(suffix_value))
+stopifnot(identical(suffix_value$value, "2026-04-11"))
+stopifnot(identical(suffix_value$suffix, "dt"))
+stopifnot(identical(apply_basic_suffix_profile("number", "3", "k"), 3000L))
+numeric_suffix <- split_basic_numeric_suffix("0.5tau")
+stopifnot(identical(numeric_suffix$value, "0.5"))
+stopifnot(identical(numeric_suffix$suffix, "tau"))
+
+base_suffix_mron <- parse_mron_string(read_fixture(file.path("conformance", "mron"), "base-suffixes.mron"))
+stopifnot(is_basic_suffix_tagged_string(base_suffix_mron$when))
+stopifnot(identical(base_suffix_mron$when$value, "2026-04-11"))
+stopifnot(identical(base_suffix_mron$bits, 10L))
+stopifnot(identical(base_suffix_mron$octal, 15L))
+stopifnot(identical(base_suffix_mron$mask, 255L))
+stopifnot(identical(base_suffix_mron$bonus, 3000L))
+stopifnot(isTRUE(all.equal(base_suffix_mron$turn, pi)))
+stopifnot(isTRUE(all.equal(base_suffix_mron$angle, pi)))
+
 block_comment_mron <- parse_mron_string(read_fixture(file.path("conformance", "mron"), "block-comments.mron"))
 stopifnot(identical(block_comment_mron$name, "Makrell"))
 stopifnot(identical(block_comment_mron$features[[2]], "typed_scalars"))
@@ -42,6 +61,13 @@ stopifnot(is.null(idtable$columns[[3]]$type))
 block_comment_table <- parse_mrtd_string(read_fixture(file.path("conformance", "mrtd"), "block-comments.mrtd"))
 stopifnot(identical(block_comment_table$records[[1]]$status, "active"))
 stopifnot(identical(block_comment_table$records[[2]]$note, "review"))
+
+base_suffix_table <- parse_mrtd_string(read_fixture(file.path("conformance", "mrtd"), "base-suffixes.mrtd"))
+stopifnot(is_basic_suffix_tagged_string(base_suffix_table$records[[1]]$when))
+stopifnot(identical(base_suffix_table$records[[1]]$bits, 10L))
+stopifnot(identical(base_suffix_table$records[[1]]$octal, 15L))
+stopifnot(identical(base_suffix_table$records[[1]]$mask, 255L))
+stopifnot(identical(base_suffix_table$records[[1]]$bonus, 3000L))
 
 doc <- list(
   columns = list(

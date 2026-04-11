@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestParseMronFixture(t *testing.T) {
@@ -68,8 +69,8 @@ func TestParseMrtdFixtureAndIdentifiers(t *testing.T) {
 		t.Fatalf("unexpected MRTD column count: %d", len(document.Columns))
 	}
 	expectedRecords := []map[string]any{
-		{"name": "Ada", "age": 32, "active": true},
-		{"name": "Ben", "age": 41, "active": false},
+		{"name": "Ada", "age": int64(32), "active": true},
+		{"name": "Ben", "age": int64(41), "active": false},
 	}
 	if !reflect.DeepEqual(expectedRecords, document.Records) {
 		t.Fatalf("unexpected MRTD records: %#v", document.Records)
@@ -101,8 +102,8 @@ func TestParseMrtdFixtureAndIdentifiers(t *testing.T) {
 		t.Fatalf("ParseMronString negative fixture failed: %v", err)
 	}
 	expectedNegativeMron := map[string]any{
-		"temps":  []any{-1, 0, -3.5},
-		"offset": -2,
+		"temps":  []any{int64(-1), int64(0), -3.5},
+		"offset": int64(-2),
 	}
 	if !reflect.DeepEqual(expectedNegativeMron, negativeMron) {
 		t.Fatalf("unexpected negative MRON value: %#v", negativeMron)
@@ -124,8 +125,8 @@ func TestParseMrtdFixtureAndIdentifiers(t *testing.T) {
 		t.Fatalf("ParseMrtdString negative fixture failed: %v", err)
 	}
 	expectedNegativeRecords := []map[string]any{
-		{"delta": -2, "ratio": -3.5},
-		{"delta": 4, "ratio": 0.25},
+		{"delta": int64(-2), "ratio": -3.5},
+		{"delta": int64(4), "ratio": 0.25},
 	}
 	if !reflect.DeepEqual(expectedNegativeRecords, negativeTable.Records) {
 		t.Fatalf("unexpected negative MRTD records: %#v", negativeTable.Records)
@@ -141,6 +142,46 @@ func TestParseMrtdFixtureAndIdentifiers(t *testing.T) {
 	}
 	if !reflect.DeepEqual(expectedBlockCommentRecords, blockCommentTable.Records) {
 		t.Fatalf("unexpected block-comment MRTD records: %#v", blockCommentTable.Records)
+	}
+
+	baseSuffixMron, err := ParseMronString(readFixture(t, "conformance/mron", "base-suffixes.mron"))
+	if err != nil {
+		t.Fatalf("ParseMronString base-suffix fixture failed: %v", err)
+	}
+	expectedSuffixMron := map[string]any{
+		"when":  time.Date(2026, 4, 11, 0, 0, 0, 0, time.UTC),
+		"bits":  int64(10),
+		"octal": int64(15),
+		"mask":  int64(255),
+		"bonus": int64(3000),
+		"scale": int64(2000000),
+		"turn":  3.141592653589793,
+		"angle": 3.141592653589793,
+		"half":  1.5707963267948966,
+	}
+	if !reflect.DeepEqual(expectedSuffixMron, baseSuffixMron) {
+		t.Fatalf("unexpected suffix MRON value: %#v", baseSuffixMron)
+	}
+
+	baseSuffixMrtd, err := ParseMrtdString(readFixture(t, "conformance/mrtd", "base-suffixes.mrtd"))
+	if err != nil {
+		t.Fatalf("ParseMrtdString base-suffix fixture failed: %v", err)
+	}
+	expectedSuffixMrtd := []map[string]any{
+		{
+			"when":  time.Date(2026, 4, 11, 0, 0, 0, 0, time.UTC),
+			"bits":  int64(10),
+			"octal": int64(15),
+			"mask":  int64(255),
+			"bonus": int64(3000),
+			"scale": int64(2000000),
+			"turn":  3.141592653589793,
+			"angle": 3.141592653589793,
+			"half":  1.5707963267948966,
+		},
+	}
+	if !reflect.DeepEqual(expectedSuffixMrtd, baseSuffixMrtd.Records) {
+		t.Fatalf("unexpected suffix MRTD records: %#v", baseSuffixMrtd.Records)
 	}
 }
 
@@ -163,6 +204,37 @@ func TestWriteMrtdString(t *testing.T) {
 	expected := "name:string age:int active:bool\nAda 32 true\nBen 41 false"
 	if text != expected {
 		t.Fatalf("unexpected MRTD output: %s", text)
+	}
+}
+
+func TestBasicSuffixProfileIsExposedAsDirectPostL1ConversionLayer(t *testing.T) {
+	dateValue, err := ApplyBasicSuffixProfile(BasicSuffixLiteral{
+		Kind:   BasicSuffixString,
+		Value:  "2026-04-11",
+		Suffix: "dt",
+	})
+	if err != nil {
+		t.Fatalf("ApplyBasicSuffixProfile string failed: %v", err)
+	}
+	numberValue, err := ApplyBasicSuffixProfile(BasicSuffixLiteral{
+		Kind:   BasicSuffixNumber,
+		Value:  "3",
+		Suffix: "k",
+	})
+	if err != nil {
+		t.Fatalf("ApplyBasicSuffixProfile number failed: %v", err)
+	}
+
+	if !reflect.DeepEqual(dateValue, time.Date(2026, 4, 11, 0, 0, 0, 0, time.UTC)) {
+		t.Fatalf("unexpected date value: %#v", dateValue)
+	}
+	if numberValue != int64(3000) {
+		t.Fatalf("unexpected scaled value: %#v", numberValue)
+	}
+
+	raw, suffix, ok := SplitNumericLiteralSuffix("0.5tau")
+	if !ok || raw != "0.5" || suffix != "tau" {
+		t.Fatalf("unexpected numeric split: raw=%q suffix=%q ok=%v", raw, suffix, ok)
 	}
 }
 

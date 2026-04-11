@@ -21,6 +21,7 @@ Current status:
 - comments and identifier-as-string handling in MRON and MRTD
 - basic MRTD type support: `string`, `int`, `float`, `bool`
 - explicit MBF level 0/1 implementation for the data formats, with level 2 reserved for later
+- shared `basic suffix profile` support for MRON and MRTD, exposed explicitly via `BasicSuffixProfile` as a post-L1 conversion layer
 
 The code structure keeps room for:
 
@@ -33,6 +34,7 @@ Current public model types:
 - `Mron.parseString(...)` returns native `Map`, `List`, and scalar values
 - `Mrml.parseString(...)` returns `MrmlElement`
 - `Mrtd.parseString(...)` returns `MrtdDocument`
+- `BasicSuffixProfile` exposes the shared suffix conversion layer directly for reuse by other format/language code
 
 ## Publishing
 

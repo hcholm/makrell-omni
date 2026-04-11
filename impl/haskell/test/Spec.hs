@@ -19,9 +19,19 @@ main = do
   assert (Map.lookup "name" mron == Just (MString "Makrell")) "MRON fixture failed"
   let MObject iddoc = parseMronString "title Makrell tags [alpha beta gamma] nested { kind article status draft }"
   assert (Map.lookup "title" iddoc == Just (MString "Makrell")) "MRON identifiers failed"
+  assert (applyBasicSuffixProfile BasicSuffixString "2026-04-11" "dt" == BSTaggedString "2026-04-11" "dt") "Direct basic suffix string helper failed"
+  assert (applyBasicSuffixProfile BasicSuffixNumber "3" "k" == BSInt 3000) "Direct basic suffix numeric helper failed"
+  assert (splitNumericLiteralSuffix "0.5tau" == Just ("0.5", "tau")) "Numeric suffix split failed"
   conformanceText <- readFixture "conformance\\mron" "comments-and-identifiers.mron"
   let MObject conformanceMron = parseMronString conformanceText
   assert (Map.lookup "name" conformanceMron == Just (MString "Makrell")) "Conformance MRON failed"
+  baseSuffixText <- readFixture "conformance\\mron" "base-suffixes.mron"
+  let MObject baseSuffixMron = parseMronString baseSuffixText
+  assert (Map.lookup "when" baseSuffixMron == Just (MTaggedString "2026-04-11" "dt")) "MRON dt suffix failed"
+  assert (Map.lookup "bits" baseSuffixMron == Just (MInt 10)) "MRON bin suffix failed"
+  assert (Map.lookup "octal" baseSuffixMron == Just (MInt 15)) "MRON oct suffix failed"
+  assert (Map.lookup "mask" baseSuffixMron == Just (MInt 255)) "MRON hex suffix failed"
+  assert (Map.lookup "bonus" baseSuffixMron == Just (MInt 3000)) "MRON numeric suffix failed"
   blockCommentText <- readFixture "conformance\\mron" "block-comments.mron"
   let MObject blockCommentMron = parseMronString blockCommentText
   assert (Map.lookup "name" blockCommentMron == Just (MString "Makrell")) "Block-comment MRON failed"
@@ -36,6 +46,11 @@ main = do
   let idtable = parseMrtdString untypedText
   assert (lookup "status" (mrtdRecords idtable !! 0) == Just (TString "active")) "MRTD identifiers failed"
   assert (columnType (mrtdColumns idtable !! 1) == Nothing) "MRTD untyped header failed"
+  baseSuffixMrtdText <- readFixture "conformance\\mrtd" "base-suffixes.mrtd"
+  let baseSuffixMrtd = parseMrtdString baseSuffixMrtdText
+  assert (lookup "when" (mrtdRecords baseSuffixMrtd !! 0) == Just (TTaggedString "2026-04-11" "dt")) "MRTD dt suffix failed"
+  assert (lookup "bits" (mrtdRecords baseSuffixMrtd !! 0) == Just (TInt 10)) "MRTD bin suffix failed"
+  assert (lookup "bonus" (mrtdRecords baseSuffixMrtd !! 0) == Just (TInt 3000)) "MRTD numeric suffix failed"
   blockCommentMrtdText <- readFixture "conformance\\mrtd" "block-comments.mrtd"
   let blockCommentTable = parseMrtdString blockCommentMrtdText
   assert (lookup "status" (mrtdRecords blockCommentTable !! 0) == Just (TString "active")) "Block-comment MRTD failed"

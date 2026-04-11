@@ -38,7 +38,7 @@ final class Mron
     private static function convertNode(array $node): mixed
     {
         return match ($node['kind']) {
-            'scalar' => self::convertScalar($node['text'], $node['quoted']),
+            'scalar' => self::convertScalar($node['text'], $node['quoted'], $node['suffix'] ?? ''),
             'square' => array_map(self::convertNode(...), $node['children']),
             'brace' => self::convertPairs($node['children']),
             default => throw new MakrellFormatException('Unsupported MRON node kind: ' . $node['kind']),
@@ -57,10 +57,14 @@ final class Mron
         return $result;
     }
 
-    private static function convertScalar(string $text, bool $quoted): mixed
+    private static function convertScalar(string $text, bool $quoted, string $suffix): mixed
     {
         if ($quoted) {
-            return $text;
+            return BasicSuffixProfile::applyString($text, $suffix);
+        }
+        $numericLiteral = BasicSuffixProfile::splitNumericLiteralSuffix($text);
+        if ($numericLiteral !== null && $numericLiteral[1] !== '') {
+            return BasicSuffixProfile::applyNumber($numericLiteral[0], $numericLiteral[1]);
         }
         return match ($text) {
             'null' => null,
@@ -94,6 +98,9 @@ final class Mron
         }
         if (is_string($value)) {
             return self::isIdentifierLike($value) ? $value : self::quote($value);
+        }
+        if (BasicSuffixProfile::isTaggedString($value)) {
+            return self::quote($value['value']) . $value['suffix'];
         }
         if (is_array($value)) {
             if (array_is_list($value)) {

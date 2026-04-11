@@ -24,3 +24,4 @@ Current status:
 - explicit operator tokens so hyphenated barewords are not silently treated as identifiers
 - deterministic XML-style MRML serialisation
 - basic MRTD type support: `string`, `int`, `float`, `bool`
+- explicit shared `basic suffix profile` support for MRON and MRTD as a post-L1 conversion layer

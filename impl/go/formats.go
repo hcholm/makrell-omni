@@ -5,12 +5,14 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type node struct {
 	kind     string
 	text     string
 	quoted   bool
+	suffix   string
 	children []node
 }
 
@@ -181,7 +183,7 @@ func WriteMrtdString(value any) (string, error) {
 func convertMronNode(item node) (any, error) {
 	switch item.kind {
 	case "scalar":
-		return convertScalar(item.text, item.quoted), nil
+		return convertScalar(item.text, item.quoted, item.suffix)
 	case "square":
 		values := make([]any, 0, len(item.children))
 		for _, child := range item.children {
@@ -359,27 +361,29 @@ func convertMrtdCell(item node, valueType *string) (any, error) {
 	if item.kind != "scalar" {
 		return nil, fmt.Errorf("MRTD cells must be scalar values")
 	}
-	actualType := "string"
-	if valueType != nil {
-		actualType = *valueType
+	value, err := convertScalar(item.text, item.quoted, item.suffix)
+	if err != nil {
+		return nil, err
 	}
-	value := convertScalar(item.text, item.quoted)
+	if valueType == nil {
+		return value, nil
+	}
+	actualType := *valueType
 	switch actualType {
 	case "string":
-		return fmt.Sprint(value), nil
+		if text, ok := value.(string); ok {
+			return text, nil
+		}
+		return nil, fmt.Errorf("MRTD value does not match string field")
 	case "int":
 		switch v := value.(type) {
-		case int:
-			return v, nil
 		case int64:
-			return int(v), nil
+			return v, nil
 		default:
 			return nil, fmt.Errorf("MRTD value does not match int field")
 		}
 	case "float":
 		switch v := value.(type) {
-		case int:
-			return float64(v), nil
 		case int64:
 			return float64(v), nil
 		case float64:
@@ -404,12 +408,14 @@ func writeMrtdCell(value any) string {
 			return "true"
 		}
 		return "false"
-	case int:
-		return strconv.Itoa(v)
 	case int64:
 		return strconv.FormatInt(v, 10)
+	case int:
+		return strconv.Itoa(v)
 	case float64:
 		return strconv.FormatFloat(v, 'f', -1, 64)
+	case time.Time:
+		return quote(v.Format(time.RFC3339Nano)) + "dt"
 	default:
 		text := fmt.Sprint(v)
 		if isIdentifierLike(text) {
@@ -426,25 +432,34 @@ func quoteName(value string) string {
 	return quote(value)
 }
 
-func convertScalar(text string, quoted bool) any {
+func convertScalar(text string, quoted bool, suffix string) (any, error) {
 	if quoted {
-		return text
+		return ApplyBasicSuffixProfile(BasicSuffixLiteral{
+			Kind:   BasicSuffixString,
+			Value:  text,
+			Suffix: suffix,
+		})
 	}
 	switch text {
 	case "null":
-		return nil
+		return nil, nil
 	case "true":
-		return true
+		return true, nil
 	case "false":
-		return false
+		return false, nil
 	}
-	if value, err := strconv.Atoi(text); err == nil {
-		return value
+	raw, numericSuffix, ok := SplitNumericLiteralSuffix(text)
+	if ok {
+		value, err := ApplyBasicSuffixProfile(BasicSuffixLiteral{
+			Kind:   BasicSuffixNumber,
+			Value:  raw,
+			Suffix: numericSuffix,
+		})
+		if err == nil {
+			return value, nil
+		}
 	}
-	if value, err := strconv.ParseFloat(text, 64); err == nil && strings.Contains(text, ".") {
-		return value
-	}
-	return text
+	return text, nil
 }
 
 func parseMiniMbf(source string) ([]node, error) {
@@ -468,6 +483,7 @@ type token struct {
 	kind   string
 	text   string
 	quoted bool
+	suffix string
 }
 
 func parseMiniMbfNode(tokens []token, index *int) (node, error) {
@@ -478,7 +494,7 @@ func parseMiniMbfNode(tokens []token, index *int) (node, error) {
 	*index++
 	switch item.kind {
 	case "scalar", "=":
-		return node{kind: "scalar", text: item.text, quoted: item.quoted}, nil
+		return node{kind: "scalar", text: item.text, quoted: item.quoted, suffix: item.suffix}, nil
 	case "{":
 		children, err := parseMiniMbfGroup(tokens, index, "}")
 		return node{kind: "brace", children: children}, err
@@ -563,6 +579,7 @@ func tokeniseMiniMbf(source string) ([]token, error) {
 			i++
 			continue
 		case '"':
+			start := i
 			i++
 			var builder strings.Builder
 			escaping := false
@@ -594,7 +611,17 @@ func tokeniseMiniMbf(source string) ([]token, error) {
 				}
 				builder.WriteByte(c)
 			}
-			tokens = append(tokens, token{kind: "scalar", text: builder.String(), quoted: true})
+			for i < len(source) {
+				c := source[i]
+				if (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' {
+					i++
+					continue
+				}
+				break
+			}
+			raw := source[start:i]
+			_, suffix := splitQuotedStringAndSuffix(raw)
+			tokens = append(tokens, token{kind: "scalar", text: builder.String(), quoted: true, suffix: suffix})
 			continue
 		}
 
@@ -615,6 +642,14 @@ func tokeniseMiniMbf(source string) ([]token, error) {
 		tokens = append(tokens, token{kind: "scalar", text: source[start:i]})
 	}
 	return tokens, nil
+}
+
+func splitQuotedStringAndSuffix(raw string) (string, string) {
+	lastQuote := strings.LastIndex(raw, "\"")
+	if lastQuote < 0 {
+		return raw, ""
+	}
+	return raw[1:lastQuote], raw[lastQuote+1:]
 }
 
 func splitMrtdLines(source string) ([]string, error) {

@@ -20,4 +20,4 @@ Current status:
 - comments and identifier-as-string handling in MRON and MRTD
 - deterministic XML-style MRML serialisation
 - basic MRTD type support: `string`, `int`, `float`, `bool`
-- lightweight implementation intended as a portability baseline, not yet a full syntax-preserving MBF layer
+- explicit shared `basic suffix profile` support for MRON and MRTD via `applyBasicSuffixProfile` as a post-L1 conversion layer

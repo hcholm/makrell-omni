@@ -20,7 +20,7 @@ public sealed class MrtdParserTests
         Assert.Equal("sku", document.Columns[0].Name);
         Assert.Equal("string", document.Columns[0].Type);
         Assert.Equal("A-1", document.Rows[0].Cells[0]?.GetValue<string>());
-        Assert.Equal(2d, document.Rows[0].Cells[1]?.GetValue<double>());
+        Assert.Equal(2L, document.Rows[0].Cells[1]?.GetValue<long>());
         Assert.Equal(19.5d, document.Rows[0].Cells[2]?.GetValue<double>());
         Assert.True(document.Rows[0].Cells[3]?.GetValue<bool>());
     }
@@ -89,7 +89,7 @@ public sealed class MrtdParserTests
         Assert.Equal(3, document.Columns.Count);
         Assert.Equal("name", document.Columns[0].Name);
         Assert.Equal("Ada", document.Rows[0].Cells[0]?.GetValue<string>());
-        Assert.Equal(32d, document.Rows[0].Cells[1]?.GetValue<double>());
+        Assert.Equal(32L, document.Rows[0].Cells[1]?.GetValue<long>());
         Assert.True(document.Rows[0].Cells[2]?.GetValue<bool>());
     }
 
@@ -131,7 +131,7 @@ public sealed class MrtdParserTests
         Assert.Equal("when", document.Columns[0].Name);
         Assert.Null(document.Columns[0].Type);
         Assert.NotNull(document.Rows[0].Cells[0]);
-        Assert.Equal(3000d, document.Rows[0].Cells[1]?.GetValue<double>());
+        Assert.Equal(3000L, document.Rows[0].Cells[1]?.GetValue<long>());
     }
 
     [Fact]

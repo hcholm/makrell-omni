@@ -1,3 +1,6 @@
+use crate::basic_suffix_profile::{
+    apply_basic_suffix_profile, split_numeric_literal_suffix, BasicSuffixLiteralKind, BasicSuffixValue,
+};
 use crate::mini_mbf::{parse as parse_nodes, Node};
 use crate::MakrellFormatError;
 use serde::{Deserialize, Serialize};
@@ -22,6 +25,7 @@ pub enum MrtdValue {
     Int(i64),
     Float(f64),
     Bool(bool),
+    TaggedString { value: String, suffix: String },
 }
 
 pub fn parse_string(source: &str) -> Result<MrtdDocument, MakrellFormatError> {
@@ -189,44 +193,83 @@ pub fn write_string(value: &MrtdDocument) -> Result<String, MakrellFormatError> 
 }
 
 fn convert_cell(node: &Node, ty: Option<&str>) -> Result<MrtdValue, MakrellFormatError> {
-    let Node::Scalar { text, quoted } = node else {
+    let Node::Scalar { text, quoted, suffix } = node else {
         return Err(MakrellFormatError::new("MRTD cells must be scalar values."));
     };
-    let scalar = if *quoted {
-        MrtdValue::String(text.clone())
-    } else {
-        match text.as_str() {
-            "true" => MrtdValue::Bool(true),
-            "false" => MrtdValue::Bool(false),
-            _ => {
-                if let Ok(value) = text.parse::<i64>() {
-                    MrtdValue::Int(value)
-                } else if let Ok(value) = text.parse::<f64>() {
-                    MrtdValue::Float(value)
-                } else {
-                    MrtdValue::String(text.clone())
-                }
+    let scalar = convert_scalar(text, *quoted, suffix)?;
+    match ty {
+        None => Ok(scalar),
+        Some("string") => match scalar {
+            MrtdValue::String(text) => Ok(MrtdValue::String(text)),
+            MrtdValue::TaggedString { value, suffix } => Ok(MrtdValue::TaggedString { value, suffix }),
+            other => Ok(MrtdValue::String(match other {
+                MrtdValue::String(text) => text,
+                MrtdValue::Int(value) => value.to_string(),
+                MrtdValue::Float(value) => value.to_string(),
+                MrtdValue::Bool(value) => value.to_string(),
+                MrtdValue::TaggedString { value, suffix } => format!("{value}:{suffix}"),
+            })),
+        },
+        Some("int") => match scalar {
+            MrtdValue::Int(value) => Ok(MrtdValue::Int(value)),
+            _ => Err(MakrellFormatError::new("MRTD value does not match int field.")),
+        },
+        Some("float") => match scalar {
+            MrtdValue::Int(value) => Ok(MrtdValue::Float(value as f64)),
+            MrtdValue::Float(value) => Ok(MrtdValue::Float(value)),
+            _ => Err(MakrellFormatError::new("MRTD value does not match float field.")),
+        },
+        Some("bool") => match scalar {
+            MrtdValue::Bool(value) => Ok(MrtdValue::Bool(value)),
+            _ => Err(MakrellFormatError::new("MRTD value does not match bool field.")),
+        },
+        Some(actual_type) => Err(MakrellFormatError::new(format!(
+            "Unsupported MRTD field type: {actual_type}"
+        ))),
+    }
+}
+
+fn convert_scalar(text: &str, quoted: bool, suffix: &str) -> Result<MrtdValue, MakrellFormatError> {
+    if quoted {
+        return map_basic_suffix_value(apply_basic_suffix_profile(
+            BasicSuffixLiteralKind::String,
+            text,
+            suffix,
+        )?);
+    }
+
+    if let Some((value, numeric_suffix)) = split_numeric_literal_suffix(text) {
+        if !numeric_suffix.is_empty() {
+            return map_basic_suffix_value(apply_basic_suffix_profile(
+                BasicSuffixLiteralKind::Number,
+                value,
+                numeric_suffix,
+            )?);
+        }
+    }
+
+    Ok(match text {
+        "true" => MrtdValue::Bool(true),
+        "false" => MrtdValue::Bool(false),
+        _ => {
+            if let Ok(value) = text.parse::<i64>() {
+                MrtdValue::Int(value)
+            } else if let Ok(value) = text.parse::<f64>() {
+                MrtdValue::Float(value)
+            } else {
+                MrtdValue::String(text.to_string())
             }
         }
-    };
-    let actual_type = ty.unwrap_or("string");
-    match (actual_type, scalar) {
-        ("string", MrtdValue::String(text)) => Ok(MrtdValue::String(text)),
-        ("string", other) => Ok(MrtdValue::String(match other {
-            MrtdValue::String(text) => text,
-            MrtdValue::Int(value) => value.to_string(),
-            MrtdValue::Float(value) => value.to_string(),
-            MrtdValue::Bool(value) => value.to_string(),
-        })),
-        ("int", MrtdValue::Int(value)) => Ok(MrtdValue::Int(value)),
-        ("float", MrtdValue::Int(value)) => Ok(MrtdValue::Float(value as f64)),
-        ("float", MrtdValue::Float(value)) => Ok(MrtdValue::Float(value)),
-        ("bool", MrtdValue::Bool(value)) => Ok(MrtdValue::Bool(value)),
-        ("int", _) => Err(MakrellFormatError::new("MRTD value does not match int field.")),
-        ("float", _) => Err(MakrellFormatError::new("MRTD value does not match float field.")),
-        ("bool", _) => Err(MakrellFormatError::new("MRTD value does not match bool field.")),
-        _ => Err(MakrellFormatError::new(format!("Unsupported MRTD field type: {actual_type}"))),
-    }
+    })
+}
+
+fn map_basic_suffix_value(value: BasicSuffixValue) -> Result<MrtdValue, MakrellFormatError> {
+    Ok(match value {
+        BasicSuffixValue::String(text) => MrtdValue::String(text),
+        BasicSuffixValue::Int(value) => MrtdValue::Int(value),
+        BasicSuffixValue::Float(value) => MrtdValue::Float(value),
+        BasicSuffixValue::TaggedString { value, suffix } => MrtdValue::TaggedString { value, suffix },
+    })
 }
 
 fn write_cell(value: &MrtdValue) -> String {
@@ -241,6 +284,11 @@ fn write_cell(value: &MrtdValue) -> String {
         MrtdValue::Int(value) => value.to_string(),
         MrtdValue::Float(value) => value.to_string(),
         MrtdValue::Bool(value) => value.to_string(),
+        MrtdValue::TaggedString { value, suffix } => format!(
+            "\"{}\"{}",
+            value.replace('\\', "\\\\").replace('"', "\\\""),
+            suffix
+        ),
     }
 }
 

@@ -5,6 +5,10 @@ import "error.dart";
 
 class Mron {
   static Object? parseString(String source, {bool allowExec = false, Set<String> profiles = const {}}) {
+    if (profiles.isNotEmpty) {
+      // Reserved for future optional MRON extensions. Current core parsing
+      // always applies the shared basic suffix profile directly.
+    }
     if (allowExec) {
       throw MakrellFormatException("MRON executable embeds are not implemented in the Dart track.");
     }
@@ -12,7 +16,7 @@ class Mron {
     final stream = MbfLiteTokenStream(tokenizeMbfLite(source));
     final values = <Object?>[];
     while (!stream.isAtEnd) {
-      values.add(_parseValue(stream, profiles: profiles));
+      values.add(_parseValue(stream));
     }
 
     if (values.isEmpty) return null;
@@ -31,7 +35,7 @@ class Mron {
     return _writeValue(value);
   }
 
-  static Object? _parseValue(MbfLiteTokenStream stream, {required Set<String> profiles}) {
+  static Object? _parseValue(MbfLiteTokenStream stream) {
     final token = stream.consume();
     switch (token.kind) {
       case MbfLiteTokenKind.lBracket:
@@ -40,7 +44,7 @@ class Mron {
           if (stream.isAtEnd) {
             throw MakrellFormatException("Unterminated MRON list.");
           }
-          items.add(_parseValue(stream, profiles: profiles));
+          items.add(_parseValue(stream));
         }
         return items;
       case MbfLiteTokenKind.lBrace:
@@ -49,13 +53,13 @@ class Mron {
           if (stream.isAtEnd) {
             throw MakrellFormatException("Unterminated MRON object.");
           }
-          values.add(_parseValue(stream, profiles: profiles));
+          values.add(_parseValue(stream));
         }
         return _pairsToMap(values);
       case MbfLiteTokenKind.identifier:
       case MbfLiteTokenKind.number:
       case MbfLiteTokenKind.string:
-        return parseCoreScalar(token, profiles: profiles);
+        return parseCoreScalar(token);
       default:
         throw MakrellFormatException("Unexpected token '${token.lexeme}' in MRON.");
     }

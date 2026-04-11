@@ -25,7 +25,12 @@ final class MiniMbf
         }
 
         return match ($token['kind']) {
-            'scalar', '=' => ['kind' => 'scalar', 'text' => $token['text'], 'quoted' => $token['quoted']],
+            'scalar', '=' => [
+                'kind' => 'scalar',
+                'text' => $token['text'],
+                'quoted' => $token['quoted'],
+                'suffix' => $token['suffix'] ?? '',
+            ],
             '{' => ['kind' => 'brace', 'children' => self::parseGroup($tokens, $index, '}')],
             '[' => ['kind' => 'square', 'children' => self::parseGroup($tokens, $index, ']')],
             '(' => ['kind' => 'paren', 'children' => self::parseGroup($tokens, $index, ')')],
@@ -94,11 +99,11 @@ final class MiniMbf
                     }
                     $i++;
                 }
-                $tokens[] = ['kind' => 'scalar', 'text' => substr($source, $start, $i - $start), 'quoted' => false];
+                $tokens[] = ['kind' => 'scalar', 'text' => substr($source, $start, $i - $start), 'quoted' => false, 'suffix' => ''];
                 continue;
             }
             if (in_array($ch, ['{', '}', '[', ']', '(', ')', '=', '-'], true)) {
-                $tokens[] = ['kind' => $ch, 'text' => $ch, 'quoted' => false];
+                $tokens[] = ['kind' => $ch, 'text' => $ch, 'quoted' => false, 'suffix' => ''];
                 $i++;
                 continue;
             }
@@ -128,7 +133,12 @@ final class MiniMbf
                     }
                     $text .= $c;
                 }
-                $tokens[] = ['kind' => 'scalar', 'text' => $text, 'quoted' => true];
+                $tokens[] = [
+                    'kind' => 'scalar',
+                    'text' => $text,
+                    'quoted' => true,
+                    'suffix' => self::readSuffix($source, $i, $length),
+                ];
                 continue;
             }
 
@@ -146,9 +156,23 @@ final class MiniMbf
             if ($start === $i) {
                 throw new MakrellFormatException('Unexpected token: ' . $ch);
             }
-            $tokens[] = ['kind' => 'scalar', 'text' => substr($source, $start, $i - $start), 'quoted' => false];
+            $tokens[] = ['kind' => 'scalar', 'text' => substr($source, $start, $i - $start), 'quoted' => false, 'suffix' => ''];
         }
 
         return $tokens;
+    }
+
+    private static function readSuffix(string $source, int &$index, int $length): string
+    {
+        $start = $index;
+        while ($index < $length) {
+            $ch = $source[$index];
+            if (ctype_alnum($ch) || $ch === '_') {
+                $index++;
+                continue;
+            }
+            break;
+        }
+        return substr($source, $start, $index - $start);
     }
 }

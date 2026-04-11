@@ -48,6 +48,22 @@ local block_comment_table = mf.parse_mrtd_string(read_all(fixture("conformance/m
 assert(block_comment_table.records[1].status == "active", "Block-comment MRTD first row failed")
 assert(block_comment_table.records[2].note == "review", "Block-comment MRTD second row failed")
 
+local suffix_value = mf.apply_basic_suffix_profile("string", "2026-04-11", "dt")
+assert(suffix_value.value == "2026-04-11" and suffix_value.suffix == "dt", "Lua basic suffix profile string helper failed")
+assert(mf.apply_basic_suffix_profile("number", "3", "k") == 3000, "Lua basic suffix profile number helper failed")
+local raw, suffix = mf.split_numeric_literal_suffix("0.5tau")
+assert(raw == "0.5" and suffix == "tau", "Lua numeric suffix splitting failed")
+
+local suffix_mron = mf.parse_mron_string(read_all(fixture("conformance/mron", "base-suffixes.mron")))
+assert(suffix_mron.when.value == "2026-04-11" and suffix_mron.when.suffix == "dt", "Suffix MRON dt failed")
+assert(suffix_mron.bits == 10 and suffix_mron.octal == 15 and suffix_mron.mask == 255, "Suffix MRON base conversions failed")
+assert(suffix_mron.bonus == 3000 and suffix_mron.scale == 2000000, "Suffix MRON scaled numbers failed")
+
+local suffix_table = mf.parse_mrtd_string(read_all(fixture("conformance/mrtd", "base-suffixes.mrtd")))
+assert(suffix_table.records[1].when.value == "2026-04-11" and suffix_table.records[1].when.suffix == "dt", "Suffix MRTD dt failed")
+assert(suffix_table.records[1].bits == 10 and suffix_table.records[1].octal == 15 and suffix_table.records[1].mask == 255, "Suffix MRTD base conversions failed")
+assert(suffix_table.records[1].bonus == 3000 and suffix_table.records[1].scale == 2000000, "Suffix MRTD scaled numbers failed")
+
 local out = mf.write_mrtd_string({
   columns = {
     { name = "name", type = "string" },

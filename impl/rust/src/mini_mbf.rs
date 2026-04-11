@@ -2,7 +2,7 @@ use crate::MakrellFormatError;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Node {
-    Scalar { text: String, quoted: bool },
+    Scalar { text: String, quoted: bool, suffix: String },
     Brace(Vec<Node>),
     Square(Vec<Node>),
     Paren(Vec<Node>),
@@ -13,6 +13,7 @@ struct Token {
     kind: TokenKind,
     text: String,
     quoted: bool,
+    suffix: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -80,11 +81,12 @@ fn tokenize(source: &str) -> Result<Vec<Token>, MakrellFormatError> {
                 }
                 i += 1;
             }
-            tokens.push(Token {
-                kind: TokenKind::Scalar,
-                text: chars[start..i].iter().collect(),
-                quoted: false,
-            });
+                tokens.push(Token {
+                    kind: TokenKind::Scalar,
+                    text: chars[start..i].iter().collect(),
+                    quoted: false,
+                    suffix: String::new(),
+                });
             continue;
         }
         match ch {
@@ -160,6 +162,7 @@ fn tokenize(source: &str) -> Result<Vec<Token>, MakrellFormatError> {
                     kind: TokenKind::Scalar,
                     text,
                     quoted: true,
+                    suffix: read_suffix(&chars, &mut i),
                 });
                 continue;
             }
@@ -184,6 +187,7 @@ fn tokenize(source: &str) -> Result<Vec<Token>, MakrellFormatError> {
             kind: TokenKind::Scalar,
             text: chars[start..i].iter().collect(),
             quoted: false,
+            suffix: String::new(),
         });
     }
     Ok(tokens)
@@ -194,7 +198,21 @@ fn token(kind: TokenKind, text: &str) -> Token {
         kind,
         text: text.to_string(),
         quoted: false,
+        suffix: String::new(),
     }
+}
+
+fn read_suffix(chars: &[char], index: &mut usize) -> String {
+    let start = *index;
+    while *index < chars.len() {
+        let ch = chars[*index];
+        if ch.is_ascii_alphanumeric() || ch == '_' {
+            *index += 1;
+            continue;
+        }
+        break;
+    }
+    chars[start..*index].iter().collect()
 }
 
 struct Parser {
@@ -221,6 +239,7 @@ impl Parser {
             TokenKind::Scalar | TokenKind::Equals => Ok(Node::Scalar {
                 text: token.text,
                 quoted: token.quoted,
+                suffix: token.suffix,
             }),
             TokenKind::BraceOpen => Ok(Node::Brace(self.parse_group(TokenKind::BraceClose)?)),
             TokenKind::SquareOpen => Ok(Node::Square(self.parse_group(TokenKind::SquareClose)?)),

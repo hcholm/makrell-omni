@@ -1,7 +1,7 @@
 local M = {}
 
-local function token(kind, text, quoted)
-  return { kind = kind, text = text, quoted = quoted or false }
+local function token(kind, text, quoted, suffix)
+  return { kind = kind, text = text, quoted = quoted or false, suffix = suffix or "" }
 end
 
 function M.mbf_support_profile()
@@ -59,7 +59,11 @@ local function read_number(source, index)
       finish = finish + 1
     end
   end
-  return source:sub(index, finish - 1), finish
+  local suffix_start = finish
+  while finish <= #source and source:sub(finish, finish):match("[A-Za-z0-9_]") do
+    finish = finish + 1
+  end
+  return source:sub(index, finish - 1), source:sub(suffix_start, finish - 1), finish
 end
 
 local function read_string(source, index)
@@ -86,6 +90,14 @@ local function read_string(source, index)
     end
   end
   error("Unterminated string")
+end
+
+local function read_suffix(source, index)
+  local finish = index
+  while finish <= #source and source:sub(finish, finish):match("[A-Za-z0-9_]") do
+    finish = finish + 1
+  end
+  return source:sub(index, finish - 1), finish
 end
 
 local function read_identifier(source, index)
@@ -123,9 +135,9 @@ function M.tokenize_mbf_level0(source)
     elseif char == "#" then
       index = consume_line_comment(source, index + 1)
     elseif (char == "-" and is_digit(next_char)) or is_digit(char) then
-      local text
-      text, index = read_number(source, index)
-      table.insert(tokens, token("number", text, false))
+      local text, suffix
+      text, suffix, index = read_number(source, index)
+      table.insert(tokens, token("number", text, false, suffix))
     elseif string.find("{}[]()", char, 1, true) then
       table.insert(tokens, token(char, char, false))
       index = index + 1
@@ -136,9 +148,10 @@ function M.tokenize_mbf_level0(source)
       table.insert(tokens, token("operator", char, false))
       index = index + 1
     elseif char == '"' then
-      local text
+      local text, suffix
       text, index = read_string(source, index + 1)
-      table.insert(tokens, token("string", text, true))
+      suffix, index = read_suffix(source, index)
+      table.insert(tokens, token("string", text, true, suffix))
     elseif is_identifier_start(char) then
       local text
       text, index = read_identifier(source, index)
@@ -248,7 +261,7 @@ parse_node = function(tokens, index)
     error("Unexpected end of input")
   end
   if token_value.kind == "identifier" or token_value.kind == "number" or token_value.kind == "string" or token_value.kind == "=" then
-    return { kind = "scalar", text = token_value.text, quoted = token_value.quoted }, index + 1
+    return { kind = "scalar", text = token_value.text, quoted = token_value.quoted, suffix = token_value.suffix or "" }, index + 1
   end
   if token_value.kind == "operator" then
     error("Unexpected token: " .. token_value.text)
@@ -292,9 +305,60 @@ function M.parse_mbf_nodes(source)
   return M.parse_mbf_level1_nodes(source)
 end
 
-local function scalar(text, quoted)
+local function make_tagged_string(value, suffix)
+  return { value = value, suffix = suffix, __basic_suffix_profile = true }
+end
+
+local function is_tagged_string(value)
+  return type(value) == "table" and value.__basic_suffix_profile == true and type(value.value) == "string" and type(value.suffix) == "string"
+end
+
+function M.split_numeric_literal_suffix(text)
+  for boundary = #text, 1, -1 do
+    local value = text:sub(1, boundary)
+    local suffix = text:sub(boundary + 1)
+    if suffix == "" or suffix:match("^[A-Za-z_][A-Za-z0-9_]*$") then
+      if tonumber(value) ~= nil then
+        return value, suffix
+      end
+    end
+  end
+  return nil, nil
+end
+
+function M.apply_basic_suffix_profile(kind, value, suffix)
+  if kind == "string" then
+    if suffix == "" then
+      return value
+    end
+    if suffix == "dt" then return make_tagged_string(value, suffix) end
+    if suffix == "bin" then return assert(tonumber(value, 2), "Invalid binary literal") end
+    if suffix == "oct" then return assert(tonumber(value, 8), "Invalid octal literal") end
+    if suffix == "hex" then return assert(tonumber(value, 16), "Invalid hexadecimal literal") end
+    error("Unsupported basic suffix profile string suffix '" .. suffix .. "'")
+  end
+
+  local base = tonumber(value)
+  if base == nil then
+    error("Invalid numeric literal '" .. value .. "'")
+  end
+  if suffix == "" then return base end
+  if suffix == "k" then return base * 1e3 end
+  if suffix == "M" then return base * 1e6 end
+  if suffix == "G" then return base * 1e9 end
+  if suffix == "T" then return base * 1e12 end
+  if suffix == "P" then return base * 1e15 end
+  if suffix == "E" then return base * 1e18 end
+  if suffix == "e" then return base * math.exp(1) end
+  if suffix == "tau" then return base * (math.pi * 2) end
+  if suffix == "deg" then return base * (math.pi / 180) end
+  if suffix == "pi" then return base * math.pi end
+  error("Unsupported basic suffix profile numeric suffix '" .. suffix .. "'")
+end
+
+local function scalar(text, quoted, suffix)
   if quoted then
-    return text
+    return M.apply_basic_suffix_profile("string", text, suffix or "")
   end
   if text == "null" then
     return nil
@@ -305,11 +369,9 @@ local function scalar(text, quoted)
   if text == "false" then
     return false
   end
-  if text:match("^%-?%d+$") then
-    return tonumber(text)
-  end
-  if text:match("^%-?%d+%.%d+$") then
-    return tonumber(text)
+  local raw, numeric_suffix = M.split_numeric_literal_suffix(text)
+  if raw ~= nil then
+    return M.apply_basic_suffix_profile("number", raw, numeric_suffix)
   end
   return text
 end
@@ -329,7 +391,7 @@ end
 
 local function mron_node(node)
   if node.kind == "scalar" then
-    return scalar(node.text, node.quoted)
+    return scalar(node.text, node.quoted, node.suffix)
   end
   if node.kind == "square" then
     local out = {}
@@ -381,6 +443,9 @@ function M.write_mron_string(value)
   end
   if type(value) == "number" then
     return tostring(value)
+  end
+  if is_tagged_string(value) then
+    return quote_if_needed(value.value) .. value.suffix
   end
   if type(value) == "string" then
     return quote_if_needed(value)
@@ -475,9 +540,12 @@ end
 
 local function coerce_mrtd(value, field_type)
   if field_type == nil or field_type == "" then
-    field_type = "string"
+    return value
   end
   if field_type == "string" then
+    if is_tagged_string(value) then
+      return value
+    end
     return value == nil and "null" or tostring(value)
   end
   if field_type == "int" then
@@ -508,6 +576,9 @@ local function mrtd_cell(value)
   if type(value) == "number" then
     return tostring(value)
   end
+  if is_tagged_string(value) then
+    return quote_if_needed(value.value) .. value.suffix
+  end
   return quote_if_needed(tostring(value))
 end
 
@@ -533,7 +604,7 @@ function M.parse_mrtd_string(source)
     end
     local row, record = {}, {}
     for i, column in ipairs(columns) do
-      local value = coerce_mrtd(scalar(cells[i].text, cells[i].quoted), column.type)
+      local value = coerce_mrtd(scalar(cells[i].text, cells[i].quoted, cells[i].suffix), column.type)
       table.insert(row, value)
       record[column.name] = value
     end

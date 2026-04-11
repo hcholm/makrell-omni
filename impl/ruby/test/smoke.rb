@@ -47,6 +47,21 @@ block_comment_table = Makrell::Formats.parse_mrtd_string(read_fixture("conforman
 raise "Block-comment MRTD first row failed" unless block_comment_table[:records].first["status"] == "active"
 raise "Block-comment MRTD second row failed" unless block_comment_table[:records][1]["note"] == "review"
 
+suffix_value = Makrell::Formats.apply_basic_suffix_profile(:string, "2026-04-11", "dt")
+raise "Ruby basic suffix profile string helper failed" unless suffix_value == { value: "2026-04-11", suffix: "dt", __basic_suffix_profile: true }
+raise "Ruby basic suffix profile number helper failed" unless Makrell::Formats.apply_basic_suffix_profile(:number, "3", "k") == 3000
+raise "Ruby numeric suffix splitting failed" unless Makrell::Formats.split_numeric_literal_suffix("0.5tau") == ["0.5", "tau"]
+
+suffix_mron = Makrell::Formats.parse_mron_string(read_fixture("conformance/mron", "base-suffixes.mron"))
+raise "Suffix MRON dt failed" unless suffix_mron["when"] == { value: "2026-04-11", suffix: "dt", __basic_suffix_profile: true }
+raise "Suffix MRON base conversions failed" unless suffix_mron["bits"] == 10 && suffix_mron["octal"] == 15 && suffix_mron["mask"] == 255
+raise "Suffix MRON scaled numbers failed" unless suffix_mron["bonus"] == 3000 && suffix_mron["scale"] == 2000000
+
+suffix_table = Makrell::Formats.parse_mrtd_string(read_fixture("conformance/mrtd", "base-suffixes.mrtd"))
+raise "Suffix MRTD dt failed" unless suffix_table[:records].first["when"] == { value: "2026-04-11", suffix: "dt", __basic_suffix_profile: true }
+raise "Suffix MRTD base conversions failed" unless suffix_table[:records].first["bits"] == 10 && suffix_table[:records].first["octal"] == 15 && suffix_table[:records].first["mask"] == 255
+raise "Suffix MRTD scaled numbers failed" unless suffix_table[:records].first["bonus"] == 3000 && suffix_table[:records].first["scale"] == 2000000
+
 out = Makrell::Formats.write_mrtd_string(
   columns: [
     { name: "name", type: "string" },

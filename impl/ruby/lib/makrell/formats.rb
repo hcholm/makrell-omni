@@ -2,7 +2,7 @@ module Makrell
   module Formats
     module_function
 
-    Token = Struct.new(:kind, :text, :quoted, keyword_init: true)
+    Token = Struct.new(:kind, :text, :quoted, :suffix, keyword_init: true)
 
     def mbf_support_profile
       {
@@ -35,7 +35,8 @@ module Makrell
         end
         if negative_number_start?(source, i) || digit?(char)
           text, i = read_number(source, i)
-          tokens << Token.new(kind: :number, text: text, quoted: false)
+          raw, suffix = split_numeric_literal_suffix(text)
+          tokens << Token.new(kind: :number, text: text, quoted: false, suffix: suffix || "")
           next
         end
         if "{}[]()".include?(char)
@@ -55,7 +56,8 @@ module Makrell
         end
         if char == '"'
           text, i = read_string(source, i + 1)
-          tokens << Token.new(kind: :string, text: text, quoted: true)
+          suffix, i = read_suffix(source, i)
+          tokens << Token.new(kind: :string, text: text, quoted: true, suffix: suffix)
           next
         end
         if identifier_start?(char)
@@ -92,6 +94,43 @@ module Makrell
       parse_mbf_level1_nodes(source)
     end
 
+    def split_numeric_literal_suffix(text)
+      text.length.downto(1) do |boundary|
+        value = text[0...boundary]
+        suffix = text[boundary..] || ""
+        next if !suffix.empty? && suffix !~ /\A[A-Za-z_][A-Za-z0-9_]*\z/
+        return [value, suffix] if value.match?(/\A-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?\z/)
+      end
+      nil
+    end
+
+    def apply_basic_suffix_profile(kind, value, suffix)
+      suffix ||= ""
+      if kind == :string || kind == "string"
+        return value if suffix.empty?
+        return { value: value, suffix: suffix, __basic_suffix_profile: true } if suffix == "dt"
+        return Integer(value, 2) if suffix == "bin"
+        return Integer(value, 8) if suffix == "oct"
+        return Integer(value, 16) if suffix == "hex"
+        raise "Unsupported basic suffix profile string suffix '#{suffix}'."
+      end
+
+      raise "Invalid numeric literal '#{value}'." unless value.match?(/\A-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?\z/)
+      base = value.include?(".") || value.include?("e") || value.include?("E") ? value.to_f : value.to_i
+      return base if suffix.empty?
+      return base * 1e3 if suffix == "k"
+      return base * 1e6 if suffix == "M"
+      return base * 1e9 if suffix == "G"
+      return base * 1e12 if suffix == "T"
+      return base * 1e15 if suffix == "P"
+      return base * 1e18 if suffix == "E"
+      return base * Math::E if suffix == "e"
+      return base * (Math::PI * 2) if suffix == "tau"
+      return base * (Math::PI / 180) if suffix == "deg"
+      return base * Math::PI if suffix == "pi"
+      raise "Unsupported basic suffix profile numeric suffix '#{suffix}'."
+    end
+
     def parse_mron_string(source)
       nodes = parse_mbf_level1_nodes(source)
       return nil if nodes.empty?
@@ -116,11 +155,15 @@ module Makrell
         "false"
       when Numeric
         value.to_s
+      when Hash
+        if value[:__basic_suffix_profile]
+          quote_if_needed(value[:value].to_s) + value[:suffix].to_s
+        else
+          inner = value.map { |key, item| "#{quote_if_needed(key.to_s)} #{write_mron_string(item)}" }.join(" ")
+          "{ #{inner} }"
+        end
       when Array
         "[" + value.map { |item| write_mron_string(item) }.join(" ") + "]"
-      when Hash
-        inner = value.map { |key, item| "#{quote_if_needed(key.to_s)} #{write_mron_string(item)}" }.join(" ")
-        "{ #{inner} }"
       else
         quote_if_needed(value.to_s)
       end
@@ -169,7 +212,7 @@ module Makrell
         row = []
         record = {}
         columns.each_with_index do |column, index|
-          value = coerce_mrtd(scalar(cells[index][:text], cells[index][:quoted]), column[:type])
+          value = coerce_mrtd(scalar(cells[index][:text], cells[index][:quoted], cells[index][:suffix]), column[:type])
           row << value
           record[column[:name]] = value
         end
@@ -200,7 +243,7 @@ module Makrell
       raise "Unexpected end of input" if token.nil?
 
       if [:identifier, :number, :string, :"="].include?(token.kind)
-        return [{ kind: :scalar, text: token.text, quoted: token.quoted }, index + 1]
+        return [{ kind: :scalar, text: token.text, quoted: token.quoted, suffix: token.suffix || "" }, index + 1]
       end
       raise "Unexpected token: #{token.text}" if token.kind == :operator
 
@@ -233,7 +276,7 @@ module Makrell
 
     def mron_node(node)
       case node[:kind]
-      when :scalar then scalar(node[:text], node[:quoted])
+      when :scalar then scalar(node[:text], node[:quoted], node[:suffix])
       when :square then node[:children].map { |child| mron_node(child) }
       when :brace then mron_pairs(node[:children])
       else
@@ -278,22 +321,22 @@ module Makrell
       element
     end
 
-    def scalar(text, quoted)
-      return text if quoted
+    def scalar(text, quoted, suffix = "")
+      return apply_basic_suffix_profile(:string, text, suffix) if quoted
       return nil if text == "null"
       return true if text == "true"
       return false if text == "false"
-      return text.to_i if text.match?(/\A-?\d+\z/)
-      return text.to_f if text.match?(/\A-?\d+\.\d+\z/)
+      numeric_literal = split_numeric_literal_suffix(text)
+      return apply_basic_suffix_profile(:number, numeric_literal[0], numeric_literal[1]) if numeric_literal
 
       text
     end
 
     def coerce_mrtd(value, type)
-      type ||= "string"
+      return value if type.nil?
       case type
       when "string"
-        value.nil? ? "null" : value.to_s
+        value.is_a?(Hash) && value[:__basic_suffix_profile] ? value : (value.nil? ? "null" : value.to_s)
       when "int"
         raise "MRTD value does not match int field" unless value.is_a?(Integer)
         value
@@ -313,6 +356,12 @@ module Makrell
       when true then "true"
       when false then "false"
       when Numeric then value.to_s
+      when Hash
+        if value[:__basic_suffix_profile]
+          quote_if_needed(value[:value].to_s) + value[:suffix].to_s
+        else
+          quote_if_needed(value.to_s)
+        end
       else quote_if_needed(value.to_s)
       end
     end
@@ -364,6 +413,7 @@ module Makrell
         finish += 1
         finish += 1 while finish < source.length && digit?(source[finish])
       end
+      finish += 1 while finish < source.length && source[finish].match?(/[A-Za-z0-9_]/)
       [source[index...finish], finish]
     end
 
@@ -389,6 +439,12 @@ module Makrell
         index += 1
       end
       raise "Unterminated string"
+    end
+
+    def read_suffix(source, index)
+      finish = index
+      finish += 1 while finish < source.length && source[finish].match?(/[A-Za-z0-9_]/)
+      [source[index...finish], finish]
     end
 
     def identifier_start?(char)

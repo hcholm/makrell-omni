@@ -6,6 +6,10 @@ import {
   SubprocessMetaRuntimeAdapter,
 } from "./meta_runtime";
 import {
+  applyBasicSuffixProfile,
+  BasicSuffixLiteral,
+} from "./basic_suffix_profile";
+import {
   parseMrtd,
   readMrtdRecords,
   readMrtdTuples,
@@ -37,6 +41,7 @@ export {
   clearPatternHooks,
   InProcessMetaRuntimeAdapter,
   SubprocessMetaRuntimeAdapter,
+  applyBasicSuffixProfile,
   parseMrtd,
   readMrtdRecords,
   readMrtdTuples,
@@ -52,6 +57,7 @@ export {
 };
 export type { CompileOptions } from "./compiler";
 export type { MetaRuntimeAdapter } from "./meta_runtime";
+export type { BasicSuffixLiteral } from "./basic_suffix_profile";
 export type { MrtdColumn, MrtdDocument, MrtdOptions, MrtdProfile, MrtdRow, MrtdScalarType } from "./mrtd";
 
 export interface RunOptions extends CompileOptions {

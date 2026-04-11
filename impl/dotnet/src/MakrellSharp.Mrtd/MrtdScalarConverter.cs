@@ -1,6 +1,6 @@
-using System.Globalization;
 using System.Text;
 using MakrellSharp.Ast;
+using MakrellSharp.BaseFormat;
 
 namespace MakrellSharp.Mrtd;
 
@@ -31,55 +31,26 @@ internal static class MrtdScalarConverter
     private static object ConvertString(StringNode str, MrtdParseOptions options)
     {
         var unescaped = Unescape(str.Value);
-        return str.Suffix switch
+        try
         {
-            "" => unescaped,
-            "dt" => DateTime.Parse(unescaped, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind),
-            "bin" => System.Convert.ToInt64(unescaped, 2),
-            "oct" => System.Convert.ToInt64(unescaped, 8),
-            "hex" => System.Convert.ToInt64(unescaped, 16),
-            _ => throw UnsupportedStringSuffix(str.Suffix, options),
-        };
+            return BasicSuffixProfile.ApplyString(unescaped, str.Suffix);
+        }
+        catch (InvalidOperationException)
+        {
+            throw UnsupportedStringSuffix(str.Suffix, options);
+        }
     }
 
     private static object ConvertNumber(NumberNode number, MrtdParseOptions options)
     {
-        if (IsInteger(number.Value))
+        try
         {
-            var baseValue = long.Parse(number.Value, CultureInfo.InvariantCulture);
-            return number.Suffix switch
-            {
-                "" => baseValue,
-                "k" => baseValue * 1_000L,
-                "M" => baseValue * 1_000_000L,
-                "G" => baseValue * 1_000_000_000L,
-                "T" => baseValue * 1_000_000_000_000L,
-                "P" => baseValue * 1_000_000_000_000_000L,
-                "E" => baseValue * 1_000_000_000_000_000_000L,
-                "e" => Math.E * baseValue,
-                "tau" => Math.Tau * baseValue,
-                "deg" => Math.PI * baseValue / 180d,
-                "pi" => Math.PI * baseValue,
-                _ => throw UnsupportedNumberSuffix(number.Suffix, options),
-            };
+            return BasicSuffixProfile.ApplyNumber(number.Value, number.Suffix);
         }
-
-        var floatValue = double.Parse(number.Value, CultureInfo.InvariantCulture);
-        return number.Suffix switch
+        catch (InvalidOperationException)
         {
-            "" => floatValue,
-            "k" => floatValue * 1_000d,
-            "M" => floatValue * 1_000_000d,
-            "G" => floatValue * 1_000_000_000d,
-            "T" => floatValue * 1_000_000_000_000d,
-            "P" => floatValue * 1_000_000_000_000_000d,
-            "E" => floatValue * 1_000_000_000_000_000_000d,
-            "e" => Math.E * floatValue,
-            "tau" => Math.Tau * floatValue,
-            "deg" => Math.PI * floatValue / 180d,
-            "pi" => Math.PI * floatValue,
-            _ => throw UnsupportedNumberSuffix(number.Suffix, options),
-        };
+            throw UnsupportedNumberSuffix(number.Suffix, options);
+        }
     }
 
     private static Exception UnsupportedStringSuffix(string suffix, MrtdParseOptions options)
@@ -90,24 +61,6 @@ internal static class MrtdScalarConverter
     private static Exception UnsupportedNumberSuffix(string suffix, MrtdParseOptions options)
     {
         return new InvalidOperationException($"Unsupported MRTD number suffix '{suffix}'.");
-    }
-
-    private static bool IsInteger(string text)
-    {
-        foreach (var ch in text)
-        {
-            if (ch == '-')
-            {
-                continue;
-            }
-
-            if (!char.IsDigit(ch))
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     private static string Unescape(string raw)

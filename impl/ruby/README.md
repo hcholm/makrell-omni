@@ -22,3 +22,4 @@ Current status:
 - first working core pass for MRON, MRML, and MRTD
 - data-format support is intentionally capped at MBF level 1 today
 - operator tokens are preserved so hyphenated barewords are rejected rather than misread as identifiers
+- explicit shared `basic suffix profile` support for MRON and MRTD as a post-L1 conversion layer

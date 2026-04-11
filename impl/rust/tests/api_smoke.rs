@@ -1,3 +1,6 @@
+use makrell_formats::basic_suffix_profile::{
+    apply_basic_suffix_profile, BasicSuffixLiteralKind, BasicSuffixValue,
+};
 use makrell_formats::mron::{self, MronValue};
 use makrell_formats::mrml::{self, MrmlChild, MrmlElement};
 use makrell_formats::mrtd::{self, MrtdDocument, MrtdValue};
@@ -69,6 +72,20 @@ fn mrtd_parses_shared_fixture_and_identifier_strings() {
     let block_comment_doc = mrtd::parse_file(fixture_path("conformance/mrtd/block-comments.mrtd")).unwrap();
     assert_eq!(block_comment_doc.rows[0][1], MrtdValue::String("active".into()));
     assert_eq!(block_comment_doc.rows[1][1], MrtdValue::String("inactive".into()));
+
+    let suffix_doc = mrtd::parse_file(fixture_path("conformance/mrtd/base-suffixes.mrtd")).unwrap();
+    assert_eq!(
+        suffix_doc.rows[0][0],
+        MrtdValue::TaggedString {
+            value: "2026-04-11".into(),
+            suffix: "dt".into(),
+        }
+    );
+    assert_eq!(suffix_doc.rows[0][1], MrtdValue::Int(10));
+    assert_eq!(suffix_doc.rows[0][2], MrtdValue::Int(15));
+    assert_eq!(suffix_doc.rows[0][3], MrtdValue::Int(255));
+    assert_eq!(suffix_doc.rows[0][4], MrtdValue::Int(3_000));
+    assert_eq!(suffix_doc.rows[0][5], MrtdValue::Int(2_000_000));
 }
 
 #[test]
@@ -133,4 +150,39 @@ fn fixture_path(relative: &str) -> PathBuf {
 fn hyphenated_barewords_are_rejected() {
     assert!(mron::parse_file(fixture_path("conformance/mron/hyphenated-bareword.invalid.mron")).is_err());
     assert!(mrtd::parse_file(fixture_path("conformance/mrtd/hyphenated-bareword.invalid.mrtd")).is_err());
+}
+
+#[test]
+fn basic_suffix_profile_is_exposed_as_direct_post_l1_conversion_layer() {
+    assert_eq!(
+        apply_basic_suffix_profile(BasicSuffixLiteralKind::String, "2026-04-11", "dt").unwrap(),
+        BasicSuffixValue::TaggedString {
+            value: "2026-04-11".into(),
+            suffix: "dt".into(),
+        }
+    );
+    assert_eq!(
+        apply_basic_suffix_profile(BasicSuffixLiteralKind::Number, "3", "k").unwrap(),
+        BasicSuffixValue::Int(3_000)
+    );
+}
+
+#[test]
+fn mron_parses_base_suffix_fixture() {
+    let value = mron::parse_file(fixture_path("conformance/mron/base-suffixes.mron")).unwrap();
+    let MronValue::Object(map) = value else {
+        panic!("expected object");
+    };
+    assert_eq!(
+        map.get("when"),
+        Some(&MronValue::TaggedString {
+            value: "2026-04-11".into(),
+            suffix: "dt".into(),
+        })
+    );
+    assert_eq!(map.get("bits"), Some(&MronValue::Int(10)));
+    assert_eq!(map.get("octal"), Some(&MronValue::Int(15)));
+    assert_eq!(map.get("mask"), Some(&MronValue::Int(255)));
+    assert_eq!(map.get("bonus"), Some(&MronValue::Int(3_000)));
+    assert_eq!(map.get("scale"), Some(&MronValue::Int(2_000_000)));
 }

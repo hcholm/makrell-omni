@@ -8,6 +8,7 @@ import {
   compile,
   compileToDts,
   compileToTs,
+  applyBasicSuffixProfile,
   getMakrellEditorAssets,
   getMakrellPlaygroundExample,
   InProcessMetaRuntimeAdapter,
@@ -691,7 +692,7 @@ describe("MakrellTs MVP", () => {
     expect(text).toContain("1 Ada 13.5");
   });
 
-  test("parseMrtd accepts suffixes without a profile", () => {
+  test("parseMrtd accepts core suffixes directly", () => {
     const document = parseMrtd(`
       when bonus:float
       "2026-04-03"dt 3k
@@ -699,6 +700,11 @@ describe("MakrellTs MVP", () => {
 
     expect(document.records[0].when).toBeInstanceOf(Date);
     expect(document.records[0].bonus).toBe(3000);
+  });
+
+  test("basic suffix profile is exposed as a direct post-L1 conversion layer", () => {
+    expect(applyBasicSuffixProfile({ kind: "string", value: "2026-04-11", suffix: "dt" })).toBeInstanceOf(Date);
+    expect(applyBasicSuffixProfile({ kind: "number", value: "3", suffix: "k" })).toBe(3000);
   });
 
   test("parseMrtd accepts shared base suffix conformance fixture", () => {

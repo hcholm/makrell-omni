@@ -1,3 +1,5 @@
+import { applyBasicSuffixProfile } from "./basic_suffix_profile";
+
 export type MrtdScalarType = "int" | "float" | "bool" | "string";
 export interface MrtdColumn {
   name: string;
@@ -27,15 +29,6 @@ const declaredTypes = new Set<MrtdScalarType>(["int", "float", "bool", "string"]
 const identifierRx = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
 const quotedStringRx = /^"((?:\\.|[^"\\])*)"([A-Za-z0-9_$]*)$/s;
 const numberRx = /^(-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)([A-Za-z0-9_$]*)$/;
-const numericSuffixFactors: Record<string, number> = {
-  k: 1_000,
-  M: 1_000_000,
-  G: 1_000_000_000,
-  T: 1_000_000_000_000,
-  P: 1_000_000_000_000_000,
-  E: 1_000_000_000_000_000_000,
-};
-
 export function parseMrtd(source: string, options: MrtdOptions = {}): MrtdDocument {
   const rows = splitRootRows(source);
   if (rows.length === 0) {
@@ -388,48 +381,13 @@ function parseScalar(cell: string, options: MrtdOptions): unknown {
   if (quoted) {
     const [, body, suffix] = quoted;
     const text = unescapeString(body);
-    if (!suffix) {
-      return text;
-    }
-    if (suffix === "dt") {
-      return new Date(text);
-    }
-    if (suffix === "bin") {
-      return parseInt(text, 2);
-    }
-    if (suffix === "oct") {
-      return parseInt(text, 8);
-    }
-    if (suffix === "hex") {
-      return parseInt(text, 16);
-    }
-    throw new Error(`Unsupported MRTD string suffix '${suffix}'.`);
+    return applyBasicSuffixProfile({ kind: "string", value: text, suffix });
   }
 
   const numeric = numberRx.exec(cell);
   if (numeric) {
     const [, digits, suffix] = numeric;
-    const parsed = Number(digits);
-    if (!suffix) {
-      return parsed;
-    }
-    const factor = numericSuffixFactors[suffix];
-    if (factor !== undefined) {
-      return parsed * factor;
-    }
-    if (suffix === "e") {
-      return parsed * Math.E;
-    }
-    if (suffix === "tau") {
-      return parsed * Math.PI * 2;
-    }
-    if (suffix === "deg") {
-      return parsed * Math.PI / 180;
-    }
-    if (suffix === "pi") {
-      return parsed * Math.PI;
-    }
-    throw new Error(`Unsupported MRTD numeric suffix '${suffix}'.`);
+    return applyBasicSuffixProfile({ kind: "number", value: digits, suffix });
   }
 
   return parseStringLikeToken(cell);

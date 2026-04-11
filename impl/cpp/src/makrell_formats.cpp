@@ -1,7 +1,10 @@
 #include "makrell_formats.hpp"
 
 #include <cctype>
+#include <cmath>
 #include <fstream>
+#include <numbers>
+#include <regex>
 #include <sstream>
 #include <stdexcept>
 
@@ -12,14 +15,19 @@ struct Token {
     std::string kind;
     std::string text;
     bool quoted = false;
+    std::string suffix;
 };
 
 struct Node {
     std::string kind;
     std::string text;
     bool quoted = false;
+    std::string suffix;
     std::vector<Node> children;
 };
+
+std::pair<std::string, std::string> split_numeric_literal_suffix_impl(const std::string& text);
+MronValue apply_basic_suffix_profile_impl(const std::string& kind, const std::string& value, const std::string& suffix);
 
 std::string read_file(const std::string& path) {
     std::ifstream in(path);
@@ -76,16 +84,18 @@ std::vector<Token> tokenize(const std::string& source) {
                 }
                 ++i;
             }
-            tokens.push_back(Token{"scalar", source.substr(start, i - start), false});
+            std::string text = source.substr(start, i - start);
+            auto [raw, suffix] = split_numeric_literal_suffix_impl(text);
+            tokens.push_back(Token{"scalar", text, false, suffix});
             continue;
         }
         if (ch == '-') {
-            tokens.push_back(Token{"-", "-", false});
+            tokens.push_back(Token{"-", "-", false, ""});
             ++i;
             continue;
         }
         if (std::string("{}[]()=").find(ch) != std::string::npos) {
-            tokens.push_back(Token{std::string(1, ch), std::string(1, ch), false});
+            tokens.push_back(Token{std::string(1, ch), std::string(1, ch), false, ""});
             ++i;
             continue;
         }
@@ -114,7 +124,11 @@ std::vector<Token> tokenize(const std::string& source) {
                 }
                 text.push_back(c);
             }
-            tokens.push_back(Token{"scalar", text, true});
+            std::size_t suffixStart = i;
+            while (i < source.size() && (std::isalnum(static_cast<unsigned char>(source[i])) || source[i] == '_')) {
+                ++i;
+            }
+            tokens.push_back(Token{"scalar", text, true, source.substr(suffixStart, i - suffixStart)});
             continue;
         }
         std::size_t start = i;
@@ -129,7 +143,11 @@ std::vector<Token> tokenize(const std::string& source) {
             }
             ++i;
         }
-        tokens.push_back(Token{"scalar", source.substr(start, i - start), false});
+        {
+            std::string text = source.substr(start, i - start);
+            auto [raw, suffix] = split_numeric_literal_suffix_impl(text);
+            tokens.push_back(Token{"scalar", text, false, suffix});
+        }
     }
     return tokens;
 }
@@ -151,16 +169,16 @@ std::vector<Node> parse_group(const std::vector<Token>& tokens, std::size_t& ind
 Node parse_node(const std::vector<Token>& tokens, std::size_t& index) {
     const Token& token = tokens.at(index++);
     if (token.kind == "scalar" || token.kind == "=") {
-        return Node{"scalar", token.text, token.quoted, {}};
+        return Node{"scalar", token.text, token.quoted, token.suffix, {}};
     }
     if (token.kind == "{") {
-        return Node{"brace", "", false, parse_group(tokens, index, "}")};
+        return Node{"brace", "", false, "", parse_group(tokens, index, "}")};
     }
     if (token.kind == "[") {
-        return Node{"square", "", false, parse_group(tokens, index, "]")};
+        return Node{"square", "", false, "", parse_group(tokens, index, "]")};
     }
     if (token.kind == "(") {
-        return Node{"paren", "", false, parse_group(tokens, index, ")")};
+        return Node{"paren", "", false, "", parse_group(tokens, index, ")")};
     }
     throw std::runtime_error("Unexpected token: " + token.text);
 }
@@ -175,34 +193,74 @@ std::vector<Node> parse_nodes(const std::string& source) {
     return nodes;
 }
 
-MronValue convert_scalar(const std::string& text, bool quoted) {
+std::pair<std::string, std::string> split_numeric_literal_suffix_impl(const std::string& text) {
+    for (std::size_t boundary = text.size(); boundary > 0; --boundary) {
+        std::string value = text.substr(0, boundary);
+        std::string suffix = text.substr(boundary);
+        if (!suffix.empty() && !std::regex_match(suffix, std::regex("[A-Za-z_][A-Za-z0-9_]*"))) {
+            continue;
+        }
+        try {
+            std::size_t pos = 0;
+            std::stod(value, &pos);
+            if (pos == value.size()) {
+                return {value, suffix};
+            }
+        } catch (...) {
+        }
+    }
+    return {"", ""};
+}
+
+MronValue apply_basic_suffix_profile_impl(const std::string& kind, const std::string& value, const std::string& suffix) {
+    if (kind == "string") {
+        if (suffix.empty()) return MronValue{std::string{value}};
+        if (suffix == "dt") return MronValue{BasicSuffixTaggedString{value, suffix}};
+        if (suffix == "bin") return MronValue{static_cast<long long>(std::stoll(value, nullptr, 2))};
+        if (suffix == "oct") return MronValue{static_cast<long long>(std::stoll(value, nullptr, 8))};
+        if (suffix == "hex") return MronValue{static_cast<long long>(std::stoll(value, nullptr, 16))};
+        throw std::runtime_error("Unsupported basic suffix profile string suffix '" + suffix + "'.");
+    }
+
+    double base = std::stod(value);
+    if (suffix.empty()) {
+        if (value.find('.') == std::string::npos && value.find('e') == std::string::npos && value.find('E') == std::string::npos) {
+            return MronValue{static_cast<long long>(std::stoll(value))};
+        }
+        return MronValue{base};
+    }
+    if (suffix == "k") base *= 1e3;
+    else if (suffix == "M") base *= 1e6;
+    else if (suffix == "G") base *= 1e9;
+    else if (suffix == "T") base *= 1e12;
+    else if (suffix == "P") base *= 1e15;
+    else if (suffix == "E") base *= 1e18;
+    else if (suffix == "e") base *= std::exp(1.0);
+    else if (suffix == "tau") base *= (std::numbers::pi * 2.0);
+    else if (suffix == "deg") base *= (std::numbers::pi / 180.0);
+    else if (suffix == "pi") base *= std::numbers::pi;
+    else throw std::runtime_error("Unsupported basic suffix profile numeric suffix '" + suffix + "'.");
+
+    if (value.find('.') == std::string::npos && value.find('e') == std::string::npos && value.find('E') == std::string::npos &&
+        suffix != "e" && suffix != "tau" && suffix != "deg" && suffix != "pi") {
+        long long intValue = static_cast<long long>(base);
+        if (base == static_cast<double>(intValue)) {
+            return MronValue{intValue};
+        }
+    }
+    return MronValue{base};
+}
+
+MronValue convert_scalar(const std::string& text, bool quoted, const std::string& suffix) {
     if (quoted) {
-        return MronValue{std::string{text}};
+        return apply_basic_suffix_profile_impl("string", text, suffix);
     }
-    if (text == "null") {
-        return MronValue{nullptr};
-    }
-    if (text == "true") {
-        return MronValue{true};
-    }
-    if (text == "false") {
-        return MronValue{false};
-    }
-    try {
-        std::size_t pos = 0;
-        long long value = std::stoll(text, &pos);
-        if (pos == text.size()) {
-            return MronValue{value};
-        }
-    } catch (...) {
-    }
-    try {
-        std::size_t pos = 0;
-        double value = std::stod(text, &pos);
-        if (pos == text.size() && text.find('.') != std::string::npos) {
-            return MronValue{value};
-        }
-    } catch (...) {
+    if (text == "null") return MronValue{nullptr};
+    if (text == "true") return MronValue{true};
+    if (text == "false") return MronValue{false};
+    auto [raw, numericSuffix] = split_numeric_literal_suffix_impl(text);
+    if (!raw.empty()) {
+        return apply_basic_suffix_profile_impl("number", raw, numericSuffix);
     }
     return MronValue{std::string{text}};
 }
@@ -219,6 +277,7 @@ MronObject convert_mron_pairs(const std::vector<Node>& nodes) {
         object[std::get<std::string>(MronValue{std::visit([](const auto& v) -> std::string {
             using T = std::decay_t<decltype(v)>;
             if constexpr (std::is_same_v<T, std::string>) return v;
+            else if constexpr (std::is_same_v<T, BasicSuffixTaggedString>) return v.value;
             else if constexpr (std::is_same_v<T, bool>) return v ? "true" : "false";
             else if constexpr (std::is_same_v<T, std::nullptr_t>) return "null";
             else if constexpr (std::is_same_v<T, long long>) return std::to_string(v);
@@ -231,7 +290,7 @@ MronObject convert_mron_pairs(const std::vector<Node>& nodes) {
 
 MronValue convert_mron_node(const Node& node) {
     if (node.kind == "scalar") {
-        return convert_scalar(node.text, node.quoted);
+        return convert_scalar(node.text, node.quoted, node.suffix);
     }
     if (node.kind == "square") {
         MronArray items;
@@ -284,6 +343,8 @@ std::string write_mron_value_inner(const MronValue& value) {
             return out.str();
         } else if constexpr (std::is_same_v<T, std::string>) {
             return is_identifier_like(item) ? item : quote(item);
+        } else if constexpr (std::is_same_v<T, BasicSuffixTaggedString>) {
+            return (is_identifier_like(item.value) ? item.value : quote(item.value)) + item.suffix;
         } else if constexpr (std::is_same_v<T, MronArray>) {
             std::vector<std::string> parts;
             for (const auto& child : item) parts.push_back(write_mron_value_inner(child));
@@ -381,11 +442,22 @@ MrtdCell convert_mrtd_cell(const Node& node, const std::string& type) {
     if (node.kind != "scalar") {
         throw std::runtime_error("MRTD cells must be scalar values");
     }
-    MronValue scalar = convert_scalar(node.text, node.quoted);
+    MronValue scalar = convert_scalar(node.text, node.quoted, node.suffix);
+    if (type.empty()) {
+        return std::visit([](const auto& item) -> MrtdCell {
+            using T = std::decay_t<decltype(item)>;
+            if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, long long> || std::is_same_v<T, double> || std::is_same_v<T, bool> || std::is_same_v<T, BasicSuffixTaggedString>) {
+                return item;
+            } else {
+                return std::string("null");
+            }
+        }, scalar.value);
+    }
     if (type == "string") {
-        return std::visit([](const auto& item) -> std::string {
+        return std::visit([](const auto& item) -> MrtdCell {
             using T = std::decay_t<decltype(item)>;
             if constexpr (std::is_same_v<T, std::string>) return item;
+            else if constexpr (std::is_same_v<T, BasicSuffixTaggedString>) return item;
             else if constexpr (std::is_same_v<T, bool>) return item ? "true" : "false";
             else if constexpr (std::is_same_v<T, long long>) return std::to_string(item);
             else if constexpr (std::is_same_v<T, double>) { std::ostringstream out; out << item; return out.str(); }
@@ -412,6 +484,7 @@ std::string write_mrtd_cell_inner(const MrtdCell& cell) {
     return std::visit([](const auto& item) -> std::string {
         using T = std::decay_t<decltype(item)>;
         if constexpr (std::is_same_v<T, std::string>) return is_identifier_like(item) ? item : quote(item);
+        else if constexpr (std::is_same_v<T, BasicSuffixTaggedString>) return (is_identifier_like(item.value) ? item.value : quote(item.value)) + item.suffix;
         else if constexpr (std::is_same_v<T, bool>) return item ? "true" : "false";
         else if constexpr (std::is_same_v<T, long long>) return std::to_string(item);
         else { std::ostringstream out; out << item; return out.str(); }
@@ -419,6 +492,14 @@ std::string write_mrtd_cell_inner(const MrtdCell& cell) {
 }
 
 }  // namespace
+
+std::pair<std::string, std::string> split_numeric_literal_suffix(const std::string& text) {
+    return split_numeric_literal_suffix_impl(text);
+}
+
+MronValue apply_basic_suffix_profile(const std::string& kind, const std::string& value, const std::string& suffix) {
+    return apply_basic_suffix_profile_impl(kind, value, suffix);
+}
 
 MronValue parse_mron_string(const std::string& source) {
     std::vector<Node> nodes = parse_nodes(source);
@@ -472,7 +553,7 @@ MrtdDocument parse_mrtd_string(const std::string& source) {
         std::size_t pos = node.text.find(':');
         document.columns.push_back(MrtdColumn{
             pos == std::string::npos ? node.text : node.text.substr(0, pos),
-            pos == std::string::npos ? "string" : node.text.substr(pos + 1)
+            pos == std::string::npos ? "" : node.text.substr(pos + 1)
         });
     }
     for (std::size_t i = 1; i < lines.size(); ++i) {
@@ -505,8 +586,10 @@ std::string write_mrtd_string(const MrtdDocument& value) {
     std::ostringstream out;
     for (std::size_t i = 0; i < value.columns.size(); ++i) {
         if (i) out << " ";
-        out << (is_identifier_like(value.columns[i].name) ? value.columns[i].name : quote(value.columns[i].name))
-            << ":" << value.columns[i].type;
+        out << (is_identifier_like(value.columns[i].name) ? value.columns[i].name : quote(value.columns[i].name));
+        if (!value.columns[i].type.empty()) {
+            out << ":" << value.columns[i].type;
+        }
     }
     for (const auto& row : value.rows) {
         out << "\n";
