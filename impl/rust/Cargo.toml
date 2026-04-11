@@ -1,11 +1,11 @@
 [package]
 name = "makrell-formats"
-version = "0.1.0-alpha.1"
+version = "0.10.0"
 edition = "2021"
 license = "MIT"
 description = "MRON, MRML, and MRTD support for Rust."
 homepage = "https://makrell.dev"
-repository = "https://github.com/hcholm/makrell"
+repository = "https://github.com/hcholm/makrell-omni"
 readme = "README.md"
 
 [lib]

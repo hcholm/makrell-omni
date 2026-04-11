@@ -44,6 +44,17 @@ The JVM track is set up for `v0.10.0` publication as:
 - artifact: `makrell-formats`
 - version: `0.10.0`
 
+For GitHub Packages publication, provide:
+
+- `GITHUB_PACKAGES_USERNAME`
+- `GITHUB_PACKAGES_TOKEN`
+
+Then run:
+
+```bash
+gradle publishMavenJavaPublicationToGitHubPackagesRepository
+```
+
 For Maven Central publication via the Sonatype Central Portal compatibility
 endpoint, provide:
 
@@ -58,7 +69,7 @@ using `gradle.properties.example` as the template.
 Then run:
 
 ```bash
-gradle clean publish
+gradle clean publishMavenJavaPublicationToMavenCentralRepository
 ```
 
 For a dry run to local Maven only:

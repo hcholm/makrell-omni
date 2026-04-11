@@ -1,4 +1,6 @@
 mavenCentralUsername=your-central-username
 mavenCentralPassword=your-central-password
+githubPackagesUsername=your-github-username
+githubPackagesToken=your-github-packages-token
 signingInMemoryKey=your-armored-private-key
 signingInMemoryKeyPassword=your-signing-key-password

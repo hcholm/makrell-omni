@@ -1,5 +1,5 @@
 package = "makrell-formats"
-version = "dev-1"
+version = "0.10.0-1"
 source = {
   url = "."
 }

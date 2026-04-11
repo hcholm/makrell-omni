@@ -15,6 +15,12 @@ val centralUsername = providers.gradleProperty("mavenCentralUsername")
     .orElse(providers.environmentVariable("MAVEN_CENTRAL_USERNAME"))
 val centralPassword = providers.gradleProperty("mavenCentralPassword")
     .orElse(providers.environmentVariable("MAVEN_CENTRAL_PASSWORD"))
+val githubPackagesUsername = providers.gradleProperty("githubPackagesUsername")
+    .orElse(providers.environmentVariable("GITHUB_PACKAGES_USERNAME"))
+    .orElse(providers.environmentVariable("GITHUB_ACTOR"))
+val githubPackagesToken = providers.gradleProperty("githubPackagesToken")
+    .orElse(providers.environmentVariable("GITHUB_PACKAGES_TOKEN"))
+    .orElse(providers.environmentVariable("GH_TOKEN"))
 val signingKey = providers.gradleProperty("signingInMemoryKey")
     .orElse(providers.environmentVariable("SIGNING_IN_MEMORY_KEY"))
 val signingPassword = providers.gradleProperty("signingInMemoryKeyPassword")
@@ -68,14 +74,22 @@ publishing {
                     }
                 }
                 scm {
-                    connection.set("scm:git:https://github.com/hcholm/makrell.git")
-                    developerConnection.set("scm:git:ssh://git@github.com/hcholm/makrell.git")
-                    url.set("https://github.com/hcholm/makrell")
+                    connection.set("scm:git:https://github.com/hcholm/makrell-omni.git")
+                    developerConnection.set("scm:git:ssh://git@github.com/hcholm/makrell-omni.git")
+                    url.set("https://github.com/hcholm/makrell-omni")
                 }
             }
         }
     }
     repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/hcholm/makrell-omni")
+            credentials {
+                username = githubPackagesUsername.orNull
+                password = githubPackagesToken.orNull
+            }
+        }
         maven {
             name = "mavenCentral"
             url = uri(
@@ -95,12 +109,12 @@ publishing {
 
 signing {
     setRequired {
-        !isSnapshot && gradle.startParameter.taskNames.any { taskName ->
+        signingKey.isPresent && !isSnapshot && gradle.startParameter.taskNames.any { taskName ->
             taskName.startsWith("publish") && !taskName.contains("MavenLocal")
         }
     }
     if (signingKey.isPresent) {
         useInMemoryPgpKeys(signingKey.get(), signingPassword.orNull)
+        sign(publishing.publications["mavenJava"])
     }
-    sign(publishing.publications["mavenJava"])
 }

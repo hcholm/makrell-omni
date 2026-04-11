@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name = "makrell-formats"
-  spec.version = "0.1.0"
+  spec.version = "0.10.0"
   spec.summary = "MRON, MRML, and MRTD support for Ruby"
   spec.authors = ["Makrell contributors"]
   spec.email = ["opensource@makrell.dev"]
